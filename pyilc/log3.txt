@@ -1,0 +1,386 @@
+ell_F =  50.0
+ell_F =  100.0
+ell_F =  250.0
+ell_F =  501.0
+ell_F =  1002.0
+ell_F =  2005.0
+ell_F =  3008.0
+ell_F =  4011.0
+ell_F =  4096.0
+ell_B =  931.0
+ell_B =  1114.0
+ell_B =  2270.0
+ell_B =  3105.0
+ell_B =  4096.0
+ell_B =  4096.0
+ell_B =  4096.0
+[[ True  True  True  True  True  True  True]
+ [ True  True  True  True  True  True  True]
+ [ True  True  True  True  True  True  True]
+ [ True  True  True  True  True  True  True]
+ [False  True  True  True  True  True  True]
+ [False False  True  True  True  True  True]
+ [False False False  True  True  True  True]
+ [False False False False  True  True  True]
+ [False False False False  True  True  True]
+ [False False False False  True  True  True]]
+[7 7 7 7 6 5 4 3 3 3]
+[  64  128  256  512 1024 2048 2048 2048 2048 2048]
+[   49152   196608   786432  3145728 12582912 50331648 50331648 50331648
+ 50331648 50331648]
+FWHM_pix (deg): [282.58382334 163.29935731  61.72134061  32.65986325  14.14213562
+   5.77350269   3.16227766   2.67261411   1.58350024   0.50691459]
+waveletizing frequency  0 ...
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq0_scale0.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq0_scale1.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq0_scale2.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq0_scale3.fits
+4
+done waveletizing frequency  0 ...
+waveletizing frequency  1 ...
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq1_scale0.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq1_scale1.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq1_scale2.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq1_scale3.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq1_scale4.fits
+5
+done waveletizing frequency  1 ...
+waveletizing frequency  2 ...
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq2_scale0.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq2_scale1.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq2_scale2.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq2_scale3.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq2_scale4.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq2_scale5.fits
+6
+done waveletizing frequency  2 ...
+waveletizing frequency  3 ...
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq3_scale0.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq3_scale1.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq3_scale2.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq3_scale3.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq3_scale4.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq3_scale5.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq3_scale6.fits
+7
+done waveletizing frequency  3 ...
+waveletizing frequency  4 ...
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq4_scale0.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq4_scale1.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq4_scale2.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq4_scale3.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq4_scale4.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq4_scale5.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq4_scale6.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq4_scale7.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq4_scale8.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq4_scale9.fits
+10
+done waveletizing frequency  4 ...
+waveletizing frequency  5 ...
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq5_scale0.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq5_scale1.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq5_scale2.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq5_scale3.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq5_scale4.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq5_scale5.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq5_scale6.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq5_scale7.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq5_scale8.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq5_scale9.fits
+10
+done waveletizing frequency  5 ...
+waveletizing frequency  6 ...
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq6_scale0.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq6_scale1.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq6_scale2.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq6_scale3.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq6_scale4.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq6_scale5.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq6_scale6.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq6_scale7.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq6_scale8.fits
+needlet coefficient map already exists: /data/jch/pyilc_output/test_needletcoeffmap_freq6_scale9.fits
+10
+done waveletizing frequency  6 ...
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq0_freq0_scale0.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq0_freq1_scale0.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq0_freq2_scale0.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq0_freq3_scale0.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq0_freq4_scale0.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq0_freq5_scale0.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq0_freq6_scale0.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq1_freq1_scale0.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq1_freq2_scale0.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq1_freq3_scale0.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq1_freq4_scale0.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq1_freq5_scale0.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq1_freq6_scale0.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq2_freq2_scale0.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq2_freq3_scale0.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq2_freq4_scale0.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq2_freq5_scale0.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq2_freq6_scale0.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq3_freq3_scale0.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq3_freq4_scale0.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq3_freq5_scale0.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq3_freq6_scale0.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq4_freq4_scale0.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq4_freq5_scale0.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq4_freq6_scale0.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq5_freq5_scale0.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq5_freq6_scale0.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq6_freq6_scale0.fits
+done computing all covariance maps at scale0
+28
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq0_freq0_scale0.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq0_freq1_scale0.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq0_freq2_scale0.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq0_freq3_scale0.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq0_freq4_scale0.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq0_freq5_scale0.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq0_freq6_scale0.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq1_freq1_scale0.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq1_freq2_scale0.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq1_freq3_scale0.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq1_freq4_scale0.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq1_freq5_scale0.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq1_freq6_scale0.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq2_freq2_scale0.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq2_freq3_scale0.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq2_freq4_scale0.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq2_freq5_scale0.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq2_freq6_scale0.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq3_freq3_scale0.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq3_freq4_scale0.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq3_freq5_scale0.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq3_freq6_scale0.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq4_freq4_scale0.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq4_freq5_scale0.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq4_freq6_scale0.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq5_freq5_scale0.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq5_freq6_scale0.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq6_freq6_scale0.fits
+done computing all ILC weights at scale0
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq0_freq0_scale1.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq0_freq1_scale1.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq0_freq2_scale1.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq0_freq3_scale1.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq0_freq4_scale1.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq0_freq5_scale1.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq0_freq6_scale1.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq1_freq1_scale1.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq1_freq2_scale1.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq1_freq3_scale1.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq1_freq4_scale1.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq1_freq5_scale1.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq1_freq6_scale1.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq2_freq2_scale1.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq2_freq3_scale1.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq2_freq4_scale1.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq2_freq5_scale1.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq2_freq6_scale1.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq3_freq3_scale1.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq3_freq4_scale1.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq3_freq5_scale1.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq3_freq6_scale1.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq4_freq4_scale1.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq4_freq5_scale1.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq4_freq6_scale1.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq5_freq5_scale1.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq5_freq6_scale1.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq6_freq6_scale1.fits
+done computing all covariance maps at scale1
+28
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq0_freq0_scale1.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq0_freq1_scale1.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq0_freq2_scale1.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq0_freq3_scale1.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq0_freq4_scale1.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq0_freq5_scale1.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq0_freq6_scale1.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq1_freq1_scale1.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq1_freq2_scale1.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq1_freq3_scale1.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq1_freq4_scale1.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq1_freq5_scale1.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq1_freq6_scale1.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq2_freq2_scale1.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq2_freq3_scale1.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq2_freq4_scale1.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq2_freq5_scale1.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq2_freq6_scale1.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq3_freq3_scale1.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq3_freq4_scale1.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq3_freq5_scale1.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq3_freq6_scale1.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq4_freq4_scale1.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq4_freq5_scale1.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq4_freq6_scale1.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq5_freq5_scale1.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq5_freq6_scale1.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq6_freq6_scale1.fits
+done computing all ILC weights at scale1
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq0_freq0_scale2.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq0_freq1_scale2.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq0_freq2_scale2.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq0_freq3_scale2.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq0_freq4_scale2.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq0_freq5_scale2.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq0_freq6_scale2.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq1_freq1_scale2.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq1_freq2_scale2.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq1_freq3_scale2.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq1_freq4_scale2.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq1_freq5_scale2.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq1_freq6_scale2.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq2_freq2_scale2.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq2_freq3_scale2.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq2_freq4_scale2.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq2_freq5_scale2.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq2_freq6_scale2.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq3_freq3_scale2.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq3_freq4_scale2.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq3_freq5_scale2.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq3_freq6_scale2.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq4_freq4_scale2.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq4_freq5_scale2.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq4_freq6_scale2.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq5_freq5_scale2.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq5_freq6_scale2.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq6_freq6_scale2.fits
+done computing all covariance maps at scale2
+28
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq0_freq0_scale2.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq0_freq1_scale2.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq0_freq2_scale2.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq0_freq3_scale2.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq0_freq4_scale2.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq0_freq5_scale2.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq0_freq6_scale2.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq1_freq1_scale2.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq1_freq2_scale2.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq1_freq3_scale2.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq1_freq4_scale2.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq1_freq5_scale2.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq1_freq6_scale2.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq2_freq2_scale2.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq2_freq3_scale2.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq2_freq4_scale2.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq2_freq5_scale2.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq2_freq6_scale2.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq3_freq3_scale2.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq3_freq4_scale2.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq3_freq5_scale2.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq3_freq6_scale2.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq4_freq4_scale2.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq4_freq5_scale2.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq4_freq6_scale2.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq5_freq5_scale2.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq5_freq6_scale2.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq6_freq6_scale2.fits
+done computing all ILC weights at scale2
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq0_freq0_scale3.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq0_freq1_scale3.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq0_freq2_scale3.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq0_freq3_scale3.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq0_freq4_scale3.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq0_freq5_scale3.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq0_freq6_scale3.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq1_freq1_scale3.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq1_freq2_scale3.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq1_freq3_scale3.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq1_freq4_scale3.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq1_freq5_scale3.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq1_freq6_scale3.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq2_freq2_scale3.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq2_freq3_scale3.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq2_freq4_scale3.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq2_freq5_scale3.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq2_freq6_scale3.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq3_freq3_scale3.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq3_freq4_scale3.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq3_freq5_scale3.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq3_freq6_scale3.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq4_freq4_scale3.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq4_freq5_scale3.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq4_freq6_scale3.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq5_freq5_scale3.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq5_freq6_scale3.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq6_freq6_scale3.fits
+done computing all covariance maps at scale3
+28
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq0_freq0_scale3.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq0_freq1_scale3.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq0_freq2_scale3.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq0_freq3_scale3.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq0_freq4_scale3.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq0_freq5_scale3.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq0_freq6_scale3.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq1_freq1_scale3.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq1_freq2_scale3.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq1_freq3_scale3.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq1_freq4_scale3.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq1_freq5_scale3.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq1_freq6_scale3.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq2_freq2_scale3.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq2_freq3_scale3.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq2_freq4_scale3.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq2_freq5_scale3.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq2_freq6_scale3.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq3_freq3_scale3.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq3_freq4_scale3.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq3_freq5_scale3.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq3_freq6_scale3.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq4_freq4_scale3.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq4_freq5_scale3.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq4_freq6_scale3.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq5_freq5_scale3.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq5_freq6_scale3.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq6_freq6_scale3.fits
+done computing all ILC weights at scale3
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq1_freq1_scale4.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq1_freq2_scale4.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq1_freq3_scale4.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq1_freq4_scale4.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq1_freq5_scale4.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq1_freq6_scale4.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq2_freq2_scale4.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq2_freq3_scale4.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq2_freq4_scale4.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq2_freq5_scale4.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq2_freq6_scale4.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq3_freq3_scale4.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq3_freq4_scale4.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq3_freq5_scale4.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq3_freq6_scale4.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq4_freq4_scale4.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq4_freq5_scale4.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq4_freq6_scale4.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq5_freq5_scale4.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq5_freq6_scale4.fits
+needlet coefficient covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_covmap_freq6_freq6_scale4.fits
+done computing all covariance maps at scale4
+21
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq1_freq1_scale4.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq1_freq2_scale4.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq1_freq3_scale4.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq1_freq4_scale4.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq1_freq5_scale4.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq1_freq6_scale4.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq2_freq2_scale4.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq2_freq3_scale4.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq2_freq4_scale4.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq2_freq5_scale4.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq2_freq6_scale4.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq3_freq3_scale4.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq3_freq4_scale4.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq3_freq5_scale4.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq3_freq6_scale4.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq4_freq4_scale4.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq4_freq5_scale4.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq4_freq6_scale4.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq5_freq5_scale4.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq5_freq6_scale4.fits
+needlet coefficient inverse covariance map already exists: /data/jch/pyilc_output/test_needletcoeff_invcovmap_freq6_freq6_scale4.fits
+done computing all ILC weights at scale4

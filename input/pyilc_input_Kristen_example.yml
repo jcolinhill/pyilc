@@ -1,0 +1,32 @@
+output_dir: '/data/jch/pyilc_output/'
+output_prefix: 'GaussianNeedlet_MCILC_KristenSim_2freqs_noise_beam_fullsky_CMBpreserve_nodeproj_ELLMAX1024'
+save_weights: 'yes'
+
+ELLMAX: 1024
+wavelet_type: 'GaussianNeedlets'
+N_scales: 7
+GN_FWHM_arcmin: [600., 300., 120., 60., 30., 15.]
+
+N_freqs: 2
+bandpass_type: 'DeltaBandpasses'
+freqs_delta_ghz: [90., 150.]
+
+freq_map_files: ['FILLINPATH/90_sim.fits','FILLINPATH/150_sim.fits']
+
+beam_type: 'Gaussians'
+beam_FWHM_arcmin: [1.0, 1.0] #update with whatever beam FWHM was used in the sim map construction; note that ordering should always be from lowest-res to highest-res maps (here and in the lists of maps, freqs, etc above)
+
+N_side: 1024
+
+ILC_preserved_comp: 'CMB'
+N_deproj: 0
+ILC_deproj_comps: []
+N_SED_params: 0
+SED_params: []
+SED_params_vals: []
+SED_params_priors: []
+SED_params_priors_params: []
+
+N_maps_xcorr: 1
+maps_xcorr_files: ['FILLINPATH/sim_input_CMB_map.fits']
+masks_xcorr_files: 
