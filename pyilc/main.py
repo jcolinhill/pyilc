@@ -10,10 +10,11 @@ main script for doing wavelet (MC)^2ILC analysis
 """
 ##########################
 # main input file
-# there is also a default input file included in input.py if you don't specify one here
-#input_file = '/home/jch/Peyton/Dropbox/Thesis_Projects/yNILC/MCILC/wavelet_MCILC/pyilc/input/pyilc_input.yml'
 ### input file containing most specifications ###
 input_file = (sys.argv)[1]
+# there is also a default input file included in input.py if you don't specify one here
+if (input_file is None):
+    input_file = '../input/pyilc_input.yml'
 ##########################
 
 ##########################

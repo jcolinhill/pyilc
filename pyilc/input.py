@@ -40,7 +40,7 @@ PRIOR_TYPES = ['Delta','Gaussian','TopHat']
 ### DEFAULT INPUT FILE ###
 # modify this if you want to use your own
 # or you can specify it when constructing ILCInfo
-default_path = '/home/jch/Peyton/Dropbox/Thesis_Projects/yNILC/MCILC/wavelet_MCILC/pyilc/input/'
+default_path = '../input/'
 default_input = 'pyilc_input.yml'
 ##########################
 
