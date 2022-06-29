@@ -11,10 +11,10 @@ main script for doing wavelet (MC)^2ILC analysis
 ##########################
 # main input file
 ### input file containing most specifications ###
-input_file = (sys.argv)[1]
-# there is also a default input file included in input.py if you don't specify one here
-if (input_file is None):
-    input_file = '../input/pyilc_input.yml'
+try:
+    input_file = (sys.argv)[1]
+except IndexError:
+    input_file = '../input/pyilc_input_Kristen_example.yml'
 ##########################
 
 ##########################
