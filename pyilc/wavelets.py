@@ -435,93 +435,90 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
             if (flag==True):
                 ### construct the matrix Q_{alpha beta} defined just before Eq. 12 for each pixel at this wavelet scale and evaluate Eq. 13 to get weights ###
                 #Qab = np.zeros((int(N_pix_to_use[j]),N_comps,N_comps)) #we don't actually need to keep Qab for every pixel
-                for p in range(int(N_pix_to_use[j])): #TODO: is there a way to do this without a loop over p? (i.e. vectorized) -- would be much faster
-                    inv_covmat_temp = np.zeros((int(N_freqs_to_use[j]),int(N_freqs_to_use[j])))
-                    count=0
-                    for a in range(info.N_freqs):
-                        for b in range(a, info.N_freqs):
-                            if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True):
-                                # inv_cov_maps_temp is in order 00, 01, 02, ..., 0(N_freqs_to_use[j]-1), 11, 12, ..., 1(N_freqs_to_use[j]-1), 22, 23, ...
-                                inv_covmat_temp[a-a_min][b-a_min] = inv_cov_maps_temp[count][p] #by construction we're going through inv_cov_maps_temp in the same order as it was populated when computed (see below)
-                                if (a-a_min) != (b-a_min):
-                                    inv_covmat_temp[b-a_min][a-a_min] = inv_covmat_temp[a-a_min][b-a_min] #symmetrize
-                                count+=1
-                    #Qab_pix = np.zeros((N_comps,N_comps))
-                    #Qab[p] = np.inner(np.inner(np.transpose(A_mix), maps_covinv_temp[:,:,p]), np.transpose(A_mix))
-                    Qab_pix = np.inner(np.inner(np.transpose(A_mix), inv_covmat_temp), np.transpose(A_mix))
-                    # compute weights -- Eq. 13 of notes
-                    tempvec = np.zeros(N_comps)
-                    # treat the no-deprojection case separately, since QSa_temp is empty in this case
-                    if (N_comps == 1):
-                        tempvec[0] = 1.0
-                    else:
-                        for a in range(N_comps):
-                            #QSa_temp = np.delete(np.delete(Qab[p], a, 0), 0, 1) #remove the a^th row and zero^th column
-                            QSa_temp = np.delete(np.delete(Qab_pix, a, 0), 0, 1) #remove the a^th row and zero^th column
-                            tempvec[a] = (-1.0)**float(a) * np.linalg.det(QSa_temp)
-                    #weights[p] = (1.0 / np.linalg.det(Qab[p])) * np.inner(maps_covinv_temp[:,:,p], np.inner(A_mix, tempvec)) #N.B. 'weights' here only includes channels that passed beam_thresh criterion
-                    weights[p] = (1.0 / np.linalg.det(Qab_pix)) * np.inner(inv_covmat_temp, np.inner(A_mix, tempvec)) #N.B. 'weights' here only includes channels that passed beam_thresh criterion
-                    # response verification
+                inv_covmat_temp = np.zeros((int(N_freqs_to_use[j]),int(N_freqs_to_use[j]), int(N_pix_to_use[j])))
+                count=0
+                for a in range(info.N_freqs):
+                    for b in range(a, info.N_freqs):
+                        if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True):
+                            # inv_cov_maps_temp is in order 00, 01, 02, ..., 0(N_freqs_to_use[j]-1), 11, 12, ..., 1(N_freqs_to_use[j]-1), 22, 23, ...
+                            inv_covmat_temp[a-a_min][b-a_min] = inv_cov_maps_temp[count] #by construction we're going through inv_cov_maps_temp in the same order as it was populated when computed (see below)
+                            if (a-a_min) != (b-a_min):
+                                inv_covmat_temp[b-a_min][a-a_min] = inv_covmat_temp[a-a_min][b-a_min] #symmetrize
+                            count+=1
+                tmp1 = np.einsum('ai,jip->ajp', np.transpose(A_mix), inv_covmat_temp)
+                Qab_pix = np.einsum('ajp,bj->abp', tmp1, np.transpose(A_mix))
+                # compute weights -- Eq. 13 of notes
+                tempvec = np.zeros((N_comps, int(N_pix_to_use[j])))
+                # treat the no-deprojection case separately, since QSa_temp is empty in this case
+                if (N_comps == 1):
+                    tempvec[0] = [1.0]*int(N_pix_to_use[j])
+                else:
                     for a in range(N_comps):
-                        response = np.sum(weights[p]*A_mix[:,a])
-                        if (a == 0): #preserved component, want response=1
-                            if (np.absolute(response - 1.) >= resp_tol):
-                                print("preserved component response failed for pixel "+str(p)+" at wavelet scale "+str(j)+": ",response)
-                                quit()
-                        else: #deprojected components, want response=0
-                            if (np.absolute(response - 0.) >= resp_tol):
-                                print("deprojected component response failed for pixel "+str(p)+" at wavelet scale "+str(j)+": ",response," component: ",info.ILC_deproj_comps[a-1])
-                                quit()
-                    #if (p % 1000 == 0):
-                    #    print("done with pixel ", p)
+                        QSa_temp = np.delete(np.delete(Qab_pix, a, 0), 0, 1) #remove the a^th row and zero^th column
+                        tempvec[a] = (-1.0)**float(a) * np.array([np.linalg.det(QSa_temp[:,:,p]) for p in range(int(N_pix_to_use[j]))])
+                tmp2 = np.einsum('ia,ap->ip', A_mix, tempvec)
+                tmp3 = np.einsum('jip,ip->jp', inv_covmat_temp, tmp2)
+                weights = np.array([(1.0 / np.linalg.det(Qab_pix[:,:,p]))*tmp3[:,p] for p in range(int(N_pix_to_use[j]))]) #N.B. 'weights' here only includes channels that passed beam_thresh criterion, todo: parallelize
+                # response verification
+                response = np.einsum('pi,ia->ap', weights, A_mix) #dimensions N_comps x N_pix_to_use[j]
+                optimal_response_preserved_comp = np.ones(int(N_pix_to_use[j]))  #preserved component, want response=1
+                optimal_response_deproj_comp = np.zeros((N_comps-1, int(N_pix_to_use[j]))) #deprojected components, want response=0
+                if not (np.absolute(response[0]-optimal_response_preserved_comp) < resp_tol).all():
+                    print(f'preserved component response failed at wavelet scale {j}')
+                    quit()
+                if not (np.absolute(response[1:]-optimal_response_preserved_comp) < resp_tol).all():
+                    print(f'deprojected component response failed at wavelet scale {j}')
+                    quit()
+
+
             ##########
             ### if inverse covariance maps don't already exist ###
             if (flag == False): # TODO -- this can almost certainly be done in a much more efficient way (vectorized somehow)
-                for p in range(int((N_pix_to_use[j]))):
-                    covmat = np.zeros((int(N_freqs_to_use[j]),int(N_freqs_to_use[j])))
-                    count=0
-                    for a in range(info.N_freqs):
-                        for b in range(a, info.N_freqs):
-                            if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True):
-                                # cov_maps_temp is in order 00, 01, 02, ..., 0(N_freqs_to_use[j]-1), 11, 12, ..., 1(N_freqs_to_use[j]-1), 22, 23, ...
-                                covmat[a-a_min][b-a_min] = cov_maps_temp[count][p] #by construction we're going through cov_maps_temp in the same order as it was populated above
-                                if (a-a_min) != (b-a_min):
-                                    covmat[b-a_min][a-a_min] = covmat[a-a_min][b-a_min] #symmetrize
-                                count+=1
-                    inv_covmat = np.linalg.inv(covmat)
-                    assert np.allclose(np.dot(inv_covmat, covmat), np.eye(int(N_freqs_to_use[j])), rtol=1.e-5, atol=1.e-5), "covmat inversion failed for scale "+str(j)+" at pixel "+str(p) #, covmat, inv_covmat, np.dot(inv_covmat, covmat)-np.eye(int(N_freqs_to_use[j]))
-                    count=0
-                    for a in range(info.N_freqs):
-                        for b in range(a, info.N_freqs):
-                            if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True):
-                                # inv_cov_maps_temp is in order 00, 01, 02, ..., 0(N_freqs_to_use[j]-1), 11, 12, ..., 1(N_freqs_to_use[j]-1), 22, 23, ...
-                                inv_cov_maps_temp[count][p] = inv_covmat[a-a_min][b-a_min] #by construction we're going through cov_maps_temp in the same order as it was populated above
-                                count+=1
-                    # construct Qab and weights
-                    Qab_pix = np.inner(np.inner(np.transpose(A_mix), inv_covmat), np.transpose(A_mix))
-                    # compute weights -- Eq. 13 of notes
-                    tempvec = np.zeros(N_comps)
-                    # treat the no-deprojection case separately, since QSa_temp is empty in this case
-                    if (N_comps == 1):
-                        tempvec[0] = 1.0
-                    else:
-                        for a in range(N_comps):
-                            QSa_temp = np.delete(np.delete(Qab_pix, a, 0), 0, 1) #remove the a^th row and zero^th column
-                            tempvec[a] = (-1.0)**float(a) * np.linalg.det(QSa_temp)
-                    weights[p] = (1.0 / np.linalg.det(Qab_pix)) * np.inner(inv_covmat, np.inner(A_mix, tempvec)) #N.B. 'weights' here only includes channels that passed beam_thresh criterion
-                    # response verification
+                covmat = np.zeros((int(N_freqs_to_use[j]),int(N_freqs_to_use[j]), int(N_pix_to_use[j])))
+                count=0
+                for a in range(info.N_freqs):
+                    for b in range(a, info.N_freqs):
+                        if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True):
+                            # cov_maps_temp is in order 00, 01, 02, ..., 0(N_freqs_to_use[j]-1), 11, 12, ..., 1(N_freqs_to_use[j]-1), 22, 23, ...
+                            covmat[a-a_min][b-a_min] = cov_maps_temp[count] #by construction we're going through cov_maps_temp in the same order as it was populated above
+                            if (a-a_min) != (b-a_min):
+                                covmat[b-a_min][a-a_min] = covmat[a-a_min][b-a_min] #symmetrize
+                            count+=1
+                inv_covmat = np.array([np.linalg.inv(covmat[:,:,p]) for p in range(int(N_pix_to_use[j]))]) #dim pix,freqs,freqs
+                inv_covmat = np.transpose(inv_covmat, axes=[1,2,0]) #new dim freq, freq, pix
+                assert np.allclose(np.einsum('ijp,jkp->pik', inv_covmat, covmat), np.array([np.eye(int(N_freqs_to_use[j]))]*int(N_pix_to_use[j])), rtol=1.e-5, atol=1.e-5), "covmat inversion failed for scale "+str(j) #, covmat, inv_covmat, np.dot(inv_covmat, covmat)-np.eye(int(N_freqs_to_use[j]))
+                count=0
+                for a in range(info.N_freqs):
+                    for b in range(a, info.N_freqs):
+                        if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True):
+                            # inv_cov_maps_temp is in order 00, 01, 02, ..., 0(N_freqs_to_use[j]-1), 11, 12, ..., 1(N_freqs_to_use[j]-1), 22, 23, ...
+                            inv_cov_maps_temp[count] = inv_covmat[a-a_min][b-a_min] #by construction we're going through cov_maps_temp in the same order as it was populated above
+                            count+=1
+                tmp1 = np.einsum('ai,jip->ajp', np.transpose(A_mix), inv_covmat)
+                Qab_pix = np.einsum('ajp,bj->abp', tmp1, np.transpose(A_mix))
+                # compute weights -- Eq. 13 of notes
+                tempvec = np.zeros((N_comps, int(N_pix_to_use[j])))
+                # treat the no-deprojection case separately, since QSa_temp is empty in this case
+                if (N_comps == 1):
+                    tempvec[0] = [1.0]*int(N_pix_to_use[j])
+                else:
                     for a in range(N_comps):
-                        response = np.sum(weights[p]*A_mix[:,a])
-                        if (a == 0): #preserved component, want response=1
-                            if (np.absolute(response - 1.) >= resp_tol):
-                                print("preserved component response failed for pixel "+str(p)+" at wavelet scale "+str(j)+": ",response)
-                                quit()
-                        else: #deprojected components, want response=0
-                            if (np.absolute(response - 0.) >= resp_tol):
-                                print("deprojected component response failed for pixel "+str(p)+" at wavelet scale "+str(j)+": ",response," component: ",info.ILC_deproj_comps[a-1])
-                                quit()
-                    #if (p % 1000 == 0):
-                    #    print("done with pixel ", p)
+                        QSa_temp = np.delete(np.delete(Qab_pix, a, 0), 0, 1) #remove the a^th row and zero^th column
+                        tempvec[a] = (-1.0)**float(a) * np.array([np.linalg.det(QSa_temp[:,:,p]) for p in range(int(N_pix_to_use[j]))])
+                tmp2 = np.einsum('ia,ap->ip', A_mix, tempvec)
+                tmp3 = np.einsum('jip,ip->jp', inv_covmat, tmp2)
+                weights = np.array([(1.0 / np.linalg.det(Qab_pix[:,:,p]))*tmp3[:,p] for p in range(int(N_pix_to_use[j]))]) #N.B. 'weights' here only includes channels that passed beam_thresh criterion, todo: parallelize
+                # response verification
+                response = np.einsum('pi,ia->ap', weights, A_mix) #dimensions N_comps x N_pix_to_use[j]
+                optimal_response_preserved_comp = np.ones(int(N_pix_to_use[j]))  #preserved component, want response=1
+                optimal_response_deproj_comp = np.zeros((N_comps-1, int(N_pix_to_use[j]))) #deprojected components, want response=0
+                if not (np.absolute(response[0]-optimal_response_preserved_comp) < resp_tol).all():
+                    print(f'preserved component response failed at wavelet scale {j}')
+                    quit()
+                if not (np.absolute(response[1:]-optimal_response_preserved_comp) < resp_tol).all():
+                    print(f'deprojected component response failed at wavelet scale {j}')
+                    quit()
+
                 # save inverse covariance maps for future use
                 count=0
                 for a in range(info.N_freqs):
