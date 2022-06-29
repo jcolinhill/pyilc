@@ -50,7 +50,7 @@ class Wavelets(object):
     # Planck 2015 NILC y-map Gaussian needlet filters: [600', 300', 120', 60', 30', 15', 10', 7.5', 5']
     # Planck 2016 GNILC Gaussian needlet filters: [300' , 120' , 60' , 45' , 30' , 15' , 10' , 7.5' , 5']
     # (These are from email via M. Remazeilles 2/22/19 -- update: y-map filters are still slightly different at low ell than those in the paper)
-    # for the details of the construction, 
+    # for the details of the construction,
     #   see Eqs. (A.29)-(A.32) of http://arxiv.org/pdf/1605.09387.pdf
     # note that these can be constructed for different (user-specified) choices of N_scales and ELLMAX also
     # define the FWHM values used in the Gaussians -- default = Planck 2015 NILC y-map values
@@ -78,7 +78,7 @@ class Wavelets(object):
     #    App. B of https://arxiv.org/pdf/1502.05956.pdf and App. B of https://arxiv.org/pdf/1807.06208.pdf
     #    (not yet implemented here)
     #def CosineNeedlets(self, ellmin=None, ellpeak=None, ellmax=None):
-    #    FILL IN 
+    #    FILL IN
     #    # simple check to ensure that sum of squared transmission is unity as needed for NILC algorithm
     #    assert (np.absolute( np.sum( self.filters**2., axis=0 ) - np.ones(self.ELLMAX+1,dtype=float)) < self.tol).all(), "wavelet filter transmission check failed"
     #    return self.ell, self.filters
@@ -253,7 +253,7 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
     # based on ILC bias mode-counting
     FWHM_pix = np.zeros(wv.N_scales,dtype=float)
     if info.wavelet_type == 'GaussianNeedlets':
-        ell, filts = wv.GaussianNeedlets()
+        ell, filts = wv.GaussianNeedlets(info.GN_FWHM_arcmin)
     # TODO: implement these
     #elif info.wavelet_type == 'CosineNeedlets':
     #elif info.wavelet_type == 'ScaleDiscretizedWavelets':
@@ -614,7 +614,7 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
 # #plt.legend(loc=0)
 # plt.savefig('NILC_bands_FigA2ofGNILCpaper.pdf')
 
-# # # read in NILC filter scales from 2015 y-map paper                                                                                                                                                       
+# # # read in NILC filter scales from 2015 y-map paper
 # ELLMAX_NILC = 4097
 # ell_NILC = np.arange(0,ELLMAX_NILC+1)
 # Nbands_NILC = 10

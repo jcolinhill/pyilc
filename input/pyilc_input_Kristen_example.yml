@@ -1,5 +1,5 @@
-output_dir: '/data/jch/pyilc_output/'
-output_prefix: 'GaussianNeedlet_MCILC_KristenSim_2freqs_noise_beam_fullsky_CMBpreserve_nodeproj_ELLMAX1024'
+output_dir: '/moto/hill/users/kms2320/repositories/NILC-Power-Spectrum/pyilc_output/GaussianNeedlet_MCILC_KristenSim_2freqs_noise_beam_fullsky_CMBpreserve_nodeproj_ELLMAX1024'
+output_prefix: ''
 save_weights: 'yes'
 
 ELLMAX: 1024
@@ -11,10 +11,11 @@ N_freqs: 2
 bandpass_type: 'DeltaBandpasses'
 freqs_delta_ghz: [90., 150.]
 
-freq_map_files: ['FILLINPATH/90_sim.fits','FILLINPATH/150_sim.fits']
+freq_map_files: ['/moto/hill/users/kms2320/repositories/NILC-Power-Spectrum/sim_maps/sim_map_90GHz_tSZamp1_nside1024_K.fits',
+'/moto/hill/users/kms2320/repositories/NILC-Power-Spectrum/sim_maps/sim_map_150GHz_tSZamp1_nside1024_K.fits']
 
 beam_type: 'Gaussians'
-beam_FWHM_arcmin: [1.0, 1.0] #update with whatever beam FWHM was used in the sim map construction; note that ordering should always be from lowest-res to highest-res maps (here and in the lists of maps, freqs, etc above)
+beam_FWHM_arcmin: [1.4, 1.4] #update with whatever beam FWHM was used in the sim map construction; note that ordering should always be from lowest-res to highest-res maps (here and in the lists of maps, freqs, etc above)
 
 N_side: 1024
 
@@ -28,5 +29,5 @@ SED_params_priors: []
 SED_params_priors_params: []
 
 N_maps_xcorr: 1
-maps_xcorr_files: ['FILLINPATH/sim_input_CMB_map.fits']
-masks_xcorr_files: 
+maps_xcorr_files: ['/moto/hill/users/kms2320/websky_maps/cmb_lensed_nside1024_K.fits']
+masks_xcorr_files:
