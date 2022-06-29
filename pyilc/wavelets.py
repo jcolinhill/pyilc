@@ -349,7 +349,8 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
                     for b in range(N_comps):
                         if (b == 0): # zero^th component is special (this is the one being preserved in the ILC)
                             if (info.bandpass_type == 'DeltaBandpasses'):
-                                # N.B. get_mix and get_mix_bandpassed assume the input maps are in uK_CMB, i.e., responses are computed in uK_CMB
+                                # N.B. get_mix and get_mix_bandpassed assume the input maps are in uK_CMB, i.e., responses are computed in uK_CMB, but we are assuming in this code that all maps are in K_CMB, hence factor of 1.e-6 below
+                                # However, note that as a consequence an output NILC CMB map from this code has units of uK_CMB!
                                 #print(get_mix(150., 'tSZ',  param_dict_file='../input/fg_SEDs_default_params.yml', param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))
                                 #print(get_mix_bandpassed(['../data/HFI_BANDPASS_F143_reformat.txt'], 'tSZ', param_dict_file='../input/fg_SEDs_default_params.yml',param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))
                                 #

@@ -40,8 +40,8 @@ PRIOR_TYPES = ['Delta','Gaussian','TopHat']
 ### DEFAULT INPUT FILE ###
 # modify this if you want to use your own
 # or you can specify it when constructing ILCInfo
-default_path = '/moto/hill/users/kms2320/repositories/pyilc/input/'
-default_input = 'pyilc_input_Kristen_example.yml'
+default_path = '../input/'
+default_input = 'pyilc_input.yml'
 ##########################
 
 ##########################
