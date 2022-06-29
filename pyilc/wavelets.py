@@ -253,7 +253,7 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
     # based on ILC bias mode-counting
     FWHM_pix = np.zeros(wv.N_scales,dtype=float)
     if info.wavelet_type == 'GaussianNeedlets':
-        ell, filts = wv.GaussianNeedlets(info.GN_FWHM_arcmin) #flag, changed
+        ell, filts = wv.GaussianNeedlets(info.GN_FWHM_arcmin)
     # TODO: implement these
     #elif info.wavelet_type == 'CosineNeedlets':
     #elif info.wavelet_type == 'ScaleDiscretizedWavelets':
