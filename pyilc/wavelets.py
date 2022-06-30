@@ -466,7 +466,7 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
                 if not (np.absolute(response[0]-optimal_response_preserved_comp) < resp_tol).all():
                     print(f'preserved component response failed at wavelet scale {j}')
                     quit()
-                if not (np.absolute(response[1:]-optimal_response_preserved_comp) < resp_tol).all():
+                if not (np.absolute(response[1:]-optimal_response_deproj_comp) < resp_tol).all():
                     print(f'deprojected component response failed at wavelet scale {j}')
                     quit()
 
@@ -515,7 +515,7 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
                 if not (np.absolute(response[0]-optimal_response_preserved_comp) < resp_tol).all():
                     print(f'preserved component response failed at wavelet scale {j}')
                     quit()
-                if not (np.absolute(response[1:]-optimal_response_preserved_comp) < resp_tol).all():
+                if not (np.absolute(response[1:]-optimal_response_deproj_comp) < resp_tol).all():
                     print(f'deprojected component response failed at wavelet scale {j}')
                     quit()
 
