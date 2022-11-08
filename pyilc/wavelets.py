@@ -182,7 +182,7 @@ def synthesize(wv_maps=None, wv=None, N_side_out=None):
         N_side_temp = hp.npix2nside(N_pix_temp)
         temp_alm = hp.map2alm(wv_maps[j], lmax=np.amin(np.array([wv.ELLMAX, 3*N_side_temp-1])))
         if (3*N_side_temp-1 < wv.ELLMAX):
-            temp_alm_filt = hp.almxfl(temp_alm, (wv.filters[j])[3*N_side_temp])
+            temp_alm_filt = hp.almxfl(temp_alm, (wv.filters[j])[:3*N_side_temp])
         else:
             temp_alm_filt = hp.almxfl(temp_alm, wv.filters[j])
         out_map += hp.alm2map(temp_alm_filt, nside=N_side_out)
