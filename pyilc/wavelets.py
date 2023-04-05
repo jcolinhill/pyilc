@@ -35,10 +35,13 @@ the module also contains the wavelet ILC function
 class Wavelets(object):
     # initialize the filters to unity
     # construct non-trivial filters (or user can define)
-    def __init__(self, N_scales=10, ELLMAX=4097, tol=1.e-6):
+    def __init__(self, N_scales=10, ELLMAX=4097, tol=1.e-6, taper_width=200):
         self.N_scales = N_scales #number of needlet filters
         self.ELLMAX = ELLMAX #maximum multipole
         self.tol = tol #tolerance for transmission condition
+        # Include option to apply a taper near ELLMAX to avoid aliasing of small-scale power 
+        # due to sharp truncation. Set taper_width to zero for no taper
+        self.taper_width = taper_width 
         assert(self.N_scales > 0)
         assert(type(self.N_scales) is int)
         assert(self.ELLMAX > 0)
@@ -109,8 +112,7 @@ class Wavelets(object):
 
 
 # apply wavelet transform (i.e., filters) to a map
-# include option to apply a taper near ELLMAX to avoid aliasing of small-scale power due to sharp truncation
-def waveletize(inp_map=None, wv=None, taper=True, taper_width=50., rebeam=False, inp_beam=None, new_beam=None, wv_filts_to_use=None, N_side_to_use=None): #Kristen changed taper width from 200 to 50
+def waveletize(inp_map=None, wv=None, rebeam=False, inp_beam=None, new_beam=None, wv_filts_to_use=None, N_side_to_use=None):
     assert inp_map is not None, "no input map specified"
     N_pix = len(inp_map)
     N_side_inp = hp.npix2nside(N_pix)
@@ -131,9 +133,9 @@ def waveletize(inp_map=None, wv=None, taper=True, taper_width=50., rebeam=False,
         beam_fac = np.ones(wv.ELLMAX+1,dtype=float)
     #N_alm = int(hp.sphtfunc.Alm.getsize(wv.ELLMAX))
     #alm_arr = np.empty([N_freqs,N_alm], dtype=complex)
-    if(taper):
-        assert wv.ELLMAX - taper_width > 10., "desired taper is too broad for given ELLMAX"
-        taper_func = (1.0 - 0.5*(np.tanh(0.025*(wv.ell - (wv.ELLMAX - taper_width))) + 1.0)) #smooth taper to zero from ELLMAX-taper_width to ELLMAX
+    if(wv.taper_width):
+        assert wv.ELLMAX - wv.taper_width > 10., "desired taper is too broad for given ELLMAX"
+        taper_func = (1.0 - 0.5*(np.tanh(0.025*(wv.ell - (wv.ELLMAX - wv.taper_width))) + 1.0)) #smooth taper to zero from ELLMAX-taper_width to ELLMAX
     else:
         taper_func = np.ones(wv.ELLMAX+1,dtype=float)
     # convert map to alm, apply wavelet filters (and taper and rebeam)
@@ -189,15 +191,13 @@ def synthesize(wv_maps=None, wv=None, N_side_out=None):
     return out_map
 
 # wavelet ILC
-#change ILC bias to 10^-2 to get more localized, don't need as many modes in cov estimate changed Kristen
-def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-2, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3, map_images=False): #Kristen changed ILC_bias_tol from 1.e-3
+def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3, map_images=False):
     assert wv is not None, "wavelets not defined"
     assert type(wv) is Wavelets, "Wavelets TypeError"
     assert info is not None, "ILC info not defined"
     assert type(info) is ILCInfo, "ILCInfo TypeError"
     assert wv.N_scales == info.N_scales, "N_scales must match"
     assert wv.ELLMAX == info.ELLMAX, "ELLMAX must match"
-    assert(ILC_bias_tol > 0. and ILC_bias_tol < 1.)
     assert(wavelet_beam_criterion > 0. and wavelet_beam_criterion < 1.)
     assert info.N_side > 0, "N_side cannot be negative or zero"
     ##########################
@@ -242,7 +242,6 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-2, wavelet_beam_criterion=1
                 break
         if (N_side_to_use[i] > info.N_side):
             N_side_to_use[i] = info.N_side
-    N_side_to_use = np.ones(wv.N_scales,dtype=int)*info.N_side #added, Kristen need to remove
     print(freqs_to_use)
     print(N_freqs_to_use)
     print(N_side_to_use)
@@ -274,12 +273,12 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-2, wavelet_beam_criterion=1
         #   where N_modes_eff = N_modes * (2*pi*sigma_pix^2)/(4*pi)
         #   and then solving for sigma_pix
         # note that this corrects an error in Eq. 3 of Planck 2015 y-map paper -- the numerator should be (N_ch - 2) in their case (if they're deprojecting CMB)
-        sigma_pix_temp = np.sqrt( np.absolute( 2.*(float( (info.N_deproj + 1) - N_freqs_to_use[i] )) / (N_modes[i] * ILC_bias_tol) ) ) #result is in radians
+        sigma_pix_temp = np.sqrt( np.absolute( 2.*(float( (info.N_deproj + 1) - N_freqs_to_use[i] )) / (N_modes[i] * info.ILC_bias_tol) ) ) #result is in radians
         assert sigma_pix_temp < np.pi, "not enough modes to satisfy ILC_bias_tol" #don't want real-space gaussian to be the full sky or close to it
         # note that sigma_pix_temp can come out zero if N_deproj+1 = N_freqs_to_use (formally bias vanishes in this case because the problem is fully constrained)
         # for now, just set equal to case where N_freqs_to_use = N_deproj
         if sigma_pix_temp == 0.:
-            sigma_pix_temp = np.sqrt( np.absolute( 2. / (N_modes[i] * ILC_bias_tol) ) ) #result is in radians
+            sigma_pix_temp = np.sqrt( np.absolute( 2. / (N_modes[i] * info.ILC_bias_tol) ) ) #result is in radians
         FWHM_pix[i] = np.sqrt(8.*np.log(2.)) * sigma_pix_temp #in radians
     print("FWHM_pix (deg):", FWHM_pix*180./np.pi)
     #print("FWHM_pix (arcmin):", FWHM_pix * 180./np.pi * 60.)
@@ -299,13 +298,13 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-2, wavelet_beam_criterion=1
                 exists = os.path.isfile(filename)
                 if exists:
                     print('needlet coefficient map already exists:', filename)
-                    wv_maps_temp.append( hp.read_map(filename, dtype=np.float64, verbose=False) )
+                    wv_maps_temp.append( hp.read_map(filename, dtype=np.float64) )
                 else:
                     print('needlet coefficient map not previously computed; re-computing all maps for frequency '+str(i)+' now...')
                     flag=False
                     break
         if flag == False:
-            wv_maps_temp = waveletize(inp_map=(info.maps)[i], wv=wv, taper=True, taper_width=50., rebeam=True, inp_beam=(info.beams)[i], new_beam=(info.beams)[-1], wv_filts_to_use=freqs_to_use[:,i], N_side_to_use=N_side_to_use) #change taper width back to 200, Kristen
+            wv_maps_temp = waveletize(inp_map=(info.maps)[i], wv=wv, rebeam=True, inp_beam=(info.beams)[i], new_beam=(info.beams)[-1], wv_filts_to_use=freqs_to_use[:,i], N_side_to_use=N_side_to_use)
             for j in range(wv.N_scales):
                 if freqs_to_use[j][i] == True:
                     filename = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(i)+'_scale'+str(j)+'.fits'
@@ -382,7 +381,7 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-2, wavelet_beam_criterion=1
                         exists = os.path.isfile(cov_filename)
                         if exists:
                             print('needlet coefficient covariance map already exists:', cov_filename)
-                            cov_maps_temp.append( hp.read_map(cov_filename, dtype=np.float64, verbose=False) )
+                            cov_maps_temp.append( hp.read_map(cov_filename, dtype=np.float64) )
                         else:
                             print('needlet coefficient covariance map not previously computed; re-computing all covariance maps at scale'+str(j)+' now...')
                             flag=False
@@ -395,8 +394,8 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-2, wavelet_beam_criterion=1
                             # read in wavelet coefficient maps constructed in previous step above
                             filename_A = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(a)+'_scale'+str(j)+'.fits'
                             filename_B = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(b)+'_scale'+str(j)+'.fits'
-                            wavelet_map_A = hp.read_map(filename_A, dtype=np.float64, verbose=False)
-                            wavelet_map_B = hp.read_map(filename_B, dtype=np.float64, verbose=False)
+                            wavelet_map_A = hp.read_map(filename_A, dtype=np.float64)
+                            wavelet_map_B = hp.read_map(filename_B, dtype=np.float64)
                             assert len(wavelet_map_A) == len(wavelet_map_B), "cov mat map calculation: wavelet coefficient maps have different N_side"
                             # first perform smoothing operation to get the "mean" maps
                             wavelet_map_A_smoothed = hp.sphtfunc.smoothing(wavelet_map_A, FWHM_pix[j])
@@ -428,7 +427,7 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-2, wavelet_beam_criterion=1
                         exists = os.path.isfile(inv_cov_filename)
                         if exists:
                             print('needlet coefficient inverse covariance map already exists:', inv_cov_filename)
-                            inv_cov_maps_temp[count] = hp.read_map(inv_cov_filename, dtype=np.float64, verbose=False) #by construction we're going through cov_maps_temp in the same order as it was populated above
+                            inv_cov_maps_temp[count] = hp.read_map(inv_cov_filename, dtype=np.float64) #by construction we're going through cov_maps_temp in the same order as it was populated above
                             count+=1
                         else:
                             print('needlet coefficient inverse covariance map not previously computed; re-computing all inverse covariance maps at scale'+str(j)+' now...')
@@ -552,7 +551,7 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-2, wavelet_beam_criterion=1
             for a in range(info.N_freqs):
                 if (freqs_to_use[j][a] == True):
                     weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'.fits'
-                    weights[:,count] = hp.read_map(weight_filename, dtype=np.float64, verbose=False)
+                    weights[:,count] = hp.read_map(weight_filename, dtype=np.float64)
                     count+=1
         ##########################
         # apply these ILC weights to the needlet coefficient maps to get the per-needlet-scale ILC maps
@@ -561,7 +560,7 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-2, wavelet_beam_criterion=1
         for a in range(info.N_freqs):
             if (freqs_to_use[j][a] == True):
                 filename_wavelet_coeff_map = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(a)+'_scale'+str(j)+'.fits'
-                wavelet_coeff_map = hp.read_map(filename_wavelet_coeff_map, dtype=np.float64, verbose=False)
+                wavelet_coeff_map = hp.read_map(filename_wavelet_coeff_map, dtype=np.float64)
                 ILC_map_temp += weights[:,count] * wavelet_coeff_map
                 count+=1
         ILC_maps_per_scale.append(ILC_map_temp)
