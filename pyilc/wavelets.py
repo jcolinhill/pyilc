@@ -110,7 +110,7 @@ class Wavelets(object):
 
 # apply wavelet transform (i.e., filters) to a map
 # include option to apply a taper near ELLMAX to avoid aliasing of small-scale power due to sharp truncation
-def waveletize(inp_map=None, wv=None, taper=True, taper_width=200., rebeam=False, inp_beam=None, new_beam=None, wv_filts_to_use=None, N_side_to_use=None):
+def waveletize(inp_map=None, wv=None, taper=True, taper_width=50., rebeam=False, inp_beam=None, new_beam=None, wv_filts_to_use=None, N_side_to_use=None): #Kristen changed taper width from 200 to 50
     assert inp_map is not None, "no input map specified"
     N_pix = len(inp_map)
     N_side_inp = hp.npix2nside(N_pix)
@@ -189,7 +189,8 @@ def synthesize(wv_maps=None, wv=None, N_side_out=None):
     return out_map
 
 # wavelet ILC
-def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3, map_images=False):
+#change ILC bias to 10^-2 to get more localized, don't need as many modes in cov estimate changed Kristen
+def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-2, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3, map_images=False): #Kristen changed ILC_bias_tol from 1.e-3
     assert wv is not None, "wavelets not defined"
     assert type(wv) is Wavelets, "Wavelets TypeError"
     assert info is not None, "ILC info not defined"
@@ -241,6 +242,7 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
                 break
         if (N_side_to_use[i] > info.N_side):
             N_side_to_use[i] = info.N_side
+    N_side_to_use = np.ones(wv.N_scales,dtype=int)*info.N_side #added, Kristen need to remove
     print(freqs_to_use)
     print(N_freqs_to_use)
     print(N_side_to_use)
@@ -303,7 +305,7 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
                     flag=False
                     break
         if flag == False:
-            wv_maps_temp = waveletize(inp_map=(info.maps)[i], wv=wv, taper=True, taper_width=200., rebeam=True, inp_beam=(info.beams)[i], new_beam=(info.beams)[-1], wv_filts_to_use=freqs_to_use[:,i], N_side_to_use=N_side_to_use)
+            wv_maps_temp = waveletize(inp_map=(info.maps)[i], wv=wv, taper=True, taper_width=50., rebeam=True, inp_beam=(info.beams)[i], new_beam=(info.beams)[-1], wv_filts_to_use=freqs_to_use[:,i], N_side_to_use=N_side_to_use) #change taper width back to 200, Kristen
             for j in range(wv.N_scales):
                 if freqs_to_use[j][i] == True:
                     filename = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(i)+'_scale'+str(j)+'.fits'
@@ -484,9 +486,9 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
                             if (a-a_min) != (b-a_min):
                                 covmat[b-a_min][a-a_min] = covmat[a-a_min][b-a_min] #symmetrize
                             count+=1
-                inv_covmat = np.array([np.linalg.inv(covmat[:,:,p]) for p in range(int(N_pix_to_use[j]))]) #dim pix,freqs,freqs
+                inv_covmat = np.linalg.inv(np.transpose(covmat,(2,0,1))) #dim pix,freqs,freqs
                 inv_covmat = np.transpose(inv_covmat, axes=[1,2,0]) #new dim freq, freq, pix
-                assert np.allclose(np.einsum('ijp,jkp->pik', inv_covmat, covmat), np.array([np.eye(int(N_freqs_to_use[j]))]*int(N_pix_to_use[j])), rtol=1.e-5, atol=1.e-5), "covmat inversion failed for scale "+str(j) #, covmat, inv_covmat, np.dot(inv_covmat, covmat)-np.eye(int(N_freqs_to_use[j]))
+                assert np.allclose(np.einsum('ijp,jkp->pik', inv_covmat, covmat), np.transpose(np.repeat(np.eye(N_freqs_to_use[j])[:,:,None],N_pix_to_use[j],axis=2),(2,0,1)),rtol=1.e-5, atol=1.e-5), "covmat inversion failed for scale "+str(j) #, covmat, inv_covmat, np.dot(inv_covmat, covmat)-np.eye(int(N_freqs_to_use[j]))
                 count=0
                 for a in range(info.N_freqs):
                     for b in range(a, info.N_freqs):
