@@ -133,6 +133,11 @@ class ILCInfo(object):
             self.beam_files = p['beam_files']
             assert len(self.beam_files) == self.N_freqs, "beam_files"
             print("Note: frequency maps are assumed to be in strictly decreasing beam size ordering!")
+        # Fiona edit: allow for performing ILC at a user-specified beam / resolution 
+        self.perform_ILC_at_beam = None
+        if 'perform_ILC_at_beam' in p.keys():
+            #perform_ILC_at_beam should be in arcmin. If perform_ILC_at_beam is unspecified, ILC will be performed at resolution of the highest-resolution map
+            self.perform_ILC_at_beam = p['perform_ILC_at_beam']  
         # N_side value of highest-resolution input map (and presumed output map N_side)
         # be conservative and assume N_side must be a power of 2 (stricly speaking only necessary for nest-ordering)
         # https://healpy.readthedocs.io/en/latest/generated/healpy.pixelfunc.isnsideok.html
@@ -244,6 +249,12 @@ class ILCInfo(object):
             self.beams = np.zeros((self.N_freqs,self.ELLMAX+1,2), dtype=np.float64)
             for i in range(self.N_freqs):
                 self.beams[i] = np.transpose(np.array([np.arange(self.ELLMAX+1), hp.sphtfunc.gauss_beam(self.beam_FWHM_arcmin[i]*(np.pi/180.0/60.0), lmax=self.ELLMAX)]))
+                # Fiona edit: allow for performing ILC at a user-specified beam / resolution
+                #we will convolve all maps to the common_beam
+                if self.perform_ILC_at_beam is not None:
+                    self.common_beam =np.transpose(np.array([np.arange(self.ELLMAX+1), hp.sphtfunc.gauss_beam(self.perform_ILC_at_beam*(np.pi/180.0/60.0), lmax=self.ELLMAX)]))
+                else:
+                    self.common_beam = self.beams[-1] # if perform_ILC_at_beam is unspecified, convolve to the beam of the highest-resolution map
         elif self.beam_type == '1DBeams':
             self.beams = [] #initialize empty list
             for i in range(self.N_freqs):

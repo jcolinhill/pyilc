@@ -303,7 +303,10 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
                     flag=False
                     break
         if flag == False:
-            wv_maps_temp = waveletize(inp_map=(info.maps)[i], wv=wv, taper=True, taper_width=200., rebeam=True, inp_beam=(info.beams)[i], new_beam=(info.beams)[-1], wv_filts_to_use=freqs_to_use[:,i], N_side_to_use=N_side_to_use)
+             # Fiona edit: allow for performing ILC at a user-specified beam / resolution
+            #wv_maps_temp = waveletize(inp_map=(info.maps)[i], wv=wv, taper=True, taper_width=200., rebeam=True, inp_beam=(info.beams)[i], new_beam=(info.beams)[-1], wv_filts_to_use=freqs_to_use[:,i], N_side_to_use=N_side_to_use)
+            wv_maps_temp = waveletize(inp_map=(info.maps)[i], wv=wv, taper=True, taper_width=200., rebeam=True, inp_beam=(info.beams)[i], new_beam=info.common_beam, wv_filts_to_use=freqs_to_use[:,i], N_side_to_use=N_side_to_use)
+
             for j in range(wv.N_scales):
                 if freqs_to_use[j][i] == True:
                     filename = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(i)+'_scale'+str(j)+'.fits'
@@ -316,6 +319,7 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
                     hp.mollview(wv_maps_temp[j], unit="K", title="Needlet Coefficient Map, Frequency "+str(i)+" Scale "+str(j), min=np.mean(wv_maps_temp[j])-2*np.std(wv_maps_temp[j]), max=np.mean(wv_maps_temp[j])+2*np.std(wv_maps_temp[j]))
                     plt.savefig(info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(i)+'_scale'+str(j)+'.pdf')
         print("done waveletizing frequency ", i, "...")
+        # Fiona edit: 
         del wv_maps_temp #free up memory
     ##########################
     ##########################
