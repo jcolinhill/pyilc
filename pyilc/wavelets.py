@@ -306,7 +306,6 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
              # Fiona edit: allow for performing ILC at a user-specified beam / resolution
             #wv_maps_temp = waveletize(inp_map=(info.maps)[i], wv=wv, taper=True, taper_width=200., rebeam=True, inp_beam=(info.beams)[i], new_beam=(info.beams)[-1], wv_filts_to_use=freqs_to_use[:,i], N_side_to_use=N_side_to_use)
             wv_maps_temp = waveletize(inp_map=(info.maps)[i], wv=wv, taper=True, taper_width=200., rebeam=True, inp_beam=(info.beams)[i], new_beam=info.common_beam, wv_filts_to_use=freqs_to_use[:,i], N_side_to_use=N_side_to_use)
-
             for j in range(wv.N_scales):
                 if freqs_to_use[j][i] == True:
                     filename = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(i)+'_scale'+str(j)+'.fits'
@@ -319,7 +318,37 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
                     hp.mollview(wv_maps_temp[j], unit="K", title="Needlet Coefficient Map, Frequency "+str(i)+" Scale "+str(j), min=np.mean(wv_maps_temp[j])-2*np.std(wv_maps_temp[j]), max=np.mean(wv_maps_temp[j])+2*np.std(wv_maps_temp[j]))
                     plt.savefig(info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(i)+'_scale'+str(j)+'.pdf')
         print("done waveletizing frequency ", i, "...")
-        # Fiona edit: 
+        # Fiona cross-ILC implementation
+        if info.cross_ILC:
+            for season in [1,2]:
+                flag = True
+                wv_maps_temp = []
+                for j in range(wv.N_scales):
+                    if freqs_to_use[j][i] == True:
+                        filename = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(i)+'_scale'+str(j)+'_S'+str(season)+'.fits'
+                        exists = os.path.isfile(filename)
+                        if exists:
+                            print('needlet coefficient map already exists:', filename,)
+                            wv_maps_temp.append( hp.read_map(filename, dtype=np.float64, verbose=False) )
+                        else:
+                            print('needlet coefficient map not previously computed; re-computing all '+str(season)+'maps for frequency '+str(i)+' now...',)
+                            flag=False
+                            break
+                if flag == False:
+                    if season==1:
+                        maps = info.maps_s1
+                    elif season==2:
+                        maps = info.maps_s2
+
+                    wv_maps_temp = waveletize(inp_map=(maps)[i], wv=wv, taper=True, taper_width=200., rebeam=True, inp_beam=(info.beams)[i], new_beam=newbeam, wv_filts_to_use=freqs_to_use[:,i], N_side_to_use=N_side_to_use)
+                    for j in range(wv.N_scales):
+                        if freqs_to_use[j][i] == True:
+                            filename = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(i)+'_scale'+str(j)+'_S'+str(season)+'.fits'
+                            exists2 = os.path.isfile(filename)
+
+                            if not exists2:
+                                hp.write_map(filename, wv_maps_temp[j], nest=False, dtype=np.float64, overwrite=False)
+                    del(maps) #free up memory
         del wv_maps_temp #free up memory
     ##########################
     ##########################
@@ -332,7 +361,9 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
         count=0
         for a in range(info.N_freqs):
             if (freqs_to_use[j][a] == True):
-                weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'.fits'
+                # Fiona cross-ILC implementation: save the cross_ILC weights with a different filename
+                #weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'.fits'
+                weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.fits'
                 exists = os.path.isfile(weight_filename)
                 if exists:
                     print('weight map already exists:', weight_filename)
@@ -378,9 +409,16 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
             cov_maps_temp = []
             flag=True
             for a in range(info.N_freqs):
-                for b in range(a, info.N_freqs):
+                # Fiona cross-ILC implementation: for cross_ILC the {S1,S2} covmat is not symmetric in frequency so we start the b forloop at 0
+                start_at = a
+                if info.cross_ILC:
+                    start_at = 0
+                #for b in range(a, info.N_freqs):
+                for b in range(start_at, info.N_freqs):
                     if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True and flag==True):
-                        cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_covmap_freq'+str(a)+'_freq'+str(b)+'_scale'+str(j)+'.fits'
+                        # Fiona cross-ILC implementation: save the cross_ILC covmat with a different filename
+                        # cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_covmap_freq'+str(a)+'_freq'+str(b)+'_scale'+str(j)+'.fits'
+                        cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_covmap_freq'+str(a)+'_freq'+str(b)+'_scale'+str(j)+'_crossILC'*info.cross_ILC+'.fits'
                         exists = os.path.isfile(cov_filename)
                         if exists:
                             print('needlet coefficient covariance map already exists:', cov_filename)
@@ -391,12 +429,24 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
                             break
             if flag == False:
                 for a in range(info.N_freqs):
-                    for b in range(a, info.N_freqs):
+                    # Fiona cross-ILC implementation: for cross_ILC the {S1,S2} covmat is not symmetric in frequency so we start the b forloop at 0
+                    start_at = a
+                    if info.cross_ILC:
+                        start_at = 0
+                    #for b in range(a, info.N_freqs):
+                    for b in range(start_at, info.N_freqs):
                         if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True):
-                            cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_covmap_freq'+str(a)+'_freq'+str(b)+'_scale'+str(j)+'.fits'
+                            # Fiona cross-ILC implementation: save the cross_ILC covmat with a different filename
+                            cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_covmap_freq'+str(a)+'_freq'+str(b)+'_scale'+str(j)+'_crossILC'*info.cross_ILC+'.fits'
+                            #cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_covmap_freq'+str(a)+'_freq'+str(b)+'_scale'+str(j)+'.fits'
                             # read in wavelet coefficient maps constructed in previous step above
-                            filename_A = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(a)+'_scale'+str(j)+'.fits'
-                            filename_B = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(b)+'_scale'+str(j)+'.fits'
+                            # Fiona cross-ILC implementation
+                            if not info.cross_ILC:
+                                filename_A = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(a)+'_scale'+str(j)+'.fits'
+                                filename_B = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(b)+'_scale'+str(j)+'.fits'
+                            else:
+                                filename_A = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(a)+'_scale'+str(j)+'_S1.fits'
+                                filename_B = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(b)+'_scale'+str(j)+'_S2.fits'
                             wavelet_map_A = hp.read_map(filename_A, dtype=np.float64, verbose=False)
                             wavelet_map_B = hp.read_map(filename_B, dtype=np.float64, verbose=False)
                             assert len(wavelet_map_A) == len(wavelet_map_B), "cov mat map calculation: wavelet coefficient maps have different N_side"
@@ -426,7 +476,9 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
             for a in range(info.N_freqs):
                 for b in range(a, info.N_freqs):
                     if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True and flag==True):
-                        inv_cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_invcovmap_freq'+str(a)+'_freq'+str(b)+'_scale'+str(j)+'.fits'
+                        # Fiona cross-ILC implementation: save the cross_ILC covmat with a different filename
+                        # inv_cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_invcovmap_freq'+str(a)+'_freq'+str(b)+'_scale'+str(j)+'.fits'
+                        inv_cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_invcovmap_freq'+str(a)+'_freq'+str(b)+'_scale'+str(j)+'_crossILC'*info.cross_ILC+'.fits'
                         exists = os.path.isfile(inv_cov_filename)
                         if exists:
                             print('needlet coefficient inverse covariance map already exists:', inv_cov_filename)
@@ -481,13 +533,23 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
                 covmat = np.zeros((int(N_freqs_to_use[j]),int(N_freqs_to_use[j]), int(N_pix_to_use[j])))
                 count=0
                 for a in range(info.N_freqs):
-                    for b in range(a, info.N_freqs):
+                    # Fiona cross-ILC implementation: for cross_ILC the {S1,S2} covmat is not symmetric in frequency so we start the b forloop at 0
+                    start_at = a
+                    if info.cross_ILC:
+                        start_at = 0
+                    #for b in range(a, info.N_freqs):
+                    for b in range(start_at, info.N_freqs):
                         if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True):
                             # cov_maps_temp is in order 00, 01, 02, ..., 0(N_freqs_to_use[j]-1), 11, 12, ..., 1(N_freqs_to_use[j]-1), 22, 23, ...
                             covmat[a-a_min][b-a_min] = cov_maps_temp[count] #by construction we're going through cov_maps_temp in the same order as it was populated above
-                            if (a-a_min) != (b-a_min):
+                            # Fiona cross-ILC implementation: for cross_ILC covmat is not symmetric by design (until we symmetrize it later)
+                            # TODO: maybe symmetrize it before saving so that we don't have to save twice as many covmats?
+                            if (a-a_min) != (b-a_min) and not info.cross_ILC:
                                 covmat[b-a_min][a-a_min] = covmat[a-a_min][b-a_min] #symmetrize
                             count+=1
+                # Fiona cross-ILC implementation: symmetrize the covmat 
+                if info.cross_ILC:
+                    covmat = (covmat + np.transpose(covmat,(1,0,2)))/2
                 inv_covmat = np.array([np.linalg.inv(covmat[:,:,p]) for p in range(int(N_pix_to_use[j]))]) #dim pix,freqs,freqs
                 inv_covmat = np.transpose(inv_covmat, axes=[1,2,0]) #new dim freq, freq, pix
                 assert np.allclose(np.einsum('ijp,jkp->pik', inv_covmat, covmat), np.array([np.eye(int(N_freqs_to_use[j]))]*int(N_pix_to_use[j])), rtol=1.e-5, atol=1.e-5), "covmat inversion failed for scale "+str(j) #, covmat, inv_covmat, np.dot(inv_covmat, covmat)-np.eye(int(N_freqs_to_use[j]))
@@ -528,7 +590,9 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
                 for a in range(info.N_freqs):
                     for b in range(a, info.N_freqs):
                         if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True):
-                            inv_cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_invcovmap_freq'+str(a)+'_freq'+str(b)+'_scale'+str(j)+'.fits'
+                            # Fiona cross-ILC implementation: save the cross_ILC covmat with a different filename
+                            # inv_cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_invcovmap_freq'+str(a)+'_freq'+str(b)+'_scale'+str(j)+'.fits'
+                            inv_cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_invcovmap_freq'+str(a)+'_freq'+str(b)+'_scale'+str(j)+'_crossILC'*info.cross_ILC+'.fits'
                             hp.write_map(inv_cov_filename, inv_cov_maps_temp[count], nest=False, dtype=np.float64, overwrite=False)
                             count+=1
                 print('done computing all inverse covariance maps at scale'+str(j))
@@ -541,19 +605,25 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
                 count=0
                 for a in range(info.N_freqs):
                     if (freqs_to_use[j][a] == True):
-                        weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'.fits'
+                        # Fiona cross-ILC implementation: save the cross_ILC weights with a different filename
+                        # weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'.fits'
+                        weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.fits'
                         hp.write_map(weight_filename, weights[:,count], nest=False, dtype=np.float64, overwrite=False)
                         if map_images == True: #save images if requested
                             plt.clf()
                             hp.mollview(weights[:,count], unit="1/K", title="Needlet ILC Weight Map, Frequency "+str(a)+" Scale "+str(j))
-                            plt.savefig(info.output_dir+info.output_prefix+'_needletILCweightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'.pdf')
+                            # Fiona cross-ILC implementation: save the cross_ILC weights with a different filename
+                            # plt.savefig(info.output_dir+info.output_prefix+'_needletILCweightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'.pdf')
+                            plt.savefig(info.output_dir+info.output_prefix+'_needletILCweightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.pdf')
                         count+=1
         else:
             weights = np.zeros((int(N_pix_to_use[j]),int(N_freqs_to_use[j])))
             count=0
             for a in range(info.N_freqs):
                 if (freqs_to_use[j][a] == True):
-                    weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'.fits'
+                    # Fiona cross-ILC implementation: save the cross_ILC weights with a different filename
+                    #weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'.fits'
+                    weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.fits'
                     weights[:,count] = hp.read_map(weight_filename, dtype=np.float64, verbose=False)
                     count+=1
         ##########################
@@ -571,13 +641,17 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
     # synthesize the per-needlet-scale ILC maps into the final combined ILC map (apply each needlet filter again and add them all together -- have to upgrade to all match the same Nside -- done in synthesize)
     ILC_map = synthesize(wv_maps=ILC_maps_per_scale, wv=wv, N_side_out=info.N_side)
     # save the final ILC map
-    ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'.fits'
+    # Fiona cross-ILC implementation: save the cross_ILC map with a different filename
+    # ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'.fits'
+    ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.fits'
     hp.write_map(ILC_map_filename, ILC_map, nest=False, dtype=np.float64, overwrite=False)
     # make image if requested
     if map_images == True:
         plt.clf()
         hp.mollview(ILC_map, unit='dimensionless', title='Needlet ILC Map, Component '+info.ILC_preserved_comp)
-        plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'.pdf')
+        # Fiona cross-ILC implementation: save the cross_ILC weights with a different filename
+        # plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'.pdf')
+        plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.pdf')
     # cross-correlate with map specified in input file (if requested; e.g., useful for simulation analyses) -- TODO
     return 1
     ##########################
