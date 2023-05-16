@@ -23,7 +23,7 @@ BEAM_TYPES = ['Gaussians','1DBeams']
 
 ##########################
 # component types implemented thus far
-COMP_TYPES = ['CMB','kSZ','tSZ','rSZ','mu','CIB']
+COMP_TYPES = ['CMB','kSZ','tSZ','rSZ','mu','CIB', 'CIB_dbeta'] # Fiona edit: added CIB first moment CIB_dbeta
 ##########################
 
 ##########################
