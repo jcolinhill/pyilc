@@ -8,7 +8,8 @@ module to read in relevant input specified by user
 """
 ##########################
 # wavelet types implemented thus far
-WV_TYPES = ['GaussianNeedlets']
+# Fiona edit: add TopHatHarmonic wavelets (to do a HILC)
+WV_TYPES = ['GaussianNeedlets','TopHatHarmonic']
 ##########################
 
 ##########################
@@ -98,6 +99,14 @@ class ILCInfo(object):
             self.GN_FWHM_arcmin = np.asarray(p['GN_FWHM_arcmin'])
             assert len(self.GN_FWHM_arcmin) == self.N_scales - 1, "GN_FWHM_arcmin"
             assert all(FWHM_val > 0. for FWHM_val in self.GN_FWHM_arcmin), "GN_FWHM_arcmin"
+        # Fiona edit: add TopHatHarmonic wavelets (to do a HILC)
+        elif self.wavelet_type == 'TopHatHarmonic':
+            #  TODO: add functionality for the user to specity arbitrary ell-bins directly
+            self.Delta_ell_HILC = p['BinSize']  # the bin sizes for a linearly-ell-binnedHILC
+            if self.bintype == 'linear':
+                self.ellbins = np.arange(0,self.ELLMAX+1,self.Delta_ell_HILC)
+                self.N_scales = len(self.ellbins)-1
+            assert type(self.N_scales) is int and self.N_scales > 0, "N_scales"
         # TODO: implement these
         #elif self.wavelet_type == 'CosineNeedlets':
         #elif self.wavelet_type == 'ScaleDiscretizedWavelets':

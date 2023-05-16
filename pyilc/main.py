@@ -36,6 +36,9 @@ info.read_beams()
 wv = Wavelets(N_scales=info.N_scales, ELLMAX=info.ELLMAX, tol=1.e-6)
 if info.wavelet_type == 'GaussianNeedlets':
     ell, filts = wv.GaussianNeedlets(FWHM_arcmin=info.GN_FWHM_arcmin)
+# Fiona HILC implementation
+elif info.wavelet_type == 'TopHatHarmonic':
+    ell,filts = wv.TopHatHarmonic(info.ellbins)
 else:
     raise TypeError('unsupported wavelet type')
 # example plot -- output in example_wavelet_plot
@@ -44,7 +47,11 @@ else:
 
 ##########################
 # wavelet ILC
-wavelet_ILC(wv, info, ILC_bias_tol=1.e-2, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3, map_images=True)
+# Fiona HILC implementation:
+if info.wavelet_type == 'TopHatHarmonic':
+    harmonic_ILC(wv, info, ILC_bias_tol=1.e-2, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3, map_images=True)
+else:
+    wavelet_ILC(wv, info, ILC_bias_tol=1.e-2, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3, map_images=True)
 ##########################
 
 
