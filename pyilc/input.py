@@ -73,6 +73,11 @@ class ILCInfo(object):
         # prefix for output file names
         self.output_prefix = p['output_prefix']
         assert type(self.output_prefix) is str, "TypeError: output_prefix"
+        # Fiona edit: add output_suffix. This is only appended to the weights and the maps, not the covmat and invcovmat (and waveletized frequency maps), 
+        # so you can (eg) perform different deprojections with different SED specs, while using the same covmat and invcovmat
+        if 'output_suffix' in p.keys():
+            self.output_suffix = p['output_suffix']
+            assert type(self.output_suffix) is str, "TypeError: output_suffix"
         # flag whether to save maps of the ILC weights (if 'yes' then they will be saved; otherwise not)
         self.save_weights = p['save_weights']
         assert type(self.save_weights) is str, "TypeError: save_weights"
