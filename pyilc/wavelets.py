@@ -364,6 +364,9 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
                 # Fiona cross-ILC implementation: save the cross_ILC weights with a different filename
                 #weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'.fits'
                 weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.fits'
+                # Fiona: change filenames for different deprojections
+                if info.N_deproj>0:
+                    weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.fits'
                 exists = os.path.isfile(weight_filename)
                 if exists:
                     print('weight map already exists:', weight_filename)
@@ -608,13 +611,24 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
                         # Fiona cross-ILC implementation: save the cross_ILC weights with a different filename
                         # weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'.fits'
                         weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.fits'
+                        # Fiona: change filenames for different deprojections
+                        if info.N_deproj>0:
+                            weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.fits'
+
+
                         hp.write_map(weight_filename, weights[:,count], nest=False, dtype=np.float64, overwrite=False)
                         if map_images == True: #save images if requested
                             plt.clf()
                             hp.mollview(weights[:,count], unit="1/K", title="Needlet ILC Weight Map, Frequency "+str(a)+" Scale "+str(j))
                             # Fiona cross-ILC implementation: save the cross_ILC weights with a different filename
                             # plt.savefig(info.output_dir+info.output_prefix+'_needletILCweightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'.pdf')
-                            plt.savefig(info.output_dir+info.output_prefix+'_needletILCweightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.pdf')
+                            # Fiona: change filenames for different deprojections
+                            # plt.savefig(info.output_dir+info.output_prefix+'_needletILCweightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.pdf')
+                            if info.N_deproj == 0:
+                                plt.savefig(info.output_dir+info.output_prefix+'_needletILCweightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.pdf')
+                            else:
+                                plt.savefig(info.output_dir+info.output_prefix+'_needletILCweightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.pdf')
+
                         count+=1
         else:
             weights = np.zeros((int(N_pix_to_use[j]),int(N_freqs_to_use[j])))
@@ -623,7 +637,11 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
                 if (freqs_to_use[j][a] == True):
                     # Fiona cross-ILC implementation: save the cross_ILC weights with a different filename
                     #weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'.fits'
+                    # Fiona: change filenames for different deprojections
                     weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.fits'
+                    if info.N_deproj>0:
+                        weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.fits'
+
                     weights[:,count] = hp.read_map(weight_filename, dtype=np.float64, verbose=False)
                     count+=1
         ##########################
@@ -644,6 +662,9 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
     # Fiona cross-ILC implementation: save the cross_ILC map with a different filename
     # ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'.fits'
     ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.fits'
+    # Fiona: change filenames for different deprojections
+    if info.N_deproj>0:
+        ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.fits'
     hp.write_map(ILC_map_filename, ILC_map, nest=False, dtype=np.float64, overwrite=False)
     # make image if requested
     if map_images == True:
@@ -651,7 +672,13 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
         hp.mollview(ILC_map, unit='dimensionless', title='Needlet ILC Map, Component '+info.ILC_preserved_comp)
         # Fiona cross-ILC implementation: save the cross_ILC weights with a different filename
         # plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'.pdf')
-        plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.pdf')
+        # Fiona: change filenames for different deprojections
+        #plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.pdf')
+        if info.N_deproj==0:
+            plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.pdf')
+        else:
+            plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.pdf')
+
     # cross-correlate with map specified in input file (if requested; e.g., useful for simulation analyses) -- TODO
     return 1
     ##########################
