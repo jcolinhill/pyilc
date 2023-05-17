@@ -415,6 +415,25 @@ def get_mix_bandpassed(bp_list, comp, param_dict_file=None,bandpass_shifts=None,
                     # in Jy/sr from nu0_CIB to the "nominal frequency" nu_c that appears in 
                     # those equations (i.e., multiply by get_mix(nu_c, 'CIB_Jysr')).  
                     # The resulting cancellation leaves this simple expression which has no dependence on nu_c.
+                # Fiona dbeta CIB
+                elif (comp == 'CIB_dbeta'):
+                    # following Sec. 3.2 of https://arxiv.org/pdf/1303.5070.pdf 
+                    # -- N.B. IMPORTANT TYPO IN THEIR EQ. 35 -- see https://www.aanda.org/articles/aa/pdf/2014/11/aa21531-13.pdf
+                    # CIB SED parameter choices in dict file: Tdust_CIB [K], beta_CIB, nu0_CIB [GHz]
+                    # N.B. overall amplitude is not meaningful here; output ILC map (if you tried to preserve this component) would not be in sensible units
+                    mixs = get_mix(nu_ghz, 'CIB_Jysr_dbeta',
+                                   param_dict_file=param_dict_file, param_dict_override=param_dict_override,
+                                   dust_beta_param_name=dust_beta_param_name,radio_beta_param_name=radio_beta_param_name)
+
+                    vnorm = np.trapz(trans * dBnudT(nu_ghz), nu_ghz)
+                    val = (np.trapz(trans * mixs * bnus , nu_ghz) / vnorm) / lbeam
+
+                    # N.B. this expression follows from Eqs. 32 and 35 of 
+                    # https://www.aanda.org/articles/aa/pdf/2014/11/aa21531-13.pdf , 
+                    # and then noting that one also needs to first rescale the CIB emission 
+                    # in Jy/sr from nu0_CIB to the "nominal frequency" nu_c that appears in 
+                    # those equations (i.e., multiply by get_mix(nu_c, 'CIB_Jysr')).  
+                    # The resulting cancellation leaves this simple expression which has no dependence on nu_c.
                 elif (comp == 'radio'):
                     # same logic/formalism as used for CIB component immediately above this
                     # radio SED parameter choices in dict file: beta_radio, nu0_radio [GHz]

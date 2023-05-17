@@ -52,7 +52,7 @@ else:
 if info.wavelet_type == 'TopHatHarmonic':
     harmonic_ILC(wv, info, ILC_bias_tol=1.e-2, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3, map_images=False)
 else:
-    wavelet_ILC(wv, info, ILC_bias_tol=1.e-2, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3, map_images=True)
+    wavelet_ILC(wv, info, ILC_bias_tol=1.e-2, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3, map_images=False)
 ##########################
 
 

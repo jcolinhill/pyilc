@@ -480,7 +480,7 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
                             cov_map_temp = hp.sphtfunc.smoothing( (wavelet_map_A - wavelet_map_A_smoothed)*(wavelet_map_B - wavelet_map_B_smoothed) , FWHM_pix[j])
                             cov_maps_temp.append( cov_map_temp )
                             hp.write_map(cov_filename, cov_map_temp, nest=False, dtype=np.float64, overwrite=False)
-            print('done computing all covariance maps at scale'+str(j))
+            print('done computing all covariance maps at scale'+str(j),flush=True)
             ##########################
             ##########################
             # invert the cov matrix in each pixel for each filter scale
@@ -503,7 +503,7 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
                         inv_cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_invcovmap_freq'+str(a)+'_freq'+str(b)+'_scale'+str(j)+'_crossILC'*info.cross_ILC+'.fits'
                         exists = os.path.isfile(inv_cov_filename)
                         if exists:
-                            print('needlet coefficient inverse covariance map already exists:', inv_cov_filename)
+                            print('needlet coefficient inverse covariance map already exists:', inv_cov_filename,flush=True)
                             inv_cov_maps_temp[count] = hp.read_map(inv_cov_filename, dtype=np.float64, verbose=False) #by construction we're going through cov_maps_temp in the same order as it was populated above
                             count+=1
                         else:
@@ -723,7 +723,7 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
     ##########################
     ##########################
 # harmonic ILC
-def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3, map_images=True):
+def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3, map_images=False):
     # This function is copy-and-pasted from wavelet_ILC() above and edited.
     # It would be MUCH better to avoid such hard-coding by writing one wavelet_ILC() function that can do both (I have already done this on my local pyilc branch
     # However, the harmonic_ILC() function itself contains a lot of hard coded code-snippets (ie, it is a very long function with very few calls to subroutines).
