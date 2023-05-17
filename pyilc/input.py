@@ -90,8 +90,10 @@ class ILCInfo(object):
         assert type(self.wavelet_type) is str, "TypeError: wavelet_type"
         assert self.wavelet_type in WV_TYPES, "unsupported wavelet type"
         # number of wavelet filter scales used
-        self.N_scales = p['N_scales']
-        assert type(self.N_scales) is int and self.N_scales > 0, "N_scales"
+        # Fiona edit: add if statement for HILC case
+        if not self.wavelet_type == 'TopHatHarmonic':
+            self.N_scales = p['N_scales']
+            assert type(self.N_scales) is int and self.N_scales > 0, "N_scales"
         # parameters for each wavelet type
         # TODO: implement passing of these to the wavelet construction (probably in the main ILC script)
         if self.wavelet_type == 'GaussianNeedlets':
@@ -103,9 +105,8 @@ class ILCInfo(object):
         elif self.wavelet_type == 'TopHatHarmonic':
             #  TODO: add functionality for the user to specity arbitrary ell-bins directly
             self.Delta_ell_HILC = p['BinSize']  # the bin sizes for a linearly-ell-binnedHILC
-            if self.bintype == 'linear':
-                self.ellbins = np.arange(0,self.ELLMAX+1,self.Delta_ell_HILC)
-                self.N_scales = len(self.ellbins)-1
+            self.ellbins = np.arange(0,self.ELLMAX+1,self.Delta_ell_HILC)
+            self.N_scales = len(self.ellbins)-1
             assert type(self.N_scales) is int and self.N_scales > 0, "N_scales"
         # TODO: implement these
         #elif self.wavelet_type == 'CosineNeedlets':

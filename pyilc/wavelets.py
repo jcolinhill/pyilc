@@ -187,6 +187,7 @@ def synthesize(wv_maps=None, wv=None, N_side_out=None):
     assert wv.ELLMAX < 3*N_side_out-1, "ELLMAX too high"
     N_pix_out = 12*N_side_out**2
     out_map = np.zeros(N_pix_out)
+    print("length is",len(wv_maps))
     for j in range(wv.N_scales):
         #out_map += hp.alm2map(hp.almxfl(hp.map2alm(wv_maps[j], lmax=wv.ELLMAX), wv.filters[j]), nside=N_side)
         N_pix_temp = len(wv_maps[j])
@@ -265,6 +266,9 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
     FWHM_pix = np.zeros(wv.N_scales,dtype=float)
     if info.wavelet_type == 'GaussianNeedlets':
         ell, filts = wv.GaussianNeedlets(info.GN_FWHM_arcmin)
+    # Fiona addition HILC:
+    elif info.wavelet_type == 'TopHatHarmonic':
+        ell, filts = wv.TopHatHarmonic(info.ellbins)
     # TODO: implement these
     #elif info.wavelet_type == 'CosineNeedlets':
     #elif info.wavelet_type == 'ScaleDiscretizedWavelets':
@@ -719,7 +723,7 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
     ##########################
     ##########################
 # harmonic ILC
-def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3, map_images=False):
+def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3, map_images=True):
     # This function is copy-and-pasted from wavelet_ILC() above and edited.
     # It would be MUCH better to avoid such hard-coding by writing one wavelet_ILC() function that can do both (I have already done this on my local pyilc branch
     # However, the harmonic_ILC() function itself contains a lot of hard coded code-snippets (ie, it is a very long function with very few calls to subroutines).
@@ -788,7 +792,9 @@ def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=
     # criterion to determine the real-space gaussian FWHM used in wavelet ILC
     # based on ILC bias mode-counting
     FWHM_pix = np.zeros(wv.N_scales,dtype=float)
-    ell, filts = wv.GaussianNeedlets(info.ellbins)
+    ell, filts = wv.TopHatHarmonic(info.ellbins)
+
+
     # compute effective number of modes associated with each filter (on the full sky)
     # note that the weights we use are filt^2, since this is the quantity that sums to unity at each ell
     N_modes = np.zeros(wv.N_scales, dtype=float)
@@ -873,6 +879,7 @@ def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=
     ### MAIN ILC CALCULATION ###
     # TODO -- memory management could certainly be improved here (reduce file I/O overhead, reduce number of smoothing operations, etc...)
     ILC_maps_per_scale = []
+    print("doing main ILC!!",flush=True)
     for j in range(wv.N_scales):
         # first, check if the weights already exist, and skip everything if so
         weights_exist = True
@@ -887,7 +894,7 @@ def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=
             print('weight vector already exists:', weight_filename)
         else:
             weights_exist = False
-            break
+            #break
         if (weights_exist == False):
             ### compute the mixing matrix A_{i\alpha} ###
             # this is the alpha^th component's SED evaluated at the i^th frequency
@@ -975,10 +982,9 @@ def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=
                             all_maps_B_smoothed.append(0)
 
 
-                        for a in range(info.N_freqs):
-
+                for a in range(info.N_freqs):
+                            countb = 0
                             for b in range(0, info.N_freqs): #  Could probably do this quicker by starting at a instead of 0 when not doing cross_ILC but would have to keep track of count_a and count_b
-
                                 if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True):
                                     wavelet_map_A = all_maps_A[a].copy()
                                     wavelet_map_B = all_maps_B[b].copy()
@@ -992,27 +998,27 @@ def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=
                                     countb +=1
                             if (freqs_to_use[j][a] == True):
                                  counta +=1
-                    cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_covmap_scale'+str(j)+'_crossILC'*info.cross_ILC+'.txt'
-                    print("saving covmat",cov_filename)
-                    np.savetxt(cov_filename,cov_matrix_harmonic)
+                cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_covmap_scale'+str(j)+'_crossILC'*info.cross_ILC+'.txt'
+                print("saving covmat",cov_filename)
+                np.savetxt(cov_filename,cov_matrix_harmonic)
 
 
-            print('done computing the covariance matrix at scale'+str(j))
+            print('done computing the covariance matrix at scale'+str(j),flush=True)
             ##########################
             ##########################
             # invert the cov matrix for each filter scale
-            print("inverting harmonic covmat",flush=True)
             if info.cross_ILC: # symmetrize the covmat
                     cov_matrix_harmonic= (cov_matrix_harmonic+ np.transpose(cov_matrix_harmonic))/2
             inv_covmat_harmonic= np.linalg.inv(cov_matrix_harmonic) # we don't need to bother saving this because it is not expensive to invert this covmat (TODO: check this)
             identity = np.eye(N_freqs_to_use[j])
             assert np.allclose(np.matmul(inv_covmat_harmonic,cov_matrix_harmonic),identity,rtol=1.e-3, atol=1.e-3)
+            inv_covmat_temp = inv_covmat_harmonic[:,:,None]
 
             ### for each filter scale, perform cov matrix inversion and compute maps of the ILC weights using the inverted cov matrix maps
             count=0
             ### construct the matrix Q_{alpha beta} defined just before Eq. 12 for each pixel at this wavelet scale and evaluate Eq. 13 to get weights ###
             #Qab = np.zeros((int(N_pix_to_use[j]),N_comps,N_comps)) #we don't actually need to keep Qab for every pixel
-            tmp1 = np.einsum('ai,jip->ajp', np.transpose(A_mix), inv_covmat_harmonic)
+            tmp1 = np.einsum('ai,jip->ajp', np.transpose(A_mix), inv_covmat_temp)
             Qab_pix = np.einsum('ajp,bj->abp', tmp1, np.transpose(A_mix))
             # compute weights -- Eq. 13 of notes
             tempvec = np.zeros((N_comps, 1))
