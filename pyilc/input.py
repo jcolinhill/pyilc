@@ -129,7 +129,7 @@ class ILCInfo(object):
         # Fiona edit: param dict file input    
         self.param_dict_file = '../input/fg_SEDs_default_params.yml'
         if 'param_dict_file' in p.keys():
-            self.param_dict_file = ['param_dict_file']
+            self.param_dict_file = p['param_dict_file']
         assert type(self.N_freqs) is int and self.N_freqs > 0, "N_freqs"
         # delta-function bandpasses or actual bandpasses
         self.bandpass_type = p['bandpass_type']
