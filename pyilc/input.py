@@ -122,6 +122,11 @@ class ILCInfo(object):
                 self.cross_ILC = True
         # number of frequency maps used
         self.N_freqs = p['N_freqs']
+
+        self.ILC_bias_tol = 0.01
+        if 'ILC_bias_tol' in p.keys():
+            self.ILC_bias_tol = p['ILC_bias_tol']
+
         assert type(self.N_freqs) is int and self.N_freqs > 0, "N_freqs"
         # delta-function bandpasses or actual bandpasses
         self.bandpass_type = p['bandpass_type']
