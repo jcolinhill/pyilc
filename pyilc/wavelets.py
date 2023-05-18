@@ -578,7 +578,9 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
                     covmat = (covmat + np.transpose(covmat,(1,0,2)))/2
                 inv_covmat = np.array([np.linalg.inv(covmat[:,:,p]) for p in range(int(N_pix_to_use[j]))]) #dim pix,freqs,freqs
                 inv_covmat = np.transpose(inv_covmat, axes=[1,2,0]) #new dim freq, freq, pix
-                assert np.allclose(np.einsum('ijp,jkp->pik', inv_covmat, covmat), np.array([np.eye(int(N_freqs_to_use[j]))]*int(N_pix_to_use[j])), rtol=1.e-5, atol=1.e-5), "covmat inversion failed for scale "+str(j) #, covmat, inv_covmat, np.dot(inv_covmat, covmat)-np.eye(int(N_freqs_to_use[j]))
+                # Fiona edit : vectorization
+                assert np.allclose(np.einsum('ijp,jkp->pik', inv_covmat, covmat), np.transpose(np.repeat(np.eye(N_freqs_to_use[j])[:,:,None],N_pix_to_use[j],axis=2),(2,0,1)), rtol=1.e-5, atol=1.e-5), "covmat inversion failed for scale "+str(j) #, covmat, inv_covmat, np.dot(inv_covmat, covmat)-np.eye(int(N_freqs_to_use[j]))
+                #assert np.allclose(np.einsum('ijp,jkp->pik', inv_covmat, covmat), np.array([np.eye(int(N_freqs_to_use[j]))]*int(N_pix_to_use[j])), rtol=1.e-3, atol=1.e-3), "covmat inversion failed for scale "+str(j) #, covmat, inv_covmat, np.dot(inv_covmat, covmat)-np.eye(int(N_freqs_to_use[j]))
                 count=0
                 for a in range(info.N_freqs):
                     for b in range(a, info.N_freqs):
