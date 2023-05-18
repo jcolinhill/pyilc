@@ -411,14 +411,14 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
                                 #print(get_mix(150., 'tSZ',  param_dict_file='../input/fg_SEDs_default_params.yml', param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))
                                 #print(get_mix_bandpassed(['../data/HFI_BANDPASS_F143_reformat.txt'], 'tSZ', param_dict_file='../input/fg_SEDs_default_params.yml',param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))
                                 #
-                                A_mix[countt][b] = 1.e-6 * (get_mix([info.freqs_delta_ghz[a]], info.ILC_preserved_comp, param_dict_file='../input/fg_SEDs_default_params.yml', param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
+                                A_mix[countt][b] = 1.e-6 * (get_mix([info.freqs_delta_ghz[a]], info.ILC_preserved_comp, param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
                             elif (info.bandpass_type == 'ActualBandpasses'):
-                                A_mix[countt][b] = 1.e-6 * (get_mix_bandpassed([info.freq_bp_files[a]], info.ILC_preserved_comp, param_dict_file='../input/fg_SEDs_default_params.yml', param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
+                                A_mix[countt][b] = 1.e-6 * (get_mix_bandpassed([info.freq_bp_files[a]], info.ILC_preserved_comp, param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
                         else:
                             if (info.bandpass_type == 'DeltaBandpasses'):
-                                A_mix[countt][b] = 1.e-6 * (get_mix([info.freqs_delta_ghz[a]], info.ILC_deproj_comps[b-1], param_dict_file='../input/fg_SEDs_default_params.yml', param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
+                                A_mix[countt][b] = 1.e-6 * (get_mix([info.freqs_delta_ghz[a]], info.ILC_deproj_comps[b-1], param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
                             elif (info.bandpass_type == 'ActualBandpasses'):
-                                A_mix[countt][b] = 1.e-6 * (get_mix_bandpassed([info.freq_bp_files[a]], info.ILC_deproj_comps[b-1], param_dict_file='../input/fg_SEDs_default_params.yml', param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
+                                A_mix[countt][b] = 1.e-6 * (get_mix_bandpassed([info.freq_bp_files[a]], info.ILC_deproj_comps[b-1], param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
                     countt += 1
             # normalize the columns of A_mix corresponding to the deprojected components so that they have values near unity
             if (info.N_deproj != 0):
@@ -588,6 +588,7 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
                             # inv_cov_maps_temp is in order 00, 01, 02, ..., 0(N_freqs_to_use[j]-1), 11, 12, ..., 1(N_freqs_to_use[j]-1), 22, 23, ...
                             inv_cov_maps_temp[count] = inv_covmat[a-a_min][b-a_min] #by construction we're going through cov_maps_temp in the same order as it was populated above
                             count+=1
+
                 tmp1 = np.einsum('ai,jip->ajp', np.transpose(A_mix), inv_covmat)
                 Qab_pix = np.einsum('ajp,bj->abp', tmp1, np.transpose(A_mix))
                 # compute weights -- Eq. 13 of notes
@@ -915,14 +916,14 @@ def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=
                                 #print(get_mix(150., 'tSZ',  param_dict_file='../input/fg_SEDs_default_params.yml', param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))
                                 #print(get_mix_bandpassed(['../data/HFI_BANDPASS_F143_reformat.txt'], 'tSZ', param_dict_file='../input/fg_SEDs_default_params.yml',param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))
                                 #
-                                A_mix[countt][b] = 1.e-6 * (get_mix([info.freqs_delta_ghz[a]], info.ILC_preserved_comp, param_dict_file='../input/fg_SEDs_default_params.yml', param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
+                                A_mix[countt][b] = 1.e-6 * (get_mix([info.freqs_delta_ghz[a]], info.ILC_preserved_comp, param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
                             elif (info.bandpass_type == 'ActualBandpasses'):
-                                A_mix[countt][b] = 1.e-6 * (get_mix_bandpassed([info.freq_bp_files[a]], info.ILC_preserved_comp, param_dict_file='../input/fg_SEDs_default_params.yml', param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
+                                A_mix[countt][b] = 1.e-6 * (get_mix_bandpassed([info.freq_bp_files[a]], info.ILC_preserved_comp, param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
                         else:
                             if (info.bandpass_type == 'DeltaBandpasses'):
-                                A_mix[countt][b] = 1.e-6 * (get_mix([info.freqs_delta_ghz[a]], info.ILC_deproj_comps[b-1], param_dict_file='../input/fg_SEDs_default_params.yml', param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
+                                A_mix[countt][b] = 1.e-6 * (get_mix([info.freqs_delta_ghz[a]], info.ILC_deproj_comps[b-1], param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
                             elif (info.bandpass_type == 'ActualBandpasses'):
-                                A_mix[countt][b] = 1.e-6 * (get_mix_bandpassed([info.freq_bp_files[a]], info.ILC_deproj_comps[b-1], param_dict_file='../input/fg_SEDs_default_params.yml', param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
+                                A_mix[countt][b] = 1.e-6 * (get_mix_bandpassed([info.freq_bp_files[a]], info.ILC_deproj_comps[b-1], param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
                     countt += 1
             # normalize the columns of A_mix corresponding to the deprojected components so that they have values near unity
             if (info.N_deproj != 0):

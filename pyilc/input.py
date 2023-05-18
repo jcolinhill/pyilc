@@ -126,7 +126,10 @@ class ILCInfo(object):
         self.ILC_bias_tol = 0.01
         if 'ILC_bias_tol' in p.keys():
             self.ILC_bias_tol = p['ILC_bias_tol']
-
+        # Fiona edit: param dict file input    
+        self.param_dict_file = '../input/fg_SEDs_default_params.yml'
+        if 'param_dict_file' in p.keys():
+            self.param_dict_file = ['param_dict_file']
         assert type(self.N_freqs) is int and self.N_freqs > 0, "N_freqs"
         # delta-function bandpasses or actual bandpasses
         self.bandpass_type = p['bandpass_type']
