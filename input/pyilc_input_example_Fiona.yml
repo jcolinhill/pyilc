@@ -43,6 +43,10 @@ N_scales: 7
 #The FWHM of the Gaussian needlet scales (only for NILC)
 GN_FWHM_arcmin: [600., 300., 120., 60., 30., 15.]
 
+# The allowed tolerance for ILC bias. This will be used to set the size of the real-space 
+# Gaussian filters in the NILC
+ILC_bias_tol: 0.01
+
 #The Delta_ell (binsize) for linear bins for the HILC
 BinSize: 20
 
