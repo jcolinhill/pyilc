@@ -375,7 +375,7 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
          maps_for_weights_needlets=[]
          for i in range(info.N_freqs):
              print("waveletizing other map",i)
-             if info.perfom_ILC_at_beam is not None:
+             if info.perform_ILC_at_beam is not None:
                     newbeam = info.common_beam
              else:
                     newbeam = (info.beams)[-1]
