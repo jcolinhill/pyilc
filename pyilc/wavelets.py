@@ -369,6 +369,21 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
     ##########################
     ### MAIN ILC CALCULATION ###
     # TODO -- memory management could certainly be improved here (reduce file I/O overhead, reduce number of smoothing operations, etc...)
+
+    # Fiona apply weights to other maps implementation
+    if info.apply_weights_to_other_maps:
+         maps_for_weights_needlets=[]
+         for i in range(info.N_freqs):
+             print("waveletizing other map",i)
+             if info.perfom_ILC_at_beam is not None:
+                    newbeam = info.common_beam
+             else:
+                    newbeam = (info.beams)[-1]
+             maps_for_weights_needlets.append(waveletize(inp_map=(info.maps_for_weights)[i], wv=wv, taper=True, taper_width=200., rebeam=True, inp_beam=(info.beams)[i], new_beam=newbeam, wv_filts_to_use=freqs_to_use[:,i], N_side_to_use=N_side_to_use))
+    else:
+        print("not waveletizing any other maps")
+
+
     ILC_maps_per_scale = []
     for j in range(wv.N_scales):
         # first, check if the weights already exist, and skip everything if so
@@ -687,6 +702,12 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
         for a in range(info.N_freqs):
             if (freqs_to_use[j][a] == True):
                 filename_wavelet_coeff_map = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(a)+'_scale'+str(j)+'.fits'
+                # Fiona apply weights to other maps implementation
+                if not info.apply_weights_to_other_map:
+
+                    wavelet_coeff_map = hp.read_map(filename_wavelet_coeff_map, dtype=np.float64, verbose=False)
+                else:
+                    wavelet_coeff_map =maps_for_weights_needlets[a][j]
                 wavelet_coeff_map = hp.read_map(filename_wavelet_coeff_map, dtype=np.float64, verbose=False)
                 ILC_map_temp += weights[:,count] * wavelet_coeff_map
                 count+=1

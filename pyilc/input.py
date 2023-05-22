@@ -151,6 +151,16 @@ class ILCInfo(object):
             assert len(self.freq_map_files_s1) == self.N_freqs, "freq_map_files_s1"
             self.freq_map_files_s2 = p['freq_map_files_s2']
             assert len(self.freq_map_files_s2) == self.N_freqs, "freq_map_files_s2"
+
+        # Fiona apply weights to other maps implementation
+        if 'maps_to_apply_weights' in p.keys():
+            self.freq_map_files_for_weights = p['maps_to_apply_weights']
+            assert len(self.freq_map_files_for_weights) == self.N_freqs, "freq_map_files_for_weights"
+            self.apply_weights_to_other_maps = True
+        else:
+            self.apply_weights_to_other_maps = False
+
+
         # beams: symmetric gaussians or 1D ell-dependent profiles
         self.beam_type = p['beam_type']
         assert self.beam_type in BEAM_TYPES, "unsupported beam type"
@@ -266,6 +276,24 @@ class ILCInfo(object):
                     self.maps_s2[i] = np.copy( hp.pixelfunc.ud_grade(temp_map_s2, nside_out=self.N_side, order_out='RING', dtype=np.float64) )
             del(temp_map_s1)
             del(temp_map_s2)
+        # Fiona apply weights to other maps implementation
+        if self.apply_weights_to_other_maps:
+            print("reading in maps for weights")
+            self.maps_for_weights = np.zeros((self.N_freqs,self.N_pix), dtype=np.float64)
+            for i in range(self.N_freqs):
+                # TODO: allow reading in of maps not in field=0 in the fits file
+                # TODO: allow specification of nested or ring ordering (although will already work here if fits keyword ORDERING is present)
+                # Fiona edit
+                print('reading',self.freq_map_files_for_weights[i])
+                # end Fiona edit
+                temp_map = hp.fitsfunc.read_map(self.freq_map_files_for_weights[i], field=0, verbose=False)
+                assert len(temp_map) <= self.N_pix, "input map at higher resolution than specified N_side"
+                if (len(temp_map) == self.N_pix):
+                    self.maps_for_weights[i] = np.copy(temp_map)
+                elif (len(temp_map) < self.N_pix):
+                    # TODO: should probably upgrade in harmonic space to get pixel window correct
+                    self.maps_for_weights[i] = np.copy( hp.pixelfunc.ud_grade(temp_map, nside_out=self.N_side, order_out='RING', dtype=np.float64) )
+            del(temp_map)
         # also read in maps with which to cross-correlate, if specified
         if self.N_maps_xcorr != 0:
             # maps
