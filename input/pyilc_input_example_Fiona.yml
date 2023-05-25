@@ -53,11 +53,13 @@ BinSize: 20
 # The component to preserve. Can be any of  ['CMB','kSZ','tSZ','rSZ','mu','CIB', 'CIB_dbeta','CIB_dT']
 ILC_preserved_comp: 'CMB'
 
-# The number of components to deproject
+# The number of components to deproject. This can either be a number or a list of numbers with N_scales elements, with how many components are deprojected at each scale
 N_deproj: 0
+#  N_deproj: [1,1,1,0,0,0,0]
 
-# A list of components to deproject (every element should be in ['CMB','kSZ','tSZ','rSZ','mu','CIB', 'CIB_dbeta','CIB_dT']
+# A list of components to deproject (every element should be in ['CMB','kSZ','tSZ','rSZ','mu','CIB', 'CIB_dbeta','CIB_dT']. This can either be a list, or a list of lists, one corresponding to each scale
 ILC_deproj_comps: []
+# ILC_deproj_comps: [['tSZ'],['tSZ'],['tSZ'],[],[],[],[]]
 
 # Whether or not to perform a cross-ILC, ie to calculate the covariances from split maps (thus not including instrumental noise).
 # If this is unspecified, a standard ILC will be performed.
