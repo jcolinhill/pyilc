@@ -245,7 +245,12 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
         # check that number of frequencies is non-zero
         assert(N_freqs_to_use[i] > 0), "insufficient number of channels for high-resolution filter(s)"
         # check that we still have enough frequencies for desired deprojection at each filter scale
-        assert((info.N_deproj + 1) <= N_freqs_to_use[i]), "not enough frequency channels to deproject this many components"
+        # Fiona edit below: allow for different components deprojected at different scales
+        # assert((info.N_deproj + 1) <= N_freqs_to_use[i]), "not enough frequency channels to deproject this many components"
+        if type(info.N_deproj) is int:
+            assert((info.N_deproj + 1) <= N_freqs_to_use[i]), "not enough frequency channels to deproject this many components"
+        else:
+            assert((info.N_deproj[i] + 1) <= N_freqs_to_use[i]), "not enough frequency channels to deproject this many components at scale "+ str()
         # determine N_side value to use for each filter scale, by finding the smallest valid N_side larger than ell_F[i]
         for j in range(20):
             if (ell_F[i] < 2**j):
@@ -287,7 +292,12 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
         #   where N_modes_eff = N_modes * (2*pi*sigma_pix^2)/(4*pi)
         #   and then solving for sigma_pix
         # note that this corrects an error in Eq. 3 of Planck 2015 y-map paper -- the numerator should be (N_ch - 2) in their case (if they're deprojecting CMB)
-        sigma_pix_temp = np.sqrt( np.absolute( 2.*(float( (info.N_deproj + 1) - N_freqs_to_use[i] )) / (N_modes[i] * ILC_bias_tol) ) ) #result is in radians
+        # Fiona edit below: allow for different components deprojected at different scales
+        # sigma_pix_temp = np.sqrt( np.absolute( 2.*(float( (info.N_deproj + 1) - N_freqs_to_use[i] )) / (N_modes[i] * ILC_bias_tol) ) ) #result is in radians
+        if type(info.N_deproj) is int:
+            sigma_pix_temp = np.sqrt( np.absolute( 2.*(float( (info.N_deproj + 1) - N_freqs_to_use[i] )) / (N_modes[i] * ILC_bias_tol) ) ) #result is in radians
+        else:
+            sigma_pix_temp = np.sqrt( np.absolute( 2.*(float( (info.N_deproj[i] + 1) - N_freqs_to_use[i] )) / (N_modes[i] * ILC_bias_tol) ) ) #result is in radians
         assert sigma_pix_temp < np.pi, "not enough modes to satisfy ILC_bias_tol" #don't want real-space gaussian to be the full sky or close to it
         # note that sigma_pix_temp can come out zero if N_deproj+1 = N_freqs_to_use (formally bias vanishes in this case because the problem is fully constrained)
         # for now, just set equal to case where N_freqs_to_use = N_deproj
@@ -387,6 +397,13 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
     ILC_maps_per_scale = []
     for j in range(wv.N_scales):
         # first, check if the weights already exist, and skip everything if so
+        # Fiona edit below: allow for different components deprojected at different scales
+        if type(info.N_deproj) is int:
+            N_deproj = info.N_deproj
+            ILC_deproj_comps = info.ILC_deproj_comps
+        else:
+            N_deproj = info.N_deproj[j]
+            ILC_deproj_comps = info.ILC_deproj_comps[j]
         weights_exist = True
         count=0
         for a in range(info.N_freqs):
@@ -397,10 +414,13 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
                 # weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.fits'
                 weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+info.output_suffix+'.fits'
                 # Fiona: change filenames for different deprojections
-                if info.N_deproj>0:
+                # Fiona edit below: allow for different components deprojected at different scales
+                # if info.N_deproj>0:
+                if N_deproj>0:
                     # Fiona edit: add output_suffix
                     # weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.fits'
-                    weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+info.output_suffix+'.fits'
+                    #weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+info.output_suffix+'.fits'
+                    weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(ILC_deproj_comps)+'_crossILC'*info.cross_ILC+info.output_suffix+'.fits'
                 exists = os.path.isfile(weight_filename)
                 if exists:
                     print('weight map already exists:', weight_filename)
@@ -413,7 +433,9 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
             # this is the alpha^th component's SED evaluated at the i^th frequency
             # units of A_mix are K_CMB
             # Note: only include channels that are being used for this filter scale
-            N_comps = (info.N_deproj + 1)
+            # Fiona edit below: allow for different components deprojected at different scales
+            # N_comps = (info.N_deproj + 1)
+            N_comps = (N_deproj + 1)
             A_mix = np.zeros((int(N_freqs_to_use[j]),N_comps))
             countt = 0
             for a in range(info.N_freqs):
@@ -430,14 +452,22 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
                             elif (info.bandpass_type == 'ActualBandpasses'):
                                 A_mix[countt][b] = 1.e-6 * (get_mix_bandpassed([info.freq_bp_files[a]], info.ILC_preserved_comp, param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
                         else:
+                            if 
                             if (info.bandpass_type == 'DeltaBandpasses'):
-                                A_mix[countt][b] = 1.e-6 * (get_mix([info.freqs_delta_ghz[a]], info.ILC_deproj_comps[b-1], param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
+                                # Fiona edit below: allow for different components deprojected at different scales
+                                # A_mix[countt][b] = 1.e-6 * (get_mix([info.freqs_delta_ghz[a]], info.ILC_deproj_comps[b-1], param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
+                                A_mix[countt][b] = 1.e-6 * (get_mix([info.freqs_delta_ghz[a]], ILC_deproj_comps[b-1], param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
                             elif (info.bandpass_type == 'ActualBandpasses'):
-                                A_mix[countt][b] = 1.e-6 * (get_mix_bandpassed([info.freq_bp_files[a]], info.ILC_deproj_comps[b-1], param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
+                                # Fiona edit below: allow for different components deprojected at different scales
+                                # A_mix[countt][b] = 1.e-6 * (get_mix_bandpassed([info.freq_bp_files[a]], info.ILC_deproj_comps[b-1], param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
+                                A_mix[countt][b] = 1.e-6 * (get_mix_bandpassed([info.freq_bp_files[a]], ILC_deproj_comps[b-1], param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
                     countt += 1
             # normalize the columns of A_mix corresponding to the deprojected components so that they have values near unity
-            if (info.N_deproj != 0):
-                for b in range(1,info.N_deproj+1):
+            # Fiona edit below: allow for different components deprojected at different scales
+            # if (info.N_deproj != 0):
+            if (N_deproj != 0):
+                # for b in range(1,info.N_deproj+1):
+                for b in range(1,N_deproj+1):
                     max_temp = np.amax(A_mix[:,b])
                     A_mix[:,b] = A_mix[:,b]/max_temp
             ##############################
@@ -655,10 +685,13 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
                         # weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.fits'
                         weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+info.output_suffix+'.fits'
                         # Fiona: change filenames for different deprojections
-                        if info.N_deproj>0:
+                        # Fiona edit below: allow for different components deprojected at different scales
+                        # if info.N_deproj>0:
+                        if N_deproj>0:
                             # Fiona edit: add output_suffix
                             # weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.fits'
-                            weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+info.output_suffix+'.fits'
+                            # weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+info.output_suffix+'.fits'
+                            weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(ILC_deproj_comps)+'_crossILC'*info.cross_ILC+info.output_suffix+'.fits'
 
 
                         hp.write_map(weight_filename, weights[:,count], nest=False, dtype=np.float64, overwrite=False)
@@ -670,12 +703,15 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
                             # Fiona: change filenames for different deprojections
                             # plt.savefig(info.output_dir+info.output_prefix+'_needletILCweightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.pdf')
                             # Fiona edit: add output_suffix
-                            if info.N_deproj == 0:
+                            # Fiona edit below: allow for different components deprojected at different scales
+                            # if info.N_deproj == 0:
+                            if N_deproj == 0:
                                 #plt.savefig(info.output_dir+info.output_prefix+'_needletILCweightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.pdf')
                                 plt.savefig(info.output_dir+info.output_prefix+'_needletILCweightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+info.output_suffix+'.pdf')
                             else:
-                                #plt.savefig(info.output_dir+info.output_prefix+'_needletILCweightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.pdf')
-                                plt.savefig(info.output_dir+info.output_prefix+'_needletILCweightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+info.output_suffix+'.pdf')
+                                # plt.savefig(info.output_dir+info.output_prefix+'_needletILCweightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.pdf')
+                                # plt.savefig(info.output_dir+info.output_prefix+'_needletILCweightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+info.output_suffix+'.pdf')
+                                plt.savefig(info.output_dir+info.output_prefix+'_needletILCweightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(ILC_deproj_comps)+'_crossILC'*info.cross_ILC+info.output_suffix+'.pdf')
 
                         count+=1
         else:
@@ -689,9 +725,12 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
                     # Fiona edit: add output_suffix
                     # weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.fits'
                     weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+info.output_suffix+'.fits'
-                    if info.N_deproj>0:
+                    # Fiona edit below: allow for different components deprojected at different scales
+                    # if info.N_deproj>0:
+                    if N_deproj>0:
                         # weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.fits'
-                        weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+info.output_suffix+'.fits'
+                        # weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+info.output_suffix+'.fits'
+                        weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(ILC_deproj_comps)+'_crossILC'*info.cross_ILC+info.output_suffix+'.fits'
 
                     weights[:,count] = hp.read_map(weight_filename, dtype=np.float64, verbose=False)
                     count+=1
@@ -722,9 +761,21 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
     # ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.fits'
     ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+info.output_suffix+'.fits'
     # Fiona: change filenames for different deprojections
-    if info.N_deproj>0:
+    # Fiona edit below: allow for different components deprojected at different scales
+    # if info.N_deproj>0:
         # ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.fits'
-        ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+info.output_suffix+'.fits'
+        # ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+info.output_suffix+'.fits'
+    if type(info.N_deproj) is int:
+        if N_deproj>0:
+             # ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.fits'
+            ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+info.output_suffix+'.fits'
+    else:
+         if N_deproj[0]>0:
+            # ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.fits'
+            # problem: ILCdeprojected file name is not so descriptive here. Need to describe it more in info.output_suffix.
+            ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps[0])+'_crossILC'*info.cross_ILC+info.output_suffix+'.fits'
+
+
     hp.write_map(ILC_map_filename, ILC_map, nest=False, dtype=np.float64, overwrite=False)
     # make image if requested
     if map_images == True:
@@ -735,12 +786,30 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
         # Fiona: change filenames for different deprojections
         # plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.pdf')
         # Fiona edit: add output_suffix
-        if info.N_deproj==0:
+        # Fiona edit below: allow for different components deprojected at different scales
+        # if info.N_deproj==0:
             # plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.pdf')
-            plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+info.output_suffix+'.pdf')
-        else:
+          #  plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+info.output_suffix+'.pdf')
+        # else:
             # plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.pdf')
-            plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+info.output_suffix+'.pdf')
+            # plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+info.output_suffix+'.pdf')
+
+        if type(info.N_deproj) is int:
+            if info.N_deproj==0:
+                # plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.pdf')
+                plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+info.output_suffix+'.pdf')
+            else:
+                # plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.pdf')
+                plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+info.output_suffix+'.pdf')
+        else:
+            if info.N_deproj[0]==0:
+                # plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.pdf')
+                plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+info.output_suffix+'.pdf')
+            else:
+                # plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.pdf')
+                # problem: ILCdeprojected file name is not so descriptive here. Need to describe it more in info.output_suffix.
+                plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps[0])+'_crossILC'*info.cross_ILC+info.output_suffix+'.pdf')
+
 
     # cross-correlate with map specified in input file (if requested; e.g., useful for simulation analyses) -- TODO
     return 1
@@ -797,7 +866,10 @@ def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=
         # check that number of frequencies is non-zero
         assert(N_freqs_to_use[i] > 0), "insufficient number of channels for high-resolution filter(s)"
         # check that we still have enough frequencies for desired deprojection at each filter scale
-        assert((info.N_deproj + 1) <= N_freqs_to_use[i]), "not enough frequency channels to deproject this many components"
+        if type(info.N_deproj) is int:
+            assert((info.N_deproj + 1) <= N_freqs_to_use[i]), "not enough frequency channels to deproject this many components"
+        else:
+            assert((info.N_deproj[i] + 1) <= N_freqs_to_use[i]), "not enough frequency channels to deproject this many components at scale "+str(i)
         # determine N_side value to use for each filter scale, by finding the smallest valid N_side larger than ell_F[i]
         for j in range(20):
             if (ell_F[i] < 2**j):
@@ -907,12 +979,20 @@ def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=
     for j in range(wv.N_scales):
         # first, check if the weights already exist, and skip everything if so
         weights_exist = True
+        if type(info.N_deproj) is int:
+            N_deproj = info.N_deproj
+            ILC_deproj_comps = info.ILC_deproj_comps
+        else:
+            N_deproj = info.N_deproj[j]
+            ILC_deproj_comps = info.ILC_deproj_comps[j]
         # Fiona cross-ILC implementation: save the cross_ILC weights with a different filename
         #weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'.fits'
         weight_filename = info.output_dir+info.output_prefix+'weightvector_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.txt'
+
+
         # Fiona: change filenames for different deprojections
-        if info.N_deproj>0:
-            weight_filename = info.output_dir+info.output_prefix+'weightvector_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.txt'
+        if N_deproj>0:
+            weight_filename = info.output_dir+info.output_prefix+'weightvector_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.txt'
         exists = os.path.isfile(weight_filename)
         if exists:
             print('weight vector already exists:', weight_filename)
@@ -924,7 +1004,7 @@ def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=
             # this is the alpha^th component's SED evaluated at the i^th frequency
             # units of A_mix are K_CMB
             # Note: only include channels that are being used for this filter scale
-            N_comps = (info.N_deproj + 1)
+            N_comps = (N_deproj + 1)
             A_mix = np.zeros((int(N_freqs_to_use[j]),N_comps))
             countt = 0
             for a in range(info.N_freqs):
@@ -942,13 +1022,13 @@ def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=
                                 A_mix[countt][b] = 1.e-6 * (get_mix_bandpassed([info.freq_bp_files[a]], info.ILC_preserved_comp, param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
                         else:
                             if (info.bandpass_type == 'DeltaBandpasses'):
-                                A_mix[countt][b] = 1.e-6 * (get_mix([info.freqs_delta_ghz[a]], info.ILC_deproj_comps[b-1], param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
+                                A_mix[countt][b] = 1.e-6 * (get_mix([info.freqs_delta_ghz[a]], ILC_deproj_comps[b-1], param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
                             elif (info.bandpass_type == 'ActualBandpasses'):
-                                A_mix[countt][b] = 1.e-6 * (get_mix_bandpassed([info.freq_bp_files[a]], info.ILC_deproj_comps[b-1], param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
+                                A_mix[countt][b] = 1.e-6 * (get_mix_bandpassed([info.freq_bp_files[a]], ILC_deproj_comps[b-1], param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
                     countt += 1
             # normalize the columns of A_mix corresponding to the deprojected components so that they have values near unity
-            if (info.N_deproj != 0):
-                for b in range(1,info.N_deproj+1):
+            if (N_deproj != 0):
+                for b in range(1,N_deproj+1):
                     max_temp = np.amax(A_mix[:,b])
                     A_mix[:,b] = A_mix[:,b]/max_temp
             ##############################
@@ -1077,16 +1157,16 @@ def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=
             # only save these ILC weights if requested
             if (info.save_weights == 'yes' or info.save_weights == 'Yes' or info.save_weights == 'YES'):
                 weight_filename = info.output_dir+info.output_prefix+'weightvector_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.txt'
-                if info.N_deproj>0:
-                    weight_filename = info.output_dir+info.output_prefix+'weightvector_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.txt'
+                if N_deproj>0:
+                    weight_filename = info.output_dir+info.output_prefix+'weightvector_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.txt'
                 np.savetxt(weight_filename, weights,)
         else:
             # Fiona cross-ILC implementation: save the cross_ILC weights with a different filename
             #weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'.fits'
             # Fiona: change filenames for different deprojections
             weight_filename = info.output_dir+info.output_prefix+'weightvector_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.txt'
-            if info.N_deproj>0:
-                weight_filename = info.output_dir+info.output_prefix+'weightvector_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.txt'
+            if N_deproj>0:
+                weight_filename = info.output_dir+info.output_prefix+'weightvector_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.txt'
 
             weights = np.loadtxt(weight_filename)
         ##########################
@@ -1108,8 +1188,12 @@ def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=
     # ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'.fits'
     ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.fits'
     # Fiona: change filenames for different deprojections
-    if info.N_deproj>0:
-        ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.fits'
+    if type(info.N_deproj) is int:
+        if info.N_deproj>0:
+            ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.fits'
+    else:
+        if info.N_deproj[0]>0:
+            ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps[0])+'_crossILC'*info.cross_ILC+'.fits'
     hp.write_map(ILC_map_filename, ILC_map, nest=False, dtype=np.float64, overwrite=False)
     # make image if requested
     if map_images == True:
@@ -1119,10 +1203,17 @@ def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=
         # plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'.pdf')
         # Fiona: change filenames for different deprojections
         #plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.pdf')
-        if info.N_deproj==0:
-            plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.pdf')
+        if type(info.N_deproj) is int:
+            if info.N_deproj==0:
+                plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.pdf')
+            else:
+                plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.pdf')
         else:
-            plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.pdf')
+             if info.N_deproj[0]==0:
+                plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.pdf')
+            else:
+                plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps[0])+'_crossILC'*info.cross_ILC+'.pdf')
+
 
     # cross-correlate with map specified in input file (if requested; e.g., useful for simulation analyses) -- TODO
     return 1

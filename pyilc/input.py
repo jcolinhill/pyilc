@@ -192,13 +192,39 @@ class ILCInfo(object):
         self.ILC_preserved_comp = p['ILC_preserved_comp']
         assert self.ILC_preserved_comp in COMP_TYPES, "unsupported component type in ILC_preserved_comp"
         # ILC: component(s) to deproject (if any)
+        # Fiona edit below: allow for different components deprojected at different scales
+        # self.N_deproj = p['N_deproj']
+        # assert type(self.N_deproj) is int and self.N_deproj >= 0, "N_deproj"
+        # if (self.N_deproj > 0):
+            # self.ILC_deproj_comps = p['ILC_deproj_comps']
+            # assert len(self.ILC_deproj_comps) == self.N_deproj, "ILC_deproj_comps"
+            # assert all(comp in COMP_TYPES for comp in self.ILC_deproj_comps), "unsupported component type in ILC_deproj_comps"
+            # assert((self.N_deproj + 1) <= self.N_freqs), "not enough frequency channels to deproject this many components"
+
         self.N_deproj = p['N_deproj']
-        assert type(self.N_deproj) is int and self.N_deproj >= 0, "N_deproj"
-        if (self.N_deproj > 0):
-            self.ILC_deproj_comps = p['ILC_deproj_comps']
-            assert len(self.ILC_deproj_comps) == self.N_deproj, "ILC_deproj_comps"
-            assert all(comp in COMP_TYPES for comp in self.ILC_deproj_comps), "unsupported component type in ILC_deproj_comps"
-            assert((self.N_deproj + 1) <= self.N_freqs), "not enough frequency channels to deproject this many components"
+        assert (type(self.N_deproj) is int) or (type(self.N_deproj) is list)
+        if type(self.N_deproj) is int:
+            assert type(self.N_deproj) is int and self.N_deproj >= 0, "N_deproj"
+            if (self.N_deproj > 0):
+                self.ILC_deproj_comps = p['ILC_deproj_comps']
+                assert len(self.ILC_deproj_comps) == self.N_deproj, "ILC_deproj_comps"
+                assert all(comp in COMP_TYPES for comp in self.ILC_deproj_comps), "unsupported component type in ILC_deproj_comps"
+                assert((self.N_deproj + 1) <= self.N_freqs), "not enough frequency channels to deproject this many components"
+        if type(self.N_deproj) is list:
+            assert len(self.N_deproj) == self.N_scales
+            ind = 0
+            self.ILC_deproj_comps=[]
+            for N_deproj in self.N_deproj:
+                assert type(N_deproj) is int and N_deproj >= 0, "N_deproj"
+                if (N_deproj > 0):
+                    self.ILC_deproj_comps.append(p['ILC_deproj_comps'][ind])
+                    assert len(self.ILC_deproj_comps[ind]) == N_deproj, "ILC_deproj_comps"
+                    assert all(comp in COMP_TYPES for comp in self.ILC_deproj_comps[ind]), "unsupported component type in ILC_deproj_comps"
+                    assert((N_deproj + 1) <= self.N_freqs), "not enough frequency channels to deproject this many components"
+                else:
+                    self.ILC_deproj_comps.append([])
+                ind = ind+1
+
         ####################
         ### TODO: this block of code with SED parameters, etc is currently not used anywhere
         ###   instead, we currently just get the SED parameter info from fg_SEDs_default_params.yml
