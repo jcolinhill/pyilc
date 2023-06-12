@@ -155,6 +155,7 @@ def get_mix(nu_ghz, comp, param_dict_file=None, param_dict_override=None,
         nu0_CIB = p['nu0_CIB_ghz']*1.e9
         X0_CIB = hplanck*nu0_CIB/(kboltz*(p['Tdust_CIB']))
         resp = hplanck * (nu/nu0_CIB)**(3.0+(p[dust_beta_param_name])) * ((-np.exp(X_CIB)*nu+(nu-nu0_CIB)*np.exp(X_CIB)*np.exp(X0_CIB)+nu0_CIB*np.exp(X0_CIB)) / (np.exp(X_CIB) - 1.0)**2 * kboltz * p['Tdust_CIB'] **2 ) * (ItoDeltaT(np.asarray(nu_ghz).astype(float))/ItoDeltaT(p['nu0_CIB_ghz']))
+        resp = (nu/nu0_CIB)**(4.0+p[dust_beta_param_name]) * (-np.exp(-X0_CIB/2)+np.exp(X0_CIB/2))**2/ (-np.exp(-X_CIB/2)+np.exp(X_CIB/2))**2 * (ItoDeltaT(np.asarray(nu_ghz).astype(float))/ItoDeltaT(p['nu0_CIB_ghz']))
         resp[np.where(nu_ghz == None)] = 0.
         return resp
     elif (comp =='CIB_Jysr_dT'):
@@ -166,9 +167,11 @@ def get_mix(nu_ghz, comp, param_dict_file=None, param_dict_override=None,
         X_CIB = hplanck*nu/(kboltz*(p['Tdust_CIB']))
         nu0_CIB = p['nu0_CIB_ghz']*1.e9
         X0_CIB = hplanck*nu0_CIB/(kboltz*(p['Tdust_CIB']))
-        resp = hplanck * (nu/nu0_CIB)**(3.0+(p[dust_beta_param_name])) * ((-np.exp(X_CIB)*nu+(nu-nu0_CIB)*np.exp(X_CIB)*np.exp(X0_CIB)+nu0_CIB*np.exp(X0_CIB)) / (np.exp(X_CIB) - 1.0)**2 * kboltz * p['Tdust_CIB'] **2 ) 
+        resp = hplanck * (nu/nu0_CIB)**(3.0+(p[dust_beta_param_name])) * ((-np.exp(X_CIB)*nu+(nu-nu0_CIB)*np.exp(X_CIB)*np.exp(X0_CIB)+nu0_CIB*np.exp(X0_CIB)) / (np.exp(X_CIB) - 1.0)**2 * kboltz * p['Tdust_CIB'] **2 ) * (ItoDeltaT(np.asarray(nu_ghz).astype(float))/ItoDeltaT(p['nu0_CIB_ghz']))
+        resp = (nu/nu0_CIB)**(4.0+p[dust_beta_param_name]) * (-np.exp(-X0_CIB/2)+np.exp(X0_CIB/2))**2/ (-np.exp(-X_CIB/2)+np.exp(X_CIB/2))**2 
         resp[np.where(nu_ghz == None)] = 0.
         return resp
+
     elif (comp =='CIB_dbeta'):
         # dbetaCIB = first derivative (WRT beta) of CIB black body
         # TODO: add first derivative WRT T of CIB black body
