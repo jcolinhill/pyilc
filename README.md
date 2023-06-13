@@ -104,7 +104,7 @@ wavelet_type: 'GaussianNeedlets'
 N_scales: N_scales
 GH_FWHM_arcmin: [FWHM_1,FWHM_2,...,]
 ```
-GH_FWHM_arcmin should be a list of the FWHMs in arcminutes of the Gaussians which are used to define the needlet scales. There must be N_scales-1 entries.
+GH_FWHM_arcmin should be a list of the FWHMs in arcminutes of the Gaussians which are used to define the needlet scales. There must be N_scales-1 entries. They must be in decreasing order.
 
 #### Real-space filter size
 
