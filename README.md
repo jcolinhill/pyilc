@@ -138,7 +138,24 @@ In any case, the SED is calculated at the frequencies specified in freqs_delta_g
 ```
 param_dict_file: /path/to/input/alternative_paramfile.yml
 ```
-If this is unspecified, the defailt will be used.  The parameters that can be changed are the temperature for the relativistic SZ evaluation (`kT_e_keV`); and the effective dust temperature and spectral index for the CIB modified black body (`Tdust_CIB` and `beta_CIB` respectively). 
+If this is unspecified, the default will be used.  The parameters that can be changed are the temperature for the relativistic SZ evaluation (`kT_e_keV`); and the effective dust temperature and spectral index for the CIB modified black body (`Tdust_CIB` and `beta_CIB` respectively). 
+
+For ILC preserving component 'AAA', specify:
+```
+ILC_preserved_comp: 'AAA'
+```
+in the input file. To deproject some number N_deproj of components, include:
+```
+N_deproj: N_deproj
+ILC_deproj_comps: ['BBB','CCC',...]
+```
+ILC_deproj_comps should be a list of length N_deproj. For unconstrained ILC, this should read
+```
+N_deproj: 0
+ILC_deproj_comps: []
+```
+All of the components should be in the list  COMP_TYPES in pyilc/input.py, or else an error will be thrown.
+
 #### Specifying new components to preserve and deproject
 
 If you want to preserve or deproject a new component whose SED you can parametrize, you should do the following:
@@ -230,6 +247,11 @@ Sometimes it is useful to apply the weights calculated from one map to a separat
 maps_to_apply_weights: [...]
 ```
 where maps_to_apply_weights is a list of filenames in the same format as freq_map_files. Note that it is importnat to directly change the output suffix if you are using this option as doing this does not automatically change the output file name of the ILC map (Recall that changing the output suffix does not change the covariance files read in as long as the output prefix is unchanged).
+
+## Different deprojections on different scales
+
+Instead of specifying one deprojected components, one can specify different components to deproject on different needlet scales. 
+
 
 ## Cross-ILC
 
