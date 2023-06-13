@@ -1,16 +1,16 @@
 # pyilc
+
 Needlet ILC in Python
 
-
-# Installation
+## Installation
 
 pyilc does not need to be installed.
 
-# Requirements
+## Requirements
 
 `pyilc` requires python3, [numpy](https://numpy.readthedocs.io/en/latest/), [matplotlib](https://matplotlib.org) and [healpy](https://healpy.readthedocs.io/en/latest/) (and all of their requirements). 
 
-# Basic usage
+## Basic usage
 
 To run `pyilc`, a `.yaml` input file is required. `pyilc` is run by running the `main.py` file using python with this input file as an argument:
 ```
@@ -19,4 +19,10 @@ python pyilc/main.py sample_input.yaml
 
 We have included a sample input file `pyilc_input_example_Fiona.yml` (Fiona to-do: change this name) which serves as documentation of the different input options. The main ones are described here.
 
-## Input/Output structure
+### Input/Output structure
+
+The maps on which the (N)ILC will be performed should all be saved separately at some location /path/to/location/map_freq_X.fits . These files should be included in the .yaml file as a list of strings:
+
+```
+freq_map_files: ['/path/to/location/map_freq_X.fits','/path/to/location/map_freq_Y.fits']
+```
