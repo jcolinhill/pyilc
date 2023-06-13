@@ -454,10 +454,12 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
         # Fiona edit below: allow for different components deprojected at different scales
         if type(info.N_deproj) is int:
             N_deproj = info.N_deproj
-            ILC_deproj_comps = info.ILC_deproj_comps
+            if N_deproj>0:
+                ILC_deproj_comps = info.ILC_deproj_comps
         else:
             N_deproj = info.N_deproj[j]
-            ILC_deproj_comps = info.ILC_deproj_comps[j]
+            if N_deproj>0:
+                ILC_deproj_comps = info.ILC_deproj_comps[j]
         weights_exist = True
         count=0
         for a in range(info.N_freqs):
