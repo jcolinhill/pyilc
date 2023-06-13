@@ -530,7 +530,7 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
                     if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True and flag==True):
                         # Fiona : make a function with the covmat file name
                         # cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_covmap_freq'+str(a)+'_freq'+str(b)+'_scale'+str(j)+'.fits'
-                        cov_filename = _cov_filename(info,freq1,freq2,scale)
+                        cov_filename = _cov_filename(info,a,b,scale)
                         exists = os.path.isfile(cov_filename)
                         if exists:
                             print('needlet coefficient covariance map already exists:', cov_filename)
@@ -550,7 +550,7 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
                         if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True):
                             # Fiona : make a function with the covmat file name
                             # cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_covmap_freq'+str(a)+'_freq'+str(b)+'_scale'+str(j)+'.fits'
-                            cov_filename = _cov_filename(info,freq1,freq2,scale)
+                            cov_filename = _cov_filename(info,a,b,scale)
                             # read in wavelet coefficient maps constructed in previous step above
                             # Fiona cross-ILC implementation
                             if not info.cross_ILC:
