@@ -27,5 +27,13 @@ The maps on which the (N)ILC will be performed should all be saved separately at
 freq_map_files: ['/path/to/location/map_freq_X.fits',
                  '/path/to/location/map_freq_Y.fits',...]
 ```
+.
 
 Note that there is another input paramater `N_freqs` which is required in the input file, and which **must be** equal to the length of the `freq_map_files` list, or else an error will be thrown.
+
+The ILC products (covariance matrices, inverse covariance matrices, ILC maps, and ILC weights if requested) will be saved in an output folder specified in the input file according to:
+
+```
+output_dir: '/path/to/output/'
+```
+.
