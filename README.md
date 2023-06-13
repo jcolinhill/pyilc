@@ -8,7 +8,7 @@ Needlet ILC in Python
 
 # Using the code
 
-pyilc is public; if you use it, please cite the paper {link to paper 1} and (optionally) {link to paper 2}
+pyilc is public; if you use it in a publication, please cite the paper {link to paper 1} and (optionally) {link to paper 2}. Additionally, if you use NILC you should cite the original NILC reference https://ui.adsabs.harvard.edu/abs/arXiv:0807.0773 along with the constrained ILC references https://ui.adsabs.harvard.edu/abs/2009ApJ...694..222C/abstract and https://ui.adsabs.harvard.edu/abs/arXiv:1006.5599 if you use a deprojected ILC.
 
 
 # Basic usage
