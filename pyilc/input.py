@@ -232,7 +232,7 @@ class ILCInfo(object):
         # covmat and not recompute all the time. So, if you don't want to recompute for different values of N_deproj, 
         # turn this off and it will just use the covmat calculated on the area appropriate for what N_deproj was the
         # first time you ran the code.
-        if ['recompute_covmat_for_ndeproj'] in p.keys(): 
+        if 'recompute_covmat_for_ndeproj' in p.keys(): 
             self.recompute_covmat_for_ndeproj = p['recompute_covmat_for_ndeproj']
 
         ####################
