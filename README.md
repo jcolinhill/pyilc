@@ -17,4 +17,4 @@ To run `pyilc`, a `.yaml` input file is required. `pyilc` is run by running the 
 python pyilc/main.py sample_input.yaml
 ```
 
-
+We have included a sample input file `pyilc_input_example_Fiona.yml` (Fiona to-do: change this name) which serves as documentation of the different input options. The main ones are described here.
