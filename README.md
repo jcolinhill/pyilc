@@ -276,6 +276,6 @@ where freq_map_files_s1 and freq_map_files_s2 are both lists with the same forma
 
 # Acknowledgments
 
-People we should thank? Maybe Kristen, did she make some edits to pyilc? Also maybe mathieu remazailles for sending you the needlet filters for the planck y map? Maybe Will, I have chatted a bit with him? anyone else?
+People we should thank? Me, if this as this will be on your github? Maybe Kristen, did she make some edits to pyilc? Also maybe mathieu remazailles for sending you the needlet filters for the planck y map? Maybe Will, I have chatted a bit with him? anyone else?
 
 
