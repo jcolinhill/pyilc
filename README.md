@@ -156,6 +156,11 @@ ILC_deproj_comps: []
 ```
 All of the components should be in the list  COMP_TYPES in pyilc/input.py, or else an error will be thrown.
 
+#### Different deprojections on different scales
+
+Instead of specifying one deprojected components, one can specify different components to deproject on different needlet scales. 
+In this case, N_deproj should be modified to be a list of length N_scales , with each entry specifying the number of 
+
 #### Specifying new components to preserve and deproject
 
 If you want to preserve or deproject a new component whose SED you can parametrize, you should do the following:
@@ -248,9 +253,7 @@ maps_to_apply_weights: [...]
 ```
 where maps_to_apply_weights is a list of filenames in the same format as freq_map_files. Note that it is importnat to directly change the output suffix if you are using this option as doing this does not automatically change the output file name of the ILC map (Recall that changing the output suffix does not change the covariance files read in as long as the output prefix is unchanged).
 
-## Different deprojections on different scales
-
-Instead of specifying one deprojected components, one can specify different components to deproject on different needlet scales. 
+components deprojected at the relevant needlet scale. Also, ILC_deproj_comps should be a list of length N_scales where each entry is a list of length of the corresponding N_deproj for that scale.
 
 
 ## Cross-ILC
