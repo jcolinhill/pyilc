@@ -6,6 +6,11 @@ Needlet ILC in Python
 
 `pyilc` requires python3, [numpy](https://numpy.readthedocs.io/en/latest/), [matplotlib](https://matplotlib.org) and [healpy](https://healpy.readthedocs.io/en/latest/) (and all of their requirements). 
 
+# Using the code
+
+pyilc is public; if you use it, please cite the paper {link to paper 1} and (optionally) {link to paper 2}
+
+
 # Basic usage
 
 To run `pyilc`, a `.yaml` input file is required. `pyilc` is run by running the `main.py` file using python with this input file as an argument:
@@ -268,3 +273,9 @@ freq_map_files_s1: [...]
 freq_map_files_s2: [...]
 ```
 where freq_map_files_s1 and freq_map_files_s2 are both lists with the same format as freq_map_files but with filenames that point to the appropriate split maps. Note that freq_map_files should still be included, as the weights will still be applied to the maps in freq_map_files. Also note that the covariance / inverse covariance and ILC map filenames will all be modified to include the term '_crossILC'.
+
+# Acknowledgments
+
+People we should thank? Maybe Kristen, did she make some edits to pyilc? Also maybe mathieu remazailles for sending you the needlet filters for the planck y map? Maybe Will, I have chatted a bit with him? anyone else?
+
+
