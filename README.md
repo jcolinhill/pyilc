@@ -126,7 +126,7 @@ For HILC, the following needs to be included in the input file
 wavelet_type: 'TopHatHarmonic'
 BinSize: 20
 ```
-BinSize is **one integer** which specifies the width in $\ell$-space of ($\Delta_ell$) of the bins on which the HILC is calculated. (Functionality for more general bins will perhaps be included in a later release; however this can be easily modified in pyilc/input.py if a user needs, by modifying the specification of `ILCInfo.ell_bins`)
+BinSize is **one integer** which specifies the width in $\ell$-space of ($\Delta_\ell$) of the bins on which the HILC is calculated. (Functionality for more general bins will perhaps be included in a later release; however this can be easily modified in pyilc/input.py if a user needs, by modifying the specification of `ILCInfo.ell_bins`)
 
 ### Specifying the components to preserve and deproject
 
@@ -192,7 +192,7 @@ All output products will be saved in `/path/to/output/` as follows:
 
 ### Needlet coefficients of input maps
 
-The needlet coefficients of the input maps are computed for each frequency (labelled by $X\in 0,..., N_freq-1$ and each scale $A\in 0,...,N_{scales}-1$) and saved as:
+The needlet coefficients of the input maps are computed for each frequency (labelled by $X\in 0,..., N_{freq}-1$ and each scale $A\in 0,...,N_{scales}-1$) and saved as:
 
 ```
 /path/to/output/output_prefix_needletcoeffmap_freqX_scaleA.fits
