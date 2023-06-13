@@ -214,3 +214,28 @@ Constrained ILC preserving component AAA and deprojecting components BBB,CCC,DDD
 ```
 Again the use of output_suffix (and not in the covariance matrices) here allows the same covariance matrices to be used to create different versions of the output maps, for example by modifying the SED of a component to be deprojected.
 
+
+# More complicated usage
+
+pyilc has various extended functionality, if required. We list some of the other abilities of pyilc here.
+
+## Applying weights to alternative maps
+
+Sometimes it is useful to apply the weights calculated from one map to a separate map, for example when testing on simulations to quantify exactly how much of a specific component there is in the final output. To propogate the weights directly through another map, the following can be specified in the input file:
+```
+maps_to_apply_weights: [...]
+```
+where maps_to_apply_weights is a list of filenames in the same format as freq_map_files. Note that it is importnat to directly change the output suffix if you are using this option as doing this does not automatically change the output file name of the ILC map (Recall that changing the output suffix does not change the covariance files read in as long as the output prefix is unchanged).
+
+## Cross-ILC
+
+pyilc can perform Cross-ILC, where the covariance matrices are computed only from independent splits of the maps; the overall statistic to be minimized in this case is the variance caused by **foregrounds**, and not instrumental noise. In order to specify that pyilc should perform cross-ILC, inlcude:
+```
+cross_ILC: 'True'
+```
+in the input (note that this `True' is a **string** and not the boolean True). In this case, two independent splits should be read in; they should be included as follows:
+```
+freq_map_files_s1: [...]
+freq_map_files_s2: [...]
+```
+where freq_map_files_s1 and freq_map_files_s2 are both lists with the same format as freq_map_files but with filenames that point to the appropriate split maps. Note that freq_map_files should still be included, as the weights will still be applied to the maps in freq_map_files. Also note that the covariance / inverse covariance and ILC map filenames will all be modified to include the term '_crossILC'.
