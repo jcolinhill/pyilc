@@ -135,7 +135,7 @@ By default, pyilc can preserve and deproject any of the following components:
 ```
 ['CMB','kSZ','tSZ','rSZ','mu','CIB', 'CIB_dbeta','CIB_dT']
 ```
-where 'CMB' and 'kSZ' both refer to a black-body (CMB+kSZ) component;  'tSZ' refers to the Compton-$y$ distortion; 'rSZ' refers to the relativistic thermal SZ; 'mu' refers to the $\mu$-distortion; 'CIB' refers to the Cosmic Infrared background, which is specified by a modified black body SED; 'CIB_dbeta' refers to the first moment with respect to beta (the spectral index) of this modified black body; and $CIB_dT$ refers to the first moment with respect to T (the temperature) of this modified black body.
+where 'CMB' and 'kSZ' both refer to a black-body (CMB+kSZ) component;  'tSZ' refers to the Compton-$y$ distortion; 'rSZ' refers to the relativistic thermal SZ; 'mu' refers to the $\mu$-distortion; 'CIB' refers to the Cosmic Infrared background, which is specified by a modified black body SED; 'CIB_dbeta' refers to the first moment with respect to beta (the spectral index) of this modified black body; and 'CIB_dT' refers to the first moment with respect to T (the temperature) of this modified black body.
 
 In any case, the SED is calculated at the frequencies specified in freqs_delta_ghz (for delta-bandpasses) or integrated over the bandpass of the maps specified in freq_bp_files (for actual-bandpasses). This is done in `pyilc/fg.py`. 
 
