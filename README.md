@@ -33,10 +33,15 @@ Note that there is another input paramater `N_freqs` which is required in the in
 The ILC products (covariance matrices, inverse covariance matrices, ILC maps, and ILC weights if requested) will be saved in an output folder `/path/to/output/` with a prefix `output_prefix` specified in the input file by strings. A suffix `output_suffix`, which will **only** be appended to ILC map and weight filenames (ie, not covariance products) can also be specified:
 
 
+```
+output_dir: '/path/to/output/'
+output_prefix: 'output_prefix'
+output_suffix: 'output_suffix'
 
+```
 
 All output products will be saved in `/path/to/output/` as follows:
 
-Elements of covariance matrices as `/path/to/output/output_prefix_needletcoeff_covmap_freqX_freqY_scaleA.fits`. In NILC, the covariance matrices are computed **at every pixel**, so each pixel has an N_freq x N_freq symmetric covariance matrix associated with it. These are saved as $\frac{N_{freq}\times (N_{freq}+1){2}$ healpy maps, with each map (labeled by $X, Y$, for $X, Y \in 0,...,N_{freq}-1$ 
+Elements of covariance matrices as `/path/to/output/output_prefix_needletcoeff_covmap_freqX_freqY_scaleA.fits`. In NILC, the covariance matrices are computed **at every pixel**, so each pixel has an N_freq x N_freq symmetric covariance matrix associated with it. These are saved as $\frac{N_{freq}\times (N_{freq}+1)}{2}$ healpy maps, with each map (labeled by $X, Y$, for $X, Y \in 0,...,N_{freq}-1$ 
 
 
