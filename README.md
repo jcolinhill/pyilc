@@ -12,6 +12,9 @@ pyilc does not need to be installed.
 
 # Basic usage
 
-To run pyilc, a .yaml input file is required. pyilc is run by running the main.py file in python with this input file as an argument:
+To run `pyilc`, a `.yaml` input file is required. `pyilc` is run by running the `main.py` file using python with this input file as an argument:
+```
+python pyilc/main.py sample_input.yaml
+```
 
 
