@@ -138,7 +138,15 @@ In any case, the SED is calculated at the frequencies specified in freqs_delta_g
 ```
 param_dict_file: /path/to/input/alternative_paramfile.yml
 ```
-If this is unspecified, the defailt will be used.  The parameters that can be changed are the temperature for the relativistic SZ evaluation (`kT_e_keV`); and the effective dust temperature and spectral index for the CIB modified black body (`Tdust_CIB` and `beta_CIB` respectively).
+If this is unspecified, the defailt will be used.  The parameters that can be changed are the temperature for the relativistic SZ evaluation (`kT_e_keV`); and the effective dust temperature and spectral index for the CIB modified black body (`Tdust_CIB` and `beta_CIB` respectively). 
+#### Specifying new components to preserve and deproject
+
+If you want to preserve or deproject a new component whose SED you can parametrize, you should do the following:
+
+* Add a string specifying your component to the list COMP_TYPES in pyilc/input.py
+* Add the SED to the fg.py by following the implementation of any of the other components. Note that you will have to specify the SED both for delta-bandpasses and the SED that should be integrated over a bandpass for the actual-bandpasses case. Note that as the maps are always read in in $\mu\mathrm{K}_{\mathrm{CIB}}$  you may need to convert from intensity to temperature with the conversion function dBnudT(nu).
+
+
 
 ## Output structure
 
