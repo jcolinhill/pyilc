@@ -42,6 +42,10 @@ output_suffix: 'output_suffix'
 
 All output products will be saved in `/path/to/output/` as follows:
 
-Elements of covariance matrices as `/path/to/output/output_prefix_needletcoeff_covmap_freqX_freqY_scaleA.fits`. In NILC, the covariance matrices are computed **at every pixel**, so each pixel has an N_freq x N_freq symmetric covariance matrix associated with it. These are saved as $\frac{N_{freq}\times (N_{freq}+1)}{2}$ healpy maps, with each map (labeled by $X, Y$, for $X, Y \in 0,...,N_{freq}-1$ 
+Elements of covariance matrices as 
+```
+/path/to/output/output_prefix_needletcoeff_covmap_freqX_freqY_scaleA.fits
+```
+In NILC, the covariance matrices are computed **at every pixel**, so each pixel has an N_freq x N_freq symmetric covariance matrix associated with it. These are saved as $\frac{N_{freq}\times (N_{freq}+1)}{2}$ healpy maps, with each map (labeled by $X, Y$, for $X, Y \in 0,...,N_{freq}-1$ 
 
 
