@@ -21,7 +21,7 @@ We have included a sample input file `pyilc_input_example_Fiona.yml` (Fiona to-d
 
 ### Input/Output structure
 
-The maps on which the (N)ILC will be performed should all be saved separately at some location /path/to/location/map_freq_X.fits . These files should be included in the .yaml file as a list of strings:
+The maps on which the (N)ILC will be performed should all be saved separately at some location `/path/to/location/map_freq_X.fits`. These files should be included in the .yaml file as a list of strings:
 
 ```
 freq_map_files: ['/path/to/location/map_freq_X.fits',
