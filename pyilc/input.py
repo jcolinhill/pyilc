@@ -79,6 +79,8 @@ class ILCInfo(object):
         if 'output_suffix' in p.keys():
             self.output_suffix = p['output_suffix']
             assert type(self.output_suffix) is str, "TypeError: output_suffix"
+        else:
+            self.output_suffix = ''
         # flag whether to save maps of the ILC weights (if 'yes' then they will be saved; otherwise not)
         self.save_weights = p['save_weights']
         assert type(self.save_weights) is str, "TypeError: save_weights"
@@ -234,7 +236,8 @@ class ILCInfo(object):
         # first time you ran the code.
         if 'recompute_covmat_for_ndeproj' in p.keys(): 
             self.recompute_covmat_for_ndeproj = p['recompute_covmat_for_ndeproj']
-
+        else:
+            self.recompute_covmat_for_ndeproj = False
         ####################
         ### TODO: this block of code with SED parameters, etc is currently not used anywhere
         ###   instead, we currently just get the SED parameter info from fg_SEDs_default_params.yml
