@@ -224,6 +224,16 @@ class ILCInfo(object):
                 else:
                     self.ILC_deproj_comps.append([])
                 ind = ind+1
+        # recompute_covmat_for_ndeproj is a toggle that, when it is on, includes the number of deprojected components
+        # in the filenames for the covmat. If it is off, it does not. This is important because the size of the real
+        # space filters is set by calculating an area that includes enough modes to respect a userspecified ILC bias
+        # tolerance, and this calculation changes depending on N_deproj. However, it is computationally intensive
+        # to recompute the covmat, and this is likely a small effect, so it is often likely OK to just use the same 
+        # covmat and not recompute all the time. So, if you don't want to recompute for different values of N_deproj, 
+        # turn this off and it will just use the covmat calculated on the area appropriate for what N_deproj was the
+        # first time you ran the code.
+        if ['recompute_covmat_for_ndeproj'] in p.keys(): 
+            self.recompute_covmat_for_ndeproj = p['recompute_covmat_for_ndeproj']
 
         ####################
         ### TODO: this block of code with SED parameters, etc is currently not used anywhere
