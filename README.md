@@ -1,6 +1,7 @@
 # pyilc
 
-Needlet ILC in Python
+pyilc implements Needlet ILC in Python. 
+This repo also includes an inpainting code which diffusively inpaints a masked region with the mean of the unmasked neighbouring pixels.
 
 # Requirements
 
