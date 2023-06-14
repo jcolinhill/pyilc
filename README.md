@@ -47,7 +47,7 @@ freq_map_files: ['/path/to/location/map_freq_X.fits',
                  '/path/to/location/map_freq_Y.fits',...]
 ```
 
-Note that there is another input paramater `N_freqs` which is required in the input file, and which **must be** equal to the length of the `freq_map_files` list, or else an error will be thrown.  The maps must be listed in order of decreasing resolution, as specified by the user-specified input beams, as described below.
+Note that there is another input parameter `N_freqs` which is required in the input file, and which **must be** equal to the length of the `freq_map_files` list, or else an error will be thrown.  The maps must be listed in order of decreasing resolution, as specified by the user-specified input beams, as described below.
 #### Beams
 There is also some additional metadata about the input maps that must be included in the input file. In particular the **beams** with which the maps are convolved must be specified. There are two options: Gaussian beams, or more general, 1-dimensional ($\ell$-dependent) beams. Gaussian beams are specified as follows:
 ```
