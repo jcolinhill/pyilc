@@ -6,6 +6,12 @@ Needlet ILC in Python
 
 `pyilc` requires python3, [numpy](https://numpy.readthedocs.io/en/latest/), [matplotlib](https://matplotlib.org) and [healpy](https://healpy.readthedocs.io/en/latest/) (and all of their requirements). 
 
+# Using the code
+
+pyilc is public; if you use it in a publication, please cite the paper {link to paper 1} and (optionally) {link to paper 2}. Additionally, if you use NILC you should cite the original NILC reference https://ui.adsabs.harvard.edu/abs/arXiv:0807.0773 along with the constrained ILC references https://ui.adsabs.harvard.edu/abs/2009ApJ...694..222C/abstract and https://ui.adsabs.harvard.edu/abs/arXiv:1006.5599 if you use a deprojected ILC. 
+{Should I also ask to refer to  https://ui.adsabs.harvard.edu/abs/arXiv:1701.00274 if you use the moment deprojections?}
+
+
 # Basic usage
 
 To run `pyilc`, a `.yaml` input file is required. `pyilc` is run by running the `main.py` file using python with this input file as an argument:
@@ -121,7 +127,7 @@ For HILC, the following needs to be included in the input file
 wavelet_type: 'TopHatHarmonic'
 BinSize: 20
 ```
-BinSize is **one integer** which specifies the width in $\ell$-space of ($\Delta_ell$) of the bins on which the HILC is calculated. (Functionality for more general bins will perhaps be included in a later release; however this can be easily modified in pyilc/input.py if a user needs, by modifying the specification of `ILCInfo.ell_bins`)
+BinSize is **one integer** which specifies the width in $\ell$-space of ($\Delta_\ell$) of the bins on which the HILC is calculated. (Functionality for more general bins will perhaps be included in a later release; however this can be easily modified in pyilc/input.py if a user needs, by modifying the specification of `ILCInfo.ell_bins`)
 
 ### Specifying the components to preserve and deproject
 
@@ -130,7 +136,7 @@ By default, pyilc can preserve and deproject any of the following components:
 ```
 ['CMB','kSZ','tSZ','rSZ','mu','CIB', 'CIB_dbeta','CIB_dT']
 ```
-where 'CMB' and 'kSZ' both refer to a black-body (CMB+kSZ) component;  'tSZ' refers to the Compton-$y$ distortion; 'rSZ' refers to the relativistic thermal SZ; 'mu' refers to the $\mu$-distortion; 'CIB' refers to the Cosmic Infrared background, which is specified by a modified black body SED; 'CIB_dbeta' refers to the first moment with respect to beta (the spectral index) of this modified black body; and $CIB_dT$ refers to the first moment with respect to T (the temperature) of this modified black body.
+where 'CMB' and 'kSZ' both refer to a black-body (CMB+kSZ) component;  'tSZ' refers to the Compton-$y$ distortion; 'rSZ' refers to the relativistic thermal SZ; 'mu' refers to the $\mu$-distortion; 'CIB' refers to the Cosmic Infrared background, which is specified by a modified black body SED; 'CIB_dbeta' refers to the first moment with respect to beta (the spectral index) of this modified black body; and 'CIB_dT' refers to the first moment with respect to T (the temperature) of this modified black body.
 
 In any case, the SED is calculated at the frequencies specified in freqs_delta_ghz (for delta-bandpasses) or integrated over the bandpass of the maps specified in freq_bp_files (for actual-bandpasses). This is done in `pyilc/fg.py`. 
 
@@ -138,7 +144,29 @@ In any case, the SED is calculated at the frequencies specified in freqs_delta_g
 ```
 param_dict_file: /path/to/input/alternative_paramfile.yml
 ```
-If this is unspecified, the defailt will be used.  The parameters that can be changed are the temperature for the relativistic SZ evaluation (`kT_e_keV`); and the effective dust temperature and spectral index for the CIB modified black body (`Tdust_CIB` and `beta_CIB` respectively). 
+If this is unspecified, the default will be used.  The parameters that can be changed are the temperature for the relativistic SZ evaluation (`kT_e_keV`); and the effective dust temperature and spectral index for the CIB modified black body (`Tdust_CIB` and `beta_CIB` respectively). 
+
+For ILC preserving component 'AAA', specify:
+```
+ILC_preserved_comp: 'AAA'
+```
+in the input file. To deproject some number N_deproj of components, include:
+```
+N_deproj: N_deproj
+ILC_deproj_comps: ['BBB','CCC',...]
+```
+ILC_deproj_comps should be a list of length N_deproj. For unconstrained ILC, this should read
+```
+N_deproj: 0
+ILC_deproj_comps: []
+```
+All of the components should be in the list  COMP_TYPES in pyilc/input.py, or else an error will be thrown.
+
+#### Different deprojections on different scales
+
+Instead of specifying one deprojected components, one can specify different components to deproject on different needlet scales. 
+In this case, N_deproj should be modified to be a list of length N_scales , with each entry specifying the number of 
+
 #### Specifying new components to preserve and deproject
 
 If you want to preserve or deproject a new component whose SED you can parametrize, you should do the following:
@@ -165,7 +193,7 @@ All output products will be saved in `/path/to/output/` as follows:
 
 ### Needlet coefficients of input maps
 
-The needlet coefficients of the input maps are computed for each frequency (labelled by $X\in 0,..., N_freq-1$ and each scale $A\in 0,...,N_{scales}-1$) and saved as:
+The needlet coefficients of the input maps are computed for each frequency (labelled by $X\in 0,..., N_{freq}-1$ and each scale $A\in 0,...,N_{scales}-1$) and saved as:
 
 ```
 /path/to/output/output_prefix_needletcoeffmap_freqX_scaleA.fits
@@ -231,6 +259,9 @@ maps_to_apply_weights: [...]
 ```
 where maps_to_apply_weights is a list of filenames in the same format as freq_map_files. Note that it is importnat to directly change the output suffix if you are using this option as doing this does not automatically change the output file name of the ILC map (Recall that changing the output suffix does not change the covariance files read in as long as the output prefix is unchanged).
 
+components deprojected at the relevant needlet scale. Also, ILC_deproj_comps should be a list of length N_scales where each entry is a list of length of the corresponding N_deproj for that scale.
+
+
 ## Cross-ILC
 
 pyilc can perform Cross-ILC, where the covariance matrices are computed only from independent splits of the maps; the overall statistic to be minimized in this case is the variance caused by **foregrounds**, and not instrumental noise. In order to specify that pyilc should perform cross-ILC, inlcude:
@@ -243,3 +274,9 @@ freq_map_files_s1: [...]
 freq_map_files_s2: [...]
 ```
 where freq_map_files_s1 and freq_map_files_s2 are both lists with the same format as freq_map_files but with filenames that point to the appropriate split maps. Note that freq_map_files should still be included, as the weights will still be applied to the maps in freq_map_files. Also note that the covariance / inverse covariance and ILC map filenames will all be modified to include the term '_crossILC'.
+
+# Acknowledgments
+
+People we should thank? Me, as this will be on your github? Maybe Kristen, did she make some edits to pyilc? Also maybe mathieu remazailles for sending you the needlet filters for the planck y map? Maybe Will, I have chatted a bit with him? anyone else?
+
+
