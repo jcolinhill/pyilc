@@ -1,7 +1,9 @@
 # pyilc
 
 pyilc implements Needlet ILC in Python. 
-This repo also includes an inpainting code which diffusively inpaints a masked region with the mean of the unmasked neighbouring pixels.
+
+## diffusive_inpaint
+This repo also includes an inpainting code which diffusively inpaints a masked region with the mean of the unmasked neighbouring pixels. This ReadMe is inteneded for pyilc, not diffusive_inpaint; in the diffusive_inpaint we have a sample .py file `diffusive_inpaint/diffusive_inpaint_example.py` which should make it clear how to use `diffusive_inpaint/diffusive_inpaint.py`
 
 # Requirements
 
