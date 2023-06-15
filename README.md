@@ -62,7 +62,7 @@ beam_type: '1DBeams'
 beam_files:['/path/to/location/beam_freq_X.txt',
             '/path/to/location/beam_freq_Y.txt',...]
 ```
-where '/path/to/location/beam_freq_X.txt' contains an array of shape (LMAX,2) where the first column specifies the $\ell$s and the second column specifies the beam at $\ell$. LMAX should be at least as high as the LMAX at which the NILC is being performed (this is a user-specified parameter in the input file).
+where '/path/to/location/beam_freq_X.txt' contains an array of shape (LMAX,2) where the first column specifies the $\ell$ and the second column specifies the beam at $\ell$. LMAX should be at least as high as the LMAX at which the NILC is being performed (this is a user-specified parameter in the input file).
 
 **The maps should all be in units of $\mu \mathrm{K}_{\mathrm{CMB}}$**
 
