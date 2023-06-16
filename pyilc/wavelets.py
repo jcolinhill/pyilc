@@ -249,6 +249,7 @@ def _weights_filename(info,freq,scale):
                         N_deproj = info.N_deproj[j]
                     weight_filename = weight_filename[:-5] +'_Ndeproj'+str(N_deproj)+'.fits'
                 # Fiona edit: allow for inputting a suffix to the path. this is useful (it only appends to weights, not covmat, so you can recompute different combinations of weights with the same covmat) and should be kept
+
                 weight_filename = weight_filename[:-5]+info.output_suffix+'.fits'
                 return weight_filename
 
@@ -666,8 +667,13 @@ def wavelet_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1
                 # Fiona cross-ILC implementation: symmetrize the covmat 
                 if info.cross_ILC:
                     covmat = (covmat + np.transpose(covmat,(1,0,2)))/2
-                inv_covmat = np.array([np.linalg.inv(covmat[:,:,p]) for p in range(int(N_pix_to_use[j]))]) #dim pix,freqs,freqs
+                # Fiona edit: vectorization
+                # inv_covmat = np.array([np.linalg.inv(covmat[:,:,p]) for p in range(int(N_pix_to_use[j]))]) #dim pix,freqs,freqs
+                inv_covmat = np.linalg.inv(np.transpose(covmat,(2,0,1)))
                 inv_covmat = np.transpose(inv_covmat, axes=[1,2,0]) #new dim freq, freq, pix
+
+
+
                 # Fiona edit : vectorization
                 assert np.allclose(np.einsum('ijp,jkp->pik', inv_covmat, covmat), np.transpose(np.repeat(np.eye(N_freqs_to_use[j])[:,:,None],N_pix_to_use[j],axis=2),(2,0,1)), rtol=1.e-5, atol=1.e-5), "covmat inversion failed for scale "+str(j) #, covmat, inv_covmat, np.dot(inv_covmat, covmat)-np.eye(int(N_freqs_to_use[j]))
                 #assert np.allclose(np.einsum('ijp,jkp->pik', inv_covmat, covmat), np.array([np.eye(int(N_freqs_to_use[j]))]*int(N_pix_to_use[j])), rtol=1.e-3, atol=1.e-3), "covmat inversion failed for scale "+str(j) #, covmat, inv_covmat, np.dot(inv_covmat, covmat)-np.eye(int(N_freqs_to_use[j]))
@@ -1140,6 +1146,7 @@ def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=
             if info.cross_ILC: # symmetrize the covmat
                     cov_matrix_harmonic= (cov_matrix_harmonic+ np.transpose(cov_matrix_harmonic))/2
             inv_covmat_harmonic= np.linalg.inv(cov_matrix_harmonic) # we don't need to bother saving this because it is not expensive to invert this covmat (TODO: check this)
+
             identity = np.eye(N_freqs_to_use[j])
             assert np.allclose(np.matmul(inv_covmat_harmonic,cov_matrix_harmonic),identity,rtol=1.e-3, atol=1.e-3)
             inv_covmat_temp = inv_covmat_harmonic[:,:,None]
