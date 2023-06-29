@@ -8,7 +8,8 @@ module to read in relevant input specified by user
 """
 ##########################
 # wavelet types implemented thus far
-WV_TYPES = ['GaussianNeedlets']
+# Fiona edit: add TopHatHarmonic wavelets (to do a HILC)
+WV_TYPES = ['GaussianNeedlets','TopHatHarmonic']
 ##########################
 
 ##########################
@@ -23,7 +24,7 @@ BEAM_TYPES = ['Gaussians','1DBeams']
 
 ##########################
 # component types implemented thus far
-COMP_TYPES = ['CMB','kSZ','tSZ','rSZ','mu','CIB', 'CIB_dbeta'] # Fiona edit: added CIB first moment CIB_dbeta
+COMP_TYPES = ['CMB','kSZ','tSZ','rSZ','mu','CIB', 'CIB_dbeta','CIB_dT'] # Fiona edit: added CIB first moment CIB_dbeta
 ##########################
 
 ##########################
@@ -73,6 +74,13 @@ class ILCInfo(object):
         # prefix for output file names
         self.output_prefix = p['output_prefix']
         assert type(self.output_prefix) is str, "TypeError: output_prefix"
+        # Fiona edit: add output_suffix. This is only appended to the weights and the maps, not the covmat and invcovmat (and waveletized frequency maps), 
+        # so you can (eg) perform different deprojections with different SED specs, while using the same covmat and invcovmat
+        if 'output_suffix' in p.keys():
+            self.output_suffix = p['output_suffix']
+            assert type(self.output_suffix) is str, "TypeError: output_suffix"
+        else:
+            self.output_suffix = ''
         # flag whether to save maps of the ILC weights (if 'yes' then they will be saved; otherwise not)
         self.save_weights = p['save_weights']
         assert type(self.save_weights) is str, "TypeError: save_weights"
@@ -89,6 +97,10 @@ class ILCInfo(object):
         # width of high ell taper for filters, set to 0 if no taper desired
         self.taper_width = p['taper_width']
         assert self.ELLMAX - self.taper_width > 10., "desired taper is too broad for given ELLMAX"
+        # Fiona edit: add if statement for HILC case
+        if not self.wavelet_type == 'TopHatHarmonic':
+            self.N_scales = p['N_scales']
+            assert type(self.N_scales) is int and self.N_scales > 0, "N_scales"
         # parameters for each wavelet type
         # TODO: implement passing of these to the wavelet construction (probably in the main ILC script)
         if self.wavelet_type == 'GaussianNeedlets':
@@ -96,6 +108,13 @@ class ILCInfo(object):
             self.GN_FWHM_arcmin = np.asarray(p['GN_FWHM_arcmin'])
             assert len(self.GN_FWHM_arcmin) == self.N_scales - 1, "GN_FWHM_arcmin"
             assert all(FWHM_val > 0. for FWHM_val in self.GN_FWHM_arcmin), "GN_FWHM_arcmin"
+        # Fiona edit: add TopHatHarmonic wavelets (to do a HILC)
+        elif self.wavelet_type == 'TopHatHarmonic':
+            #  TODO: add functionality for the user to specity arbitrary ell-bins directly
+            self.Delta_ell_HILC = p['BinSize']  # the bin sizes for a linearly-ell-binnedHILC
+            self.ellbins = np.arange(0,self.ELLMAX+1,self.Delta_ell_HILC)
+            self.N_scales = len(self.ellbins)-1
+            assert type(self.N_scales) is int and self.N_scales > 0, "N_scales"
         # TODO: implement these
         #elif self.wavelet_type == 'CosineNeedlets':
         #elif self.wavelet_type == 'ScaleDiscretizedWavelets':
@@ -103,8 +122,21 @@ class ILCInfo(object):
             # TODO: add relevant assertions
             #self.B_param = p['B_param']
             #self.J_min = p['J_min']
+        # Fiona cross-ILC implementation
+        self.cross_ILC = False
+        if 'cross_ILC' in p.keys():
+            if p['cross_ILC'].lower() in ['true','yes','y']:
+                self.cross_ILC = True
         # number of frequency maps used
         self.N_freqs = p['N_freqs']
+
+        self.ILC_bias_tol = 0.01
+        if 'ILC_bias_tol' in p.keys():
+            self.ILC_bias_tol = p['ILC_bias_tol']
+        # Fiona edit: param dict file input    
+        self.param_dict_file = '../input/fg_SEDs_default_params.yml'
+        if 'param_dict_file' in p.keys():
+            self.param_dict_file = p['param_dict_file']
         assert type(self.N_freqs) is int and self.N_freqs > 0, "N_freqs"
         # delta-function bandpasses or actual bandpasses
         self.bandpass_type = p['bandpass_type']
@@ -120,6 +152,22 @@ class ILCInfo(object):
         # frequency map file names
         self.freq_map_files = p['freq_map_files']
         assert len(self.freq_map_files) == self.N_freqs, "freq_map_files"
+        # Fiona cross-ILC implementation
+        if self.cross_ILC:
+            self.freq_map_files_s1 = p['freq_map_files_s1']
+            assert len(self.freq_map_files_s1) == self.N_freqs, "freq_map_files_s1"
+            self.freq_map_files_s2 = p['freq_map_files_s2']
+            assert len(self.freq_map_files_s2) == self.N_freqs, "freq_map_files_s2"
+
+        # Fiona apply weights to other maps implementation
+        if 'maps_to_apply_weights' in p.keys():
+            self.freq_map_files_for_weights = p['maps_to_apply_weights']
+            assert len(self.freq_map_files_for_weights) == self.N_freqs, "freq_map_files_for_weights"
+            self.apply_weights_to_other_maps = True
+        else:
+            self.apply_weights_to_other_maps = False
+
+
         # beams: symmetric gaussians or 1D ell-dependent profiles
         self.beam_type = p['beam_type']
         assert self.beam_type in BEAM_TYPES, "unsupported beam type"
@@ -136,6 +184,11 @@ class ILCInfo(object):
             self.beam_files = p['beam_files']
             assert len(self.beam_files) == self.N_freqs, "beam_files"
             print("Note: frequency maps are assumed to be in strictly decreasing beam size ordering!")
+        # Fiona edit: allow for performing ILC at a user-specified beam / resolution 
+        self.perform_ILC_at_beam = None
+        if 'perform_ILC_at_beam' in p.keys():
+            #perform_ILC_at_beam should be in arcmin. If perform_ILC_at_beam is unspecified, ILC will be performed at resolution of the highest-resolution map
+            self.perform_ILC_at_beam = p['perform_ILC_at_beam']  
         # N_side value of highest-resolution input map (and presumed output map N_side)
         # be conservative and assume N_side must be a power of 2 (stricly speaking only necessary for nest-ordering)
         # https://healpy.readthedocs.io/en/latest/generated/healpy.pixelfunc.isnsideok.html
@@ -149,13 +202,50 @@ class ILCInfo(object):
         self.ILC_bias_tol = p['ILC_bias_tol']
         assert self.ILC_bias_tol > 0. and self.ILC_bias_tol < 1., "invalid ILC bias tolerance"
         # ILC: component(s) to deproject (if any)
+        # Fiona edit below: allow for different components deprojected at different scales
+        # self.N_deproj = p['N_deproj']
+        # assert type(self.N_deproj) is int and self.N_deproj >= 0, "N_deproj"
+        # if (self.N_deproj > 0):
+            # self.ILC_deproj_comps = p['ILC_deproj_comps']
+            # assert len(self.ILC_deproj_comps) == self.N_deproj, "ILC_deproj_comps"
+            # assert all(comp in COMP_TYPES for comp in self.ILC_deproj_comps), "unsupported component type in ILC_deproj_comps"
+            # assert((self.N_deproj + 1) <= self.N_freqs), "not enough frequency channels to deproject this many components"
+
         self.N_deproj = p['N_deproj']
-        assert type(self.N_deproj) is int and self.N_deproj >= 0, "N_deproj"
-        if (self.N_deproj > 0):
-            self.ILC_deproj_comps = p['ILC_deproj_comps']
-            assert len(self.ILC_deproj_comps) == self.N_deproj, "ILC_deproj_comps"
-            assert all(comp in COMP_TYPES for comp in self.ILC_deproj_comps), "unsupported component type in ILC_deproj_comps"
-            assert((self.N_deproj + 1) <= self.N_freqs), "not enough frequency channels to deproject this many components"
+        assert (type(self.N_deproj) is int) or (type(self.N_deproj) is list)
+        if type(self.N_deproj) is int:
+            assert type(self.N_deproj) is int and self.N_deproj >= 0, "N_deproj"
+            if (self.N_deproj > 0):
+                self.ILC_deproj_comps = p['ILC_deproj_comps']
+                assert len(self.ILC_deproj_comps) == self.N_deproj, "ILC_deproj_comps"
+                assert all(comp in COMP_TYPES for comp in self.ILC_deproj_comps), "unsupported component type in ILC_deproj_comps"
+                assert((self.N_deproj + 1) <= self.N_freqs), "not enough frequency channels to deproject this many components"
+        if type(self.N_deproj) is list:
+            assert len(self.N_deproj) == self.N_scales
+            ind = 0
+            self.ILC_deproj_comps=[]
+            for N_deproj in self.N_deproj:
+                assert type(N_deproj) is int and N_deproj >= 0, "N_deproj"
+                if (N_deproj > 0):
+                    self.ILC_deproj_comps.append(p['ILC_deproj_comps'][ind])
+                    assert len(self.ILC_deproj_comps[ind]) == N_deproj, "ILC_deproj_comps"
+                    assert all(comp in COMP_TYPES for comp in self.ILC_deproj_comps[ind]), "unsupported component type in ILC_deproj_comps"
+                    assert((N_deproj + 1) <= self.N_freqs), "not enough frequency channels to deproject this many components"
+                else:
+                    self.ILC_deproj_comps.append([])
+                ind = ind+1
+        # recompute_covmat_for_ndeproj is a toggle that, when it is on, includes the number of deprojected components
+        # in the filenames for the covmat. If it is off, it does not. This is important because the size of the real
+        # space filters is set by calculating an area that includes enough modes to respect a userspecified ILC bias
+        # tolerance, and this calculation changes depending on N_deproj. However, it is computationally intensive
+        # to recompute the covmat, and this is likely a small effect, so it is often likely OK to just use the same 
+        # covmat and not recompute all the time. So, if you don't want to recompute for different values of N_deproj, 
+        # turn this off and it will just use the covmat calculated on the area appropriate for what N_deproj was the
+        # first time you ran the code.
+        if 'recompute_covmat_for_ndeproj' in p.keys(): 
+            self.recompute_covmat_for_ndeproj = p['recompute_covmat_for_ndeproj']
+        else:
+            self.recompute_covmat_for_ndeproj = False
         ####################
         ### TODO: this block of code with SED parameters, etc is currently not used anywhere
         ###   instead, we currently just get the SED parameter info from fg_SEDs_default_params.yml
@@ -210,6 +300,47 @@ class ILCInfo(object):
             elif (len(temp_map) < self.N_pix):
                 # TODO: should probably upgrade in harmonic space to get pixel window correct
                 self.maps[i] = np.copy( hp.pixelfunc.ud_grade(temp_map, nside_out=self.N_side, order_out='RING', dtype=np.float64) )
+        # Fiona cross-ILC implementation
+        if self.cross_ILC:
+            self.maps_s1 = np.zeros((self.N_freqs,self.N_pix), dtype=np.float64)
+            self.maps_s2 = np.zeros((self.N_freqs,self.N_pix), dtype=np.float64)
+            for i in range(self.N_freqs):
+                # TODO: allow reading in of maps not in field=0 in the fits file
+                # TODO: allow specification of nested or ring ordering (although will already work here if fits keyword ORDERING is present)
+                temp_map_s1 = hp.fitsfunc.read_map(self.freq_map_files_s1[i], field=0, verbose=False)
+                assert len(temp_map_s1) <= self.N_pix, "input map at higher resolution than specified N_side"
+                temp_map_s2 = hp.fitsfunc.read_map(self.freq_map_files_s2[i], field=0, verbose=False)
+                assert len(temp_map_s2) <= self.N_pix, "input map at higher resolution than specified N_side"
+                if (len(temp_map_s1) == self.N_pix):
+                    self.maps_s1[i] = np.copy(temp_map_s1)
+                elif (len(temp_map_s1) < self.N_pix):
+                    # TODO: should probably upgrade in harmonic space to get pixel window correct
+                    self.maps_s1[i] = np.copy( hp.pixelfunc.ud_grade(temp_map_s1, nside_out=self.N_side, order_out='RING', dtype=np.float64) )
+                if (len(temp_map_s2) == self.N_pix):
+                    self.maps_s2[i] = np.copy(temp_map_s2)
+                elif (len(temp_map_s2) < self.N_pix):
+                    # TODO: should probably upgrade in harmonic space to get pixel window correct
+                    self.maps_s2[i] = np.copy( hp.pixelfunc.ud_grade(temp_map_s2, nside_out=self.N_side, order_out='RING', dtype=np.float64) )
+            del(temp_map_s1)
+            del(temp_map_s2)
+        # Fiona apply weights to other maps implementation
+        if self.apply_weights_to_other_maps:
+            print("reading in maps for weights")
+            self.maps_for_weights = np.zeros((self.N_freqs,self.N_pix), dtype=np.float64)
+            for i in range(self.N_freqs):
+                # TODO: allow reading in of maps not in field=0 in the fits file
+                # TODO: allow specification of nested or ring ordering (although will already work here if fits keyword ORDERING is present)
+                # Fiona edit
+                print('reading',self.freq_map_files_for_weights[i])
+                # end Fiona edit
+                temp_map = hp.fitsfunc.read_map(self.freq_map_files_for_weights[i], field=0, verbose=False)
+                assert len(temp_map) <= self.N_pix, "input map at higher resolution than specified N_side"
+                if (len(temp_map) == self.N_pix):
+                    self.maps_for_weights[i] = np.copy(temp_map)
+                elif (len(temp_map) < self.N_pix):
+                    # TODO: should probably upgrade in harmonic space to get pixel window correct
+                    self.maps_for_weights[i] = np.copy( hp.pixelfunc.ud_grade(temp_map, nside_out=self.N_side, order_out='RING', dtype=np.float64) )
+            del(temp_map)
         # also read in maps with which to cross-correlate, if specified
         if self.N_maps_xcorr != 0:
             # maps
@@ -250,6 +381,12 @@ class ILCInfo(object):
             self.beams = np.zeros((self.N_freqs,self.ELLMAX+1,2), dtype=np.float64)
             for i in range(self.N_freqs):
                 self.beams[i] = np.transpose(np.array([np.arange(self.ELLMAX+1), hp.sphtfunc.gauss_beam(self.beam_FWHM_arcmin[i]*(np.pi/180.0/60.0), lmax=self.ELLMAX)]))
+                # Fiona edit: allow for performing ILC at a user-specified beam / resolution
+                #we will convolve all maps to the common_beam
+                if self.perform_ILC_at_beam is not None:
+                    self.common_beam =np.transpose(np.array([np.arange(self.ELLMAX+1), hp.sphtfunc.gauss_beam(self.perform_ILC_at_beam*(np.pi/180.0/60.0), lmax=self.ELLMAX)]))
+                else:
+                    self.common_beam = self.beams[-1] # if perform_ILC_at_beam is unspecified, convolve to the beam of the highest-resolution map
         elif self.beam_type == '1DBeams':
             self.beams = [] #initialize empty list
             for i in range(self.N_freqs):

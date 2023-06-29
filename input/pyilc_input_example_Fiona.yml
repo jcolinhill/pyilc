@@ -1,0 +1,121 @@
+
+#-------------------------------------#
+# Info about where to save the output #
+#-------------------------------------#
+
+# the directory in which all covariances, needlet coefficients, inverse covariances, maps, weights, will be saved (or are already saved):
+output_dir: '/dir/'
+
+# the prefix for all the files:
+output_prefix: ''
+
+# The suffix for all files EXCEPT covariances, inverse covariances, and needlet coefficients of input maps 
+# (this applies to saved weights and the final saved components only
+output_suffix: ''
+
+#save the ILC weights 'yes' for yes, 'no' for no
+save_weights: 'yes'
+
+#---------------------------------------------#
+# Info about the resolution of the output map #
+#---------------------------------------------#
+
+#the Lmax for the spherical harmonic operations
+ELLMAX: 1024
+
+#The N_side of the output map (this should also be the N_side of the highest-resolution input map)
+N_side: 1024
+
+# The FWHM (in arcminutes) of the common Gaussian beam to convolve all of the maps to before performing ILC.
+# If this is unspecified, the NILC will be performed at the beam of the highest-resolution input map.
+perform_ILC_at_beam: 10
+
+#---------------------------------------#
+# Info about the type of ILC to perform #
+#---------------------------------------#
+
+# the type of wavelets. 'GaussianNeedlets' for NILC with Gaussian needlets; 'TopHatHarmonic' for HILC
+wavelet_type: 'GaussianNeedlets'
+
+# the number of wavelet scales (only for NILC)
+N_scales: 7
+
+#The FWHM of the Gaussian needlet scales (only for NILC)
+GN_FWHM_arcmin: [600., 300., 120., 60., 30., 15.]
+
+# The allowed tolerance for ILC bias. This will be used to set the size of the real-space 
+# Gaussian filters in the NILC
+ILC_bias_tol: 0.01
+
+#The Delta_ell (binsize) for linear bins for the HILC
+BinSize: 20
+
+# The component to preserve. Can be any of  ['CMB','kSZ','tSZ','rSZ','mu','CIB', 'CIB_dbeta','CIB_dT']
+ILC_preserved_comp: 'CMB'
+
+# The number of components to deproject. This can either be a number or a list of numbers with N_scales elements, with how many components are deprojected at each scale
+N_deproj: 0
+#  N_deproj: [1,1,1,0,0,0,0]
+
+# A list of components to deproject (every element should be in ['CMB','kSZ','tSZ','rSZ','mu','CIB', 'CIB_dbeta','CIB_dT']. This can either be a list, or a list of lists, one corresponding to each scale
+ILC_deproj_comps: []
+# ILC_deproj_comps: [['tSZ'],['tSZ'],['tSZ'],[],[],[],[]]
+
+# Whether or not to perform a cross-ILC, ie to calculate the covariances from split maps (thus not including instrumental noise).
+# If this is unspecified, a standard ILC will be performed.
+# If this is one of ['true','yes','y'] (captalized or uncapitalized), a cross_ILC will be performed.
+cross_ILC: 'false'
+
+#--------------------------------------------#
+# Info about the input single-frequency maps #
+#--------------------------------------------#
+
+#The number of frequency channels
+N_freqs: 2
+
+#The type of bandpass: can be 'DeltaBandpasses' or 'ActualBandpasses'
+bandpass_type: 'DeltaBandpasses'
+
+# The frequency channels central frequencie (in GHz). Note that these should be in order of lowest-res to highest-res, NOT necessarily low-freq to high-freq
+freqs_delta_ghz: [143., 217.]
+
+# A list of files where you have saved the bandpasses at each frequency (only for 'ActualBandpasses') for the same order as freqs_delta_ghz
+freq_bp_files: ['/mnt/home/fmccarthy/comp_separation/pyilc/data/HFI_BANDPASS_F143_reformat.txt',
+'/mnt/home/fmccarthy/comp_separation/pyilc/data/HFI_BANDPASS_F217_reformat.txt']
+
+# A list of files where you have saved the frequency maps at each frequency for the same order as freqs_delta_ghz
+freq_map_files: ['/moto/hill/users/kms2320/repositories/NILC-Power-Spectrum/sim_maps/sim_map_90GHz_tSZamp1_nside1024_K.fits',
+'/moto/hill/users/kms2320/repositories/NILC-Power-Spectrum/sim_maps/sim_map_150GHz_tSZamp1_nside1024_K.fits']
+
+# A list of files where you have saved the first split of the frequency maps for the same order as freqs_delta_ghz (only for a cross-ILC)
+freq_map_files_s1: []
+# A list of files where you have saved the second split of the frequency maps for the same order as freqs_delta_ghz (only for a cross-ILC)
+freq_map_files_s2: []
+
+# A list of files where you have saved the frequency maps to apply WEIGHTS to (for weights calculated using the covariance of the maps in freq_map_files)
+# The weights will not be calculated from these maps, just applied to them
+# Make sure to change the output_suffix if you use this option as it will otherwise be saved with the same filename as the standard maps
+maps_to_apply_weights: []
+
+# The beam type for deconvolving the input maps; can be 'Gaussians' or '1DBeams'
+beam_type: 'Gaussians'
+
+# a list of FWHM (in arcmins) of the Gaussian beam used for each frequency (only if beam_type is 'Gaussians') for the same order as freqs_delta_ghz
+beam_FWHM_arcmin: [1.4, 1.4] #update with whatever beam FWHM was used in the sim map construction; note that ordering should always be from lowest-res to highest-res maps (here and in the lists of maps, freqs, etc above)
+
+# a list of files containing the 1-D beam profiles to deconvolve from each map (only if beam_type is '1Dbeams') for the same order as freqs_delta_ghz
+beam_files: []
+
+#----------------------------------------------------#
+# Info about maps to cross-correlate the output with #
+#----------------------------------------------------#
+
+# How many maps to cross-correlate with
+N_maps_xcorr: 1
+
+# A list of files where these maps are saved
+maps_xcorr_files: ['/moto/hill/users/kms2320/websky_maps/cmb_lensed_nside1024_K.fits']
+
+# A list of masks to apply before cross-correlating. If this is unspecified, no mask will be applied; 
+# otherwise it should be the same length as maps_xcorr_files and for the same order
+masks_xcorr_files:
