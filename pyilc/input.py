@@ -92,6 +92,11 @@ class ILCInfo(object):
         assert type(self.wavelet_type) is str, "TypeError: wavelet_type"
         assert self.wavelet_type in WV_TYPES, "unsupported wavelet type"
         # number of wavelet filter scales used
+        self.N_scales = p['N_scales']
+        assert type(self.N_scales) is int and self.N_scales > 0, "N_scales"
+        # width of high ell taper for filters, set to 0 if no taper desired
+        self.taper_width = p['taper_width']
+        assert self.ELLMAX - self.taper_width > 10., "desired taper is too broad for given ELLMAX"
         # Fiona edit: add if statement for HILC case
         if not self.wavelet_type == 'TopHatHarmonic':
             self.N_scales = p['N_scales']
@@ -193,6 +198,9 @@ class ILCInfo(object):
         # ILC: component to preserve
         self.ILC_preserved_comp = p['ILC_preserved_comp']
         assert self.ILC_preserved_comp in COMP_TYPES, "unsupported component type in ILC_preserved_comp"
+        # ILC: bias tolerance
+        self.ILC_bias_tol = p['ILC_bias_tol']
+        assert self.ILC_bias_tol > 0. and self.ILC_bias_tol < 1., "invalid ILC bias tolerance"
         # ILC: component(s) to deproject (if any)
         # Fiona edit below: allow for different components deprojected at different scales
         # self.N_deproj = p['N_deproj']
@@ -285,7 +293,7 @@ class ILCInfo(object):
         for i in range(self.N_freqs):
             # TODO: allow reading in of maps not in field=0 in the fits file
             # TODO: allow specification of nested or ring ordering (although will already work here if fits keyword ORDERING is present)
-            temp_map = hp.fitsfunc.read_map(self.freq_map_files[i], field=0, verbose=False)
+            temp_map = hp.fitsfunc.read_map(self.freq_map_files[i], field=0)
             assert len(temp_map) <= self.N_pix, "input map at higher resolution than specified N_side"
             if (len(temp_map) == self.N_pix):
                 self.maps[i] = np.copy(temp_map)
@@ -338,7 +346,7 @@ class ILCInfo(object):
             # maps
             self.maps_xcorr = np.zeros((self.N_maps_xcorr,self.N_pix), dtype=np.float64)
             for i in range(self.N_maps_xcorr):
-                temp_map = hp.fitsfunc.read_map(self.maps_xcorr_files[i], field=0, verbose=False)
+                temp_map = hp.fitsfunc.read_map(self.maps_xcorr_files[i], field=0)
                 assert len(temp_map) <= self.N_pix, "input map for cross-correlation at higher resolution than specified N_side"
                 if (len(temp_map) == self.N_pix):
                     self.maps_xcorr[i] = np.copy(temp_map)
@@ -349,7 +357,7 @@ class ILCInfo(object):
             if self.masks_xcorr_files is not None: #None = no mask to be applied
                 self.masks_xcorr = np.zeros((self.N_maps_xcorr,self.N_pix), dtype=np.float64)
                 for i in range(self.N_maps_xcorr):
-                    temp_map = hp.fitsfunc.read_map(self.masks_xcorr_files[i], field=0, verbose=False)
+                    temp_map = hp.fitsfunc.read_map(self.masks_xcorr_files[i], field=0)
                     assert len(temp_map) <= self.N_pix, "input mask for cross-correlation at higher resolution than specified N_side"
                     if (len(temp_map) == self.N_pix):
                         self.masks_xcorr[i] = np.copy(temp_map)

@@ -6,6 +6,7 @@ ELLMAX: 4096
 wavelet_type: 'GaussianNeedlets'
 N_scales: 10
 GN_FWHM_arcmin: [600., 300., 120., 60., 30., 15., 10., 7.5, 5.]
+taper_width: 200 #set to zero for no high ell taper of filters
 
 N_freqs: 6
 bandpass_type: 'DeltaBandpasses'
@@ -19,6 +20,7 @@ beam_FWHM_arcmin: [7.1, 4.94, 2.2, 1.3, 0.9, 0.7]
 N_side: 2048
 
 ILC_preserved_comp: 'tSZ'
+ILC_bias_tol: 0.001
 N_deproj: 0
 ILC_deproj_comps: []
 N_SED_params: 0
