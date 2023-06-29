@@ -34,7 +34,7 @@ info.read_beams()
 
 ##########################
 # construct wavelets
-wv = Wavelets(N_scales=info.N_scales, ELLMAX=info.ELLMAX, tol=1.e-6)
+wv = Wavelets(N_scales=info.N_scales, ELLMAX=info.ELLMAX, tol=1.e-6, taper_width=info.taper_width)
 if info.wavelet_type == 'GaussianNeedlets':
     ell, filts = wv.GaussianNeedlets(FWHM_arcmin=info.GN_FWHM_arcmin)
 # Fiona HILC implementation
@@ -52,7 +52,7 @@ else:
 if info.wavelet_type == 'TopHatHarmonic':
     harmonic_ILC(wv, info, ILC_bias_tol=1.e-2, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3, map_images=False)
 else:
-    wavelet_ILC(wv, info, ILC_bias_tol=info.ILC_bias_tol, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3, map_images=False)
+    wavelet_ILC(wv, info, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3, map_images=False)
 ##########################
 
 
