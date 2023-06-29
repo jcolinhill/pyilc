@@ -1,7 +1,9 @@
 # pyilc
 
 pyilc implements Needlet ILC in Python. 
-This repo also includes an inpainting code which diffusively inpaints a masked region with the mean of the unmasked neighbouring pixels.
+
+## diffusive_inpaint
+This repo also includes an inpainting code which diffusively inpaints a masked region with the mean of the unmasked neighbouring pixels. This ReadMe is inteneded for pyilc, not diffusive_inpaint; in the diffusive_inpaint we have a sample .py file `diffusive_inpaint/diffusive_inpaint_example.py` which should make it clear how to use `diffusive_inpaint/diffusive_inpaint.py`
 
 # Requirements
 
@@ -45,7 +47,7 @@ freq_map_files: ['/path/to/location/map_freq_X.fits',
                  '/path/to/location/map_freq_Y.fits',...]
 ```
 
-Note that there is another input paramater `N_freqs` which is required in the input file, and which **must be** equal to the length of the `freq_map_files` list, or else an error will be thrown.  The maps must be listed in order of decreasing resolution, as specified by the user-specified input beams, as described below.
+Note that there is another input parameter `N_freqs` which is required in the input file, and which **must be** equal to the length of the `freq_map_files` list, or else an error will be thrown.  The maps must be listed in order of decreasing resolution, as specified by the user-specified input beams, as described below.
 #### Beams
 There is also some additional metadata about the input maps that must be included in the input file. In particular the **beams** with which the maps are convolved must be specified. There are two options: Gaussian beams, or more general, 1-dimensional ($\ell$-dependent) beams. Gaussian beams are specified as follows:
 ```
@@ -60,7 +62,7 @@ beam_type: '1DBeams'
 beam_files:['/path/to/location/beam_freq_X.txt',
             '/path/to/location/beam_freq_Y.txt',...]
 ```
-where '/path/to/location/beam_freq_X.txt' contains an array of shape (LMAX,2) where the first column specifies the $ell$s and the second column specifies the beam at $\ell$. LMAX should be at least as high as the LMAX at which the NILC is being performed (this is a user-specified parameter in the input file).
+where '/path/to/location/beam_freq_X.txt' contains an array of shape (LMAX,2) where the first column specifies the $\ell$ and the second column specifies the beam at $\ell$. LMAX should be at least as high as the LMAX at which the NILC is being performed (this is a user-specified parameter in the input file).
 
 **The maps should all be in units of $\mu \mathrm{K}_{\mathrm{CMB}}$**
 
