@@ -1,6 +1,6 @@
 # pyilc
 
-pyilc is a pure-python implementation of the needlet internal linear combination (NILC) algorithm for CMB component separation.  For details, see McCarthy & Hill (2023) [arXiv:XXXX.YYYYY](https://arxiv.org/XXXX.YYYYY).
+pyilc is a pure-python implementation of the needlet internal linear combination (NILC) algorithm for CMB component separation.  Harmonic-space ILC is also implemented in the code.  For details, see McCarthy & Hill (2023) [arXiv:XXXX.YYYYY](https://arxiv.org/XXXX.YYYYY).
 
 ## diffusive_inpaint
 This repository also includes an inpainting code, diffusive_inpaint, that diffusively inpaints a masked region with the mean of the unmasked neighboring pixels. This README is intended for pyilc, not diffusive_inpaint; in the diffusive_inpaint sub-directory, we include a sample .py file `diffusive_inpaint/diffusive_inpaint_example.py`, which should make clear how to use `diffusive_inpaint/diffusive_inpaint.py`.
@@ -16,22 +16,19 @@ This repository also includes an inpainting code, diffusive_inpaint, that diffus
 
 # Basic usage
 
-To run `pyilc`, a `.yaml` input file is required. `pyilc` is run by running the `main.py` file using python with this input file as an argument:
+To run `pyilc`, a `yaml` input file is required. `pyilc` is run by running the `main.py` file using python with this input file as an argument:
 ```
-python pyilc/main.py sample_input.yaml
+python pyilc/main.py sample_input.yml
 ```
 
-We have included a sample input file `pyilc_input_example_general.yaml`, which serves as documentation of the different input options. The main ones are described here.
+We have included a sample input file `pyilc_input_example_general.yml`, which serves as documentation of the different input options. The main ones are described here.
 
-We go into detail about the input and output structure below. 
-In general, an input file will contain a list of input frequency maps on which the NILC is to be performed, along with a path specifying what directory the output should be saved in and a prefix and suffix to save the products with. 
-The output products that are saved are the needlet coefficients of the input maps; the covariance and inverse covariance matrices; and the ILC maps (and ILC weights if requested in the input file). 
-Before performing NILC, the code will check whether these products already exist in the specified output directory with the specified **prefix** (in the case of the input needlet coefficients and the covariance and inverse covariance matrices) and the specified **prefix AND suffix** (in the case of the weights and final ILC map): 
+We go into detail about the input and output structure below. In general, an input file will contain a list of input frequency maps on which the NILC is to be performed, along with a path specifying what directory the output should be saved in and a prefix and suffix with which to save the products. The output products that are saved are the needlet coefficients of the input maps, the (maps of) covariance and inverse frequency-frequency covariance matrices, and the ILC maps (and ILC weights if requested in the input file). Before performing NILC, the code will check whether these products already exist in the specified output directory with the specified **prefix** (in the case of the input needlet coefficients and the covariance and inverse covariance matrices) and the specified **prefix AND suffix** (in the case of the weights and final ILC map): 
 * If the map or weights exist, the code will not compute anything as the products already exist.  
 * If the covariance/inverse covariance matrices exist, the code will load these and use these to compute the final ILC weights and map, then save the weights/map with the specified **prefix AND suffix**. 
 * If no covariance products exist, the code will compute these, save them with the specified **prefix**, then use them to compute the weights and map and save them with the specified **prefix AND suffix**. 
 
-As the covariance matrix computation/inversion is often the costliest step in performing a NILC, this allows several versions of ILC maps (different deprojections, SEDs, etc...) to be computed with the same input without recomputing the covariances.
+As the covariance matrix computation/inversion is often the most computationally expensive step in performing NILC, this allows several versions of ILC maps (different deprojections, SEDs, etc.) to be computed with the same input without recomputing the covariances.
 
 
 ## Input structure
@@ -39,21 +36,21 @@ As the covariance matrix computation/inversion is often the costliest step in pe
 
 ### Specifying the input maps
 
-The maps on which the (N)ILC will be performed should all be saved separately at some location `/path/to/location/map_freq_X.fits`. These files should be included in the .yaml file as a list of strings:
+The maps on which the (N)ILC will be performed should all be saved separately at some location `/path/to/location/map_freq_X.fits`. These files should be included in the .yml file as a list of strings:
 
 ```
 freq_map_files: ['/path/to/location/map_freq_X.fits',
                  '/path/to/location/map_freq_Y.fits',...]
 ```
 
-Note that there is another input parameter `N_freqs` which is required in the input file, and which **must be** equal to the length of the `freq_map_files` list, or else an error will be thrown.  The maps must be listed in order of decreasing resolution, as specified by the user-specified input beams, as described below.
+Note that there is another input parameter `N_freqs` that is required in the input file, and which **must be** equal to the length of the `freq_map_files` list, or else an error will be thrown.  The maps must be listed in order of decreasing resolution, as specified by the user-specified input beams, as described below.
 #### Beams
-There is also some additional metadata about the input maps that must be included in the input file. In particular the **beams** with which the maps are convolved must be specified. There are two options: Gaussian beams, or more general, 1-dimensional ($\ell$-dependent) beams. Gaussian beams are specified as follows:
+There is also additional metadata about the input maps that must be included in the input file. In particular the **beams** with which the maps are convolved must be specified. There are two options: Gaussian beams, or more general, one-dimensional ($\ell$-dependent) beams. Gaussian beams are specified as follows:
 ```
 beam_type: 'Gaussians'  
 beam_FWHM_arcmin: [FWHM_X,FWHM_Y,...]
 ```
-where FWHM_X is the FWHM of the beam, in arcminutes, of the map at `/path/to/location/map_freq_X.fits`. **The FWHMS must be listed in the same order as the maps they correspond to in `freq_map_files`**. Also, **The FWHMS must be decreasing**, ie the maps must be read in in order from lowest-resolution to highest-resolution, or else an error will be thrown (note this might mean that they are **not** read in in a monotonic frequency order).
+where FWHM_X is the FWHM of the beam, in arcminutes, of the map at `/path/to/location/map_freq_X.fits`. **The FWHMS must be listed in the same order as the maps they correspond to in `freq_map_files`**. Also, **the FWHMS must be decreasing**, i.e., the maps must be read in in order from lowest-resolution to highest-resolution, or else an error will be thrown (note this might mean that they are **not** read in in a monotonically increasing frequency order, e.g., if the maps come from different instruments).
 
 Alternatively, 1D beams can be specified as follows:
 ```
@@ -61,9 +58,9 @@ beam_type: '1DBeams'
 beam_files:['/path/to/location/beam_freq_X.txt',
             '/path/to/location/beam_freq_Y.txt',...]
 ```
-where '/path/to/location/beam_freq_X.txt' contains an array of shape (LMAX,2) where the first column specifies the $\ell$ and the second column specifies the beam at $\ell$. LMAX should be at least as high as the LMAX at which the NILC is being performed (this is a user-specified parameter in the input file).
+where '/path/to/location/beam_freq_X.txt' contains an array of shape (LMAX,2) where the first column specifies the $\ell$ and the second column specifies the beam at $\ell$. LMAX should be at least as high as the LMAX (maximum multipole) at which the NILC is being performed (this is a user-specified parameter in the input file -- see below).
 
-**The maps should all be in units of $\mu \mathrm{K}_{\mathrm{CMB}}$**
+**The maps should all be in units of CMB thermodynamic temperature, $\mu \mathrm{K}_{\mathrm{CMB}}$.**
 
 
 #### Frequency coverage
