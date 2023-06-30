@@ -1,18 +1,17 @@
 # pyilc
 
-pyilc implements Needlet ILC in Python. 
+pyilc is a pure-python implementation of the needlet internal linear combination (NILC) algorithm for CMB component separation.  For details, see McCarthy & Hill (2023) [arXiv:XXXX.YYYYY](https://arxiv.org/XXXX.YYYYY).
 
 ## diffusive_inpaint
-This repo also includes an inpainting code which diffusively inpaints a masked region with the mean of the unmasked neighbouring pixels. This ReadMe is inteneded for pyilc, not diffusive_inpaint; in the diffusive_inpaint we have a sample .py file `diffusive_inpaint/diffusive_inpaint_example.py` which should make it clear how to use `diffusive_inpaint/diffusive_inpaint.py`
+This repository also includes an inpainting code, diffusive_inpaint, that diffusively inpaints a masked region with the mean of the unmasked neighboring pixels. This README is intended for pyilc, not diffusive_inpaint; in the diffusive_inpaint sub-directory, we include a sample .py file `diffusive_inpaint/diffusive_inpaint_example.py`, which should make clear how to use `diffusive_inpaint/diffusive_inpaint.py`.
 
 # Requirements
 
-`pyilc` requires python3, [numpy](https://numpy.readthedocs.io/en/latest/), [matplotlib](https://matplotlib.org) and [healpy](https://healpy.readthedocs.io/en/latest/) (and all of their requirements). 
+`pyilc` requires python3, [numpy](https://numpy.readthedocs.io/en/latest/), [matplotlib](https://matplotlib.org), and [healpy](https://healpy.readthedocs.io/en/latest/) (and all of their requirements). 
 
 # Using the code
 
-pyilc is public; if you use it in a publication, please cite the paper {link to paper 1} and (optionally) {link to paper 2}. Additionally, if you use NILC you should cite the original NILC reference https://ui.adsabs.harvard.edu/abs/arXiv:0807.0773 along with the constrained ILC references https://ui.adsabs.harvard.edu/abs/2009ApJ...694..222C/abstract and https://ui.adsabs.harvard.edu/abs/arXiv:1006.5599 if you use a deprojected ILC. 
-{Should I also ask to refer to  https://ui.adsabs.harvard.edu/abs/arXiv:1701.00274 if you use the moment deprojections?}
+`pyilc` is public; if you use it in a publication, please cite the paper [arXiv:XXXX.YYYYY](https://arxiv.org/XXXX.YYYYY) and (optionally) [arXiv:XXXX.YYYY2](https://arxiv.org/XXXX.YYYY2). Additionally, if you use NILC you should cite the original NILC reference, https://ui.adsabs.harvard.edu/abs/arXiv:0807.0773, along with the constrained ILC references, https://ui.adsabs.harvard.edu/abs/2009ApJ...694..222C/abstract and https://ui.adsabs.harvard.edu/abs/arXiv:1006.5599 if you use an ILC that deprojects some component.  If using a moment-based deprojection, please cite https://ui.adsabs.harvard.edu/abs/arXiv:1701.00274.
 
 
 # Basic usage
@@ -22,7 +21,7 @@ To run `pyilc`, a `.yaml` input file is required. `pyilc` is run by running the 
 python pyilc/main.py sample_input.yaml
 ```
 
-We have included a sample input file `pyilc_input_example_Fiona.yml` (Fiona to-do: change this name) which serves as documentation of the different input options. The main ones are described here.
+We have included a sample input file `pyilc_input_example_general.yaml`, which serves as documentation of the different input options. The main ones are described here.
 
 We go into detail about the input and output structure below. 
 In general, an input file will contain a list of input frequency maps on which the NILC is to be performed, along with a path specifying what directory the output should be saved in and a prefix and suffix to save the products with. 
