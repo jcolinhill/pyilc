@@ -132,9 +132,6 @@ class ILCInfo(object):
         # number of frequency maps used
         self.N_freqs = p['N_freqs']
 
-        self.ILC_bias_tol = 0.01
-        if 'ILC_bias_tol' in p.keys():
-            self.ILC_bias_tol = p['ILC_bias_tol']
         # Fiona edit: param dict file input    
         self.param_dict_file = '../input/fg_SEDs_default_params.yml'
         if 'param_dict_file' in p.keys():
@@ -201,7 +198,10 @@ class ILCInfo(object):
         self.ILC_preserved_comp = p['ILC_preserved_comp']
         assert self.ILC_preserved_comp in COMP_TYPES, "unsupported component type in ILC_preserved_comp"
         # ILC: bias tolerance
-        self.ILC_bias_tol = p['ILC_bias_tol']
+        self.ILC_bias_tol = 0.01
+        if 'ILC_bias_tol' in p.keys():
+            self.ILC_bias_tol = p['ILC_bias_tol']
+
         assert self.ILC_bias_tol > 0. and self.ILC_bias_tol < 1., "invalid ILC bias tolerance"
         # ILC: component(s) to deproject (if any)
         # Fiona edit below: allow for different components deprojected at different scales
