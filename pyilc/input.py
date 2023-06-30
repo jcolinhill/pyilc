@@ -24,7 +24,7 @@ BEAM_TYPES = ['Gaussians','1DBeams']
 
 ##########################
 # component types implemented thus far
-COMP_TYPES = ['CMB','kSZ','tSZ','rSZ','mu','CIB', 'CIB_dbeta','CIB_dT'] # Fiona edit: added CIB first moment CIB_dbeta
+COMP_TYPES = ['CMB','kSZ','tSZ','rSZ','mu','CIB', 'CIB_dbeta','CIB_dT']
 ##########################
 
 ##########################
@@ -95,7 +95,9 @@ class ILCInfo(object):
         self.N_scales = p['N_scales']
         assert type(self.N_scales) is int and self.N_scales > 0, "N_scales"
         # width of high ell taper for filters, set to 0 if no taper desired
-        self.taper_width = p['taper_width']
+        self.taper_width = 200
+        if 'taper_width' in p.keys():
+            self.taper_width = p['taper_width']
         assert self.ELLMAX - self.taper_width > 10., "desired taper is too broad for given ELLMAX"
         # Fiona edit: add if statement for HILC case
         if not self.wavelet_type == 'TopHatHarmonic':
@@ -130,9 +132,6 @@ class ILCInfo(object):
         # number of frequency maps used
         self.N_freqs = p['N_freqs']
 
-        self.ILC_bias_tol = 0.01
-        if 'ILC_bias_tol' in p.keys():
-            self.ILC_bias_tol = p['ILC_bias_tol']
         # Fiona edit: param dict file input    
         self.param_dict_file = '../input/fg_SEDs_default_params.yml'
         if 'param_dict_file' in p.keys():
@@ -199,7 +198,10 @@ class ILCInfo(object):
         self.ILC_preserved_comp = p['ILC_preserved_comp']
         assert self.ILC_preserved_comp in COMP_TYPES, "unsupported component type in ILC_preserved_comp"
         # ILC: bias tolerance
-        self.ILC_bias_tol = p['ILC_bias_tol']
+        self.ILC_bias_tol = 0.01
+        if 'ILC_bias_tol' in p.keys():
+            self.ILC_bias_tol = p['ILC_bias_tol']
+
         assert self.ILC_bias_tol > 0. and self.ILC_bias_tol < 1., "invalid ILC bias tolerance"
         # ILC: component(s) to deproject (if any)
         # Fiona edit below: allow for different components deprojected at different scales
