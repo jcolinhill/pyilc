@@ -133,9 +133,9 @@ BinSize is **one integer** which specifies the width in $\ell$-space (i.e., $\De
 By default, `pyilc` can preserve and deproject any of the following components:
 
 ```
-['CMB','kSZ','tSZ','rSZ','mu','CIB', 'CIB_dbeta','CIB_dT']
+['CMB','kSZ','tSZ','rSZ','mu','CIB','CIB_dbeta','CIB_dT','radio']
 ```
-where 'CMB' and 'kSZ' both refer to a blackbody (CMB+kSZ) component; 'tSZ' refers to the Compton-$y$ distortion; 'rSZ' refers to the relativistic thermal SZ (modeled with a Taylor expansion in kT_e/(m_e c^2)); 'mu' refers to the $\mu$-distortion; 'CIB' refers to the cosmic infrared background, which is specified by a modified blackbody SED with a spectral index beta and temperature T; 'CIB_dbeta' refers to the first moment with respect to beta of this modified blackbody; and 'CIB_dT' refers to the first moment with respect to T of this modified blackbody.
+where 'CMB' and 'kSZ' both refer to a blackbody (CMB+kSZ) component; 'tSZ' refers to the Compton-$y$ distortion; 'rSZ' refers to the relativistic thermal SZ (modeled with a Taylor expansion in kT_e/(m_e c^2)); 'mu' refers to the $\mu$-distortion; 'CIB' refers to the cosmic infrared background, which is specified by a modified blackbody SED with a spectral index beta and temperature T; 'CIB_dbeta' refers to the first moment with respect to beta of this modified blackbody; 'CIB_dT' refers to the first moment with respect to T of this modified blackbody; and 'radio' refers to a power-law SED (in specific intensity units).  The CIB and radio SEDs are also available in Jy/sr rather than the default uK_CMB units.
 
 In all cases, the SED is calculated at the frequencies specified in freqs_delta_ghz (for delta-function passbands) or integrated over the passband of the maps specified in freq_bp_files (for actual realistic passbands). This is computed in `pyilc/fg.py`. 
 
@@ -163,15 +163,16 @@ All of the components should be in the list COMP_TYPES in `pyilc/input.py`, or e
 
 #### Different deprojections on different scales
 
-Instead of specifying one deprojected components, one can specify different components to deproject on different needlet scales. 
-In this case, N_deproj should be modified to be a list of length N_scales , with each entry specifying the number of 
+Instead of specifying one set of components to deproject on all scales, one can specify different components to deproject on different needlet scales. 
+In this case, N_deproj should be modified to be a list of length N_scales, with each entry specifying the number of components to deproject at that scale.
+ILC_deproj_comps should similarly be modified to be a list (of length N_scales) of lists, with each entry specifying the list of components (of length corresponding to N_deproj at that scale) to deproject at that scale.
 
 #### Specifying new components to preserve and deproject
 
 If you want to preserve or deproject a new component whose SED you can parametrize, you should do the following:
 
-* Add a string specifying your component to the list COMP_TYPES in pyilc/input.py
-* Add the SED to the fg.py by following the implementation of any of the other components. Note that you will have to specify the SED both for delta-bandpasses and the SED that should be integrated over a bandpass for the actual-bandpasses case. Note that as the maps are always read in in $\mu\mathrm{K}_{\mathrm{CIB}}$  you may need to convert from intensity to temperature with the conversion function dBnudT(nu).
+* Add a string specifying your component to the list COMP_TYPES in `pyilc/input.py`
+* Add the SED to `fg.py` by following the implementation of any of the other components. Note that you will have to specify the SED both for delta-function passbands and the SED that should be integrated over a passband for the actual-passbands case. Note that as the maps are always read in in $\mu\mathrm{K}_{\mathrm{CMB}}$ you may need to convert from specific intensity to temperature units with the conversion function dBnudT(nu).
 
 
 
@@ -179,8 +180,7 @@ If you want to preserve or deproject a new component whose SED you can parametri
 
 **Note: this section only refers to the case when NILC is performed (not HILC)**
 
-The ILC products (needlet coefficients, covariance matrices, inverse covariance matrices, ILC maps, and ILC weights if requested) will be saved in an output folder `/path/to/output/` with a prefix `output_prefix` specified in the input file by strings. A suffix `output_suffix`, which will **only** be appended to ILC map and weight filenames (ie, not covariance products) can also be specified:
-
+The ILC products (needlet coefficients, covariance matrices, inverse covariance matrices, ILC maps, and ILC weights if requested) will be saved in an output directory `/path/to/output/` with a prefix `output_prefix` specified in the input file by strings. A suffix `output_suffix`, which will **only** be appended to the ILC map and weight filenames (i.e., not covariance products) can also be specified:
 
 ```
 output_dir: '/path/to/output/'
@@ -198,18 +198,20 @@ The needlet coefficients of the input maps are computed for each frequency (labe
 /path/to/output/output_prefix_needletcoeffmap_freqX_scaleA.fits
 ```
 
-### Covariance and inverse covariances
-Elements of covariance matrices as 
+### Covariances and inverse covariances
+Elements of covariance matrices are saved as 
 ```
 /path/to/output/output_prefix_needletcoeff_covmap_freqX_freqY_scaleA.fits
 ```
-In NILC, the covariance matrices are computed **at every pixel**, so each pixel has an N_freq x N_freq symmetric covariance matrix associated with it. These are saved as $\frac{N_{freq}\times (N_{freq}+1)}{2}$ healpy maps, with each map (labeled by $X, Y$, for $X, Y \in 0,...,N_{freq}-1$ and by the needlet scale $A\in 0,...,N_{scales}-1$.
+In NILC, the covariance matrices are computed **at every pixel**, so each pixel has an N_freq x N_freq symmetric covariance matrix associated with it. These are saved as $\frac{N_{freq}\times (N_{freq}+1)}{2}$ healpix maps, with each map (labeled by $X, Y$, for $X, Y \in 0,...,N_{freq}-1$ and by the needlet scale $A\in 0,...,N_{scales}-1$.
 
 Similarly, the **inverse** covariance matrices are saved as 
 ```
 /path/to/output/output_prefix_needletcoeff_invcovmap_freqX_freqY_scaleA.fits
 ```
-Note that the total covariance matrices are inverted **in frequency space** , ie **separately for each pixel**, before being saved.
+Note that the total covariance matrices are inverted **in frequency space** , i.e., **separately for each pixel**, before being saved.
+
+Also note that the number of frequencies is different for different needlet scales, as determined by a beam threshold criterion specified in the code (one does not want to use frequency maps with low-resolution beams in the ILC on high-$\ell$ needlet scales).  Thus the dimensionality of the covariance matrix changes as a function of needlet scale.  In addition, `pyilc` minimizes memory usage by downgrading the maps used at low-$\ell$ needlet scales.  Thus the number of pixels in the covariance and inverse covariance matrix maps is lower for low-$\ell$ needlet scales than high-$\ell$ needlet scales.
 
 ### ILC weights and maps
 
@@ -223,59 +225,55 @@ in the input file; otherwise,
 ```
 save_weights: 'no'
 ```
-should be specified. The weights depend on the component being deprojected. For unconstrained ILC preserving component AAA, they will be saved at
+should be specified. The weights depend on the component being deprojected. For an unconstrained ILC that preserves component AAA, they will be saved at
 ```
-/path/to/output/output_prefix_needletcoeff_weightmap_freqX_scaleA_component_AAA_output_suffix.fits.
+/path/to/output/output_prefix_needletcoeff_weightmap_freqX_scaleA_component_AAA_output_suffix.fits
 ```
-For constrained ILC preserving component AAA and deprojecting components BBB,CCC,DDD, the weights will be saved at
+For a constrained ILC that preserves component AAA and deprojects components BBB,CCC,DDD, the weights will be saved at
 ```
 /path/to/output/output_prefix_needletcoeff_weightmap_freqX_scaleA_componentAAA_deproject_BBB_CCC_DDD_output_suffix.fits
 ```
-Note that the use of output_suffix (and not in the covariance matrices) here allows the same covariance matrices to be used to create different versions of the output maps, for example by modifying the SED of a component to be deprojected.
+Note that the use of output_suffix here (and not in the covariance matrices) allows the same covariance matrices to be used to construct different versions of the output maps, for example by modifying the SED of a component to be deprojected.  This allows rapid construction of many ILC maps after computing the covariances and inverse covariances only once.
 
 #### ILC maps
 
-For unconstrained ILC preserving component AAA, the final ILC map will be saved at
+For an unconstrained ILC that preserves component AAA, the final ILC map will be saved at
 ```
-/path/to/output/output_prefix_needletILCmap_component_AAA_output_suffix.fits.
+/path/to/output/output_prefix_needletILCmap_component_AAA_output_suffix.fits
 ```
-Constrained ILC preserving component AAA and deprojecting components BBB,CCC,DDD will be saved at
+For a constrained ILC that preserves component AAA and deprojects components BBB,CCC,DDD, the ILC map will be saved at
 ```
-/path/to/output/output_prefix_needletILCmap_component_AAA_deproject_BBB_CCC_DDD_output_suffix.fits.
+/path/to/output/output_prefix_needletILCmap_component_AAA_deproject_BBB_CCC_DDD_output_suffix.fits
 ```
-Again the use of output_suffix (and not in the covariance matrices) here allows the same covariance matrices to be used to create different versions of the output maps, for example by modifying the SED of a component to be deprojected.
+Again the use of output_suffix here (and not in the covariance matrices) allows the same covariance matrices to be used to construct different versions of the output maps, for example by modifying the SED of a component to be deprojected.
 
 
 # More complicated usage
 
-pyilc has various extended functionality, if required. We list some of the other abilities of pyilc here.
+`pyilc` has various extended functionality, if required. We list some of the other abilities of the code here.
 
 ## Applying weights to alternative maps
 
-Sometimes it is useful to apply the weights calculated from one map to a separate map, for example when testing on simulations to quantify exactly how much of a specific component there is in the final output. To propogate the weights directly through another map, the following can be specified in the input file:
+Sometimes it is useful to apply the weights calculated from one map to a separate map, for example when testing on simulations to quantify exactly how much of a specific component exists in the final output map. To propagate the weights directly through another map, the following can be specified in the input file:
 ```
 maps_to_apply_weights: [...]
 ```
-where maps_to_apply_weights is a list of filenames in the same format as freq_map_files. Note that it is importnat to directly change the output suffix if you are using this option as doing this does not automatically change the output file name of the ILC map (Recall that changing the output suffix does not change the covariance files read in as long as the output prefix is unchanged).
-
-components deprojected at the relevant needlet scale. Also, ILC_deproj_comps should be a list of length N_scales where each entry is a list of length of the corresponding N_deproj for that scale.
+where maps_to_apply_weights is a list of filenames in the same format as freq_map_files. Note that it is important to directly change the output suffix if you are using this option, as doing this does not automatically change the output file name of the ILC map (recall that changing the output suffix does not change the covariance files read in as long as the output prefix is unchanged).
 
 
 ## Cross-ILC
 
-pyilc can perform Cross-ILC, where the covariance matrices are computed only from independent splits of the maps; the overall statistic to be minimized in this case is the variance caused by **foregrounds**, and not instrumental noise. In order to specify that pyilc should perform cross-ILC, inlcude:
+`pyilc` can also perform Cross-ILC (see https://ui.adsabs.harvard.edu/abs/2014JCAP...02..030H/abstract), where the covariance matrices are computed only from independent splits of the maps; the overall statistic to be minimized in this case is the variance caused by **foregrounds**, and not instrumental noise. In order to specify that `pyilc` should perform cross-ILC, inlcude:
 ```
 cross_ILC: 'True'
 ```
-in the input (note that this `True' is a **string** and not the boolean True). In this case, two independent splits should be read in; they should be included as follows:
+in the input (note that this `True' is a **string** and not the boolean True). In this case, two independent splits of each frequency map should be read in.  They should be included as follows:
 ```
 freq_map_files_s1: [...]
 freq_map_files_s2: [...]
 ```
-where freq_map_files_s1 and freq_map_files_s2 are both lists with the same format as freq_map_files but with filenames that point to the appropriate split maps. Note that freq_map_files should still be included, as the weights will still be applied to the maps in freq_map_files. Also note that the covariance / inverse covariance and ILC map filenames will all be modified to include the term '_crossILC'.
+where freq_map_files_s1 and freq_map_files_s2 are both lists with the same format as freq_map_files but with filenames that point to the appropriate split maps. Note that freq_map_files should still be included, as the weights will still be applied to the maps in freq_map_files. Also note that the covariance, inverse covariance, and ILC map filenames will all be modified to include the term '_crossILC'.
 
 # Acknowledgments
 
-People we should thank? Me, as this will be on your github? Maybe Kristen, did she make some edits to pyilc? Also maybe mathieu remazailles for sending you the needlet filters for the planck y map? Maybe Will, I have chatted a bit with him? anyone else?
-
-
+If using the code, please cite [arXiv:XXXX.YYYYY](https://arxiv.org/XXXX.YYYYY) and (optionally) [arXiv:XXXX.YYYY2](https://arxiv.org/XXXX.YYYY2).  The primary authors of `pyilc` are Colin Hill (jch2200@columbia.edu) and Fiona McCarthy (fmccarthy@flatironinstitute.org).  Additional contributors include Mathew Madhavacheril and Kristen Surrao.  We thank Mathieu Remazeilles for sharing details about the Planck NILC y-map analysis and Will Coulton for useful NILC comparisons.  We thank Jens Chluba for discussions about the moment expansion method.  We additionally thank Aleksandra Kusiak, Blake Sherwin, and David Spergel for useful conversations, as well as Shivam Pandey for a helpful check of our NILC y-maps.  We are also grateful to Boris Bolliet for useful discussions regarding the halo model and [class_sz](https://github.com/CLASS-SZ/class_sz).
