@@ -58,32 +58,32 @@ beam_type: '1DBeams'
 beam_files:['/path/to/location/beam_freq_X.txt',
             '/path/to/location/beam_freq_Y.txt',...]
 ```
-where '/path/to/location/beam_freq_X.txt' contains an array of shape (LMAX,2) where the first column specifies the $\ell$ and the second column specifies the beam at $\ell$. LMAX should be at least as high as the LMAX (maximum multipole) at which the NILC is being performed (this is a user-specified parameter in the input file -- see below).
+where '/path/to/location/beam_freq_X.txt' contains an array of shape (LMAX,2) where the first column specifies the $\ell$ and the second column specifies the beam at $\ell$. LMAX should be at least as high as the ELLMAX (maximum multipole) at which the NILC is being performed (this is a user-specified parameter in the input file -- see below).
 
 **The maps should all be in units of CMB thermodynamic temperature, $\mu \mathrm{K}_{\mathrm{CMB}}$**.
 
 
 #### Frequency coverage
 
-In order to calculate the SED of a given component, the code needs to know what frequencies the maps correspond to. There are two options: delta-bandpasses and performing bandpass integration. The former can be indicated by including the following in the input file:
+In order to calculate the SED of a given component, the code needs to know what frequencies the maps correspond to. There are two options: delta-function passbands and performing passband integration. The former can be indicated by including the following in the input file:
 ```
 bandpass_type: 'DeltaBandpasses'
 freqs_delta_ghz: [freq_X, freq_Y, ...]
 ```
-where freq_X refers to the frequency (**in gHZ**) of the appropriate input map (the order should be the same as that of freq_map_files). To perform bandpass interation, the following should be indicated in the input file:
+where freq_X refers to the frequency (**in GHz**) of the appropriate input map (the order should be the same as that of freq_map_files). To perform passband integration, the following should be indicated in the input file:
 ```
 bandpass_type: 'ActualBandpasses'
 freq_bp_files: ['/path/to/location/bandpass_freq_X.txt',
                 '/path/to/location/bandpass_freq_Y.txt',,...]
                
 ```
-where '/path/to/location/bandpass_freq_X.txt' is a file containing the bandpass (check format!!) of the appropriate input map (again, the order should be the same as that of freq_map_files).
+where '/path/to/location/bandpass_freq_X.txt' is a file containing the passband (first column = frequency in GHz, second column = transmission in the same convention as used in Planck) of the appropriate input map (again, the order should be the same as that of freq_map_files).
 
 ### Specifying the resolution of the output ILC map
 
-the Lmax used in all spherical harmonic transformations should be specified with
+The maximum multipole (ELLMAX) used in all spherical harmonic transformations should be specified with
 ```
-ELLMAX: Lmax
+ELLMAX: ELLMAX
 ```
 The N_side of the output map should be specified with
 ```
@@ -95,15 +95,15 @@ Optionally, the FWHM (in arcminutes) at which NILC should be performed (and with
 ```
 perform_ILC_at_beam: FWHM
 ```
-If this is **not** specified, the ILC will be performed on maps which have are all convolved to the same beam as that of the highest-resolution input map.
+If this is **not** specified, the ILC will be performed on maps which are all convolved to the same beam as that of the highest-resolution input map.
 
 ### Specifying the type of ILC to perform
 
-Currently, pyilc can perform two types of ILC: NILC with Gaussian needlets, and harmonic ILC. 
+Currently, `pyilc` can perform two types of ILC: NILC with Gaussian needlets and harmonic ILC. 
 
 #### Gaussian NILC
 
-For Gaussian NILC with N_scales needlet scales with FWHMs of FWHM_1,..., the following needs to be included in the input file:
+For Gaussian NILC with N_scales needlet scales, constructed from Gaussians with FWHMs of FWHM_1,..., the following needs to be included in the input file:
 ```
 wavelet_type: 'GaussianNeedlets' 
 N_scales: N_scales
@@ -117,16 +117,16 @@ The size of the real-space domains used for calculating the covariances is defin
 ```
 ILC_bias_tol: b_tol
 ```
-If unspecified, this is set to 0.01.
+If unspecified, this is set by default to 0.01.
 
 #### HILC
-For HILC, the following needs to be included in the input file
+For harmonic ILC (HILC), the following needs to be included in the input file
 
 ```
 wavelet_type: 'TopHatHarmonic'
 BinSize: 20
 ```
-BinSize is **one integer** which specifies the width in $\ell$-space of ($\Delta_\ell$) of the bins on which the HILC is calculated. (Functionality for more general bins will perhaps be included in a later release; however this can be easily modified in pyilc/input.py if a user needs, by modifying the specification of `ILCInfo.ell_bins`)
+BinSize is **one integer** which specifies the width in $\ell$-space (i.e., $\Delta_\ell$) of the bins on which the HILC is calculated. (Functionality for more general bins will perhaps be included in a later release; however this can be easily modified in pyilc/input.py if a user needs, by modifying the specification of `ILCInfo.ell_bins`.)
 
 ### Specifying the components to preserve and deproject
 
