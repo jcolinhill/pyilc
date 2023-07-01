@@ -130,36 +130,36 @@ BinSize is **one integer** which specifies the width in $\ell$-space (i.e., $\De
 
 ### Specifying the components to preserve and deproject
 
-By default, pyilc can preserve and deproject any of the following components:
+By default, `pyilc` can preserve and deproject any of the following components:
 
 ```
 ['CMB','kSZ','tSZ','rSZ','mu','CIB', 'CIB_dbeta','CIB_dT']
 ```
-where 'CMB' and 'kSZ' both refer to a black-body (CMB+kSZ) component;  'tSZ' refers to the Compton-$y$ distortion; 'rSZ' refers to the relativistic thermal SZ; 'mu' refers to the $\mu$-distortion; 'CIB' refers to the Cosmic Infrared background, which is specified by a modified black body SED; 'CIB_dbeta' refers to the first moment with respect to beta (the spectral index) of this modified black body; and 'CIB_dT' refers to the first moment with respect to T (the temperature) of this modified black body.
+where 'CMB' and 'kSZ' both refer to a blackbody (CMB+kSZ) component; 'tSZ' refers to the Compton-$y$ distortion; 'rSZ' refers to the relativistic thermal SZ (modeled with a Taylor expansion in kT_e/(m_e c^2)); 'mu' refers to the $\mu$-distortion; 'CIB' refers to the cosmic infrared background, which is specified by a modified blackbody SED with a spectral index beta and temperature T; 'CIB_dbeta' refers to the first moment with respect to beta of this modified blackbody; and 'CIB_dT' refers to the first moment with respect to T of this modified blackbody.
 
-In any case, the SED is calculated at the frequencies specified in freqs_delta_ghz (for delta-bandpasses) or integrated over the bandpass of the maps specified in freq_bp_files (for actual-bandpasses). This is done in `pyilc/fg.py`. 
+In all cases, the SED is calculated at the frequencies specified in freqs_delta_ghz (for delta-function passbands) or integrated over the passband of the maps specified in freq_bp_files (for actual realistic passbands). This is computed in `pyilc/fg.py`. 
 
 **Some of these SEDs depend on specified parameters**. The values of the parameters should be saved in a spearate yaml file; we provide a default `input/fg_SEDs_default_params.yml` . If a different parameter file is desired, this can be read in in the overall input file as follows:
 ```
 param_dict_file: /path/to/input/alternative_paramfile.yml
 ```
-If this is unspecified, the default will be used.  The parameters that can be changed are the temperature for the relativistic SZ evaluation (`kT_e_keV`); and the effective dust temperature and spectral index for the CIB modified black body (`Tdust_CIB` and `beta_CIB` respectively). 
+If this is unspecified, the default values will be used.  The parameters that can be changed are the temperature for the relativistic SZ evaluation (`kT_e_keV`); and the effective dust temperature and spectral index for the CIB modified blackbody (`Tdust_CIB` and `beta_CIB` respectively). 
 
-For ILC preserving component 'AAA', specify:
+For an ILC preserving component 'AAA', specify:
 ```
 ILC_preserved_comp: 'AAA'
 ```
-in the input file. To deproject some number N_deproj of components, include:
+in the input file. To deproject some number N_deproj of components in an ILC, include:
 ```
 N_deproj: N_deproj
 ILC_deproj_comps: ['BBB','CCC',...]
 ```
-ILC_deproj_comps should be a list of length N_deproj. For unconstrained ILC, this should read
+ILC_deproj_comps should be a list of length N_deproj. For an unconstrained ILC, this should read
 ```
 N_deproj: 0
 ILC_deproj_comps: []
 ```
-All of the components should be in the list  COMP_TYPES in pyilc/input.py, or else an error will be thrown.
+All of the components should be in the list COMP_TYPES in `pyilc/input.py`, or else an error will be thrown.  (You can also easily add your own desired components there.)
 
 #### Different deprojections on different scales
 
