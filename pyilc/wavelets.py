@@ -142,8 +142,6 @@ def waveletize(inp_map=None, wv=None, rebeam=False, inp_beam=None, new_beam=None
         beam_fac = new_beam[:,1]/inp_beam[:,1]
     else:
         beam_fac = np.ones(wv.ELLMAX+1,dtype=float)
-    #N_alm = int(hp.sphtfunc.Alm.getsize(wv.ELLMAX))
-    #alm_arr = np.empty([N_freqs,N_alm], dtype=complex)
     if(wv.taper_width):
         assert wv.ELLMAX - wv.taper_width > 10., "desired taper is too broad for given ELLMAX"
         taper_func = (1.0 - 0.5*(np.tanh(0.025*(wv.ell - (wv.ELLMAX - wv.taper_width))) + 1.0)) #smooth taper to zero from ELLMAX-taper_width to ELLMAX
@@ -151,26 +149,18 @@ def waveletize(inp_map=None, wv=None, rebeam=False, inp_beam=None, new_beam=None
         taper_func = np.ones(wv.ELLMAX+1,dtype=float)
     # convert map to alm, apply wavelet filters (and taper and rebeam)
     inp_map_alm = hp.map2alm(inp_map, lmax=wv.ELLMAX)
-    #wv_maps = np.zeros((wv.N_scales,N_pix))
     wv_maps = []
-    #    alm_arr[i] = hp.almxfl(hp.map2alm(maps[i], lmax=wv.ELLMAX), taper_func)
-    #    for j in range(wv.N_scales):
-    #        wv_maps[i][j] = hp.alm2map( hp.almxfl(alm_arr[i], wv.filters[j]), nside=N_side_inp)
     if wv_filts_to_use is not None: #allow user to only output maps for some of the filter scales
-        print(wv_filts_to_use)
-        print(len(wv_filts_to_use))
         assert len(wv_filts_to_use) == wv.N_scales, "wv_filts_to_use has wrong shape"
         assert len(N_side_to_use) == wv.N_scales, "N_side_to_use has wrong shape"
         for j in range(wv.N_scales):
             assert N_side_to_use[j] <= N_side_inp, "N_side_to_use > N_side_inp"
             if wv_filts_to_use[j] == True:
-                #wv_maps[j] = hp.alm2map( hp.almxfl( inp_map_alm, wv.filters[j]*taper_func*beam_fac), nside=N_side_to_use[j])
                 wv_maps.append( hp.alm2map( hp.almxfl( inp_map_alm, (wv.filters[j])*taper_func*beam_fac), nside=N_side_to_use[j]) )
     else:
         assert len(N_side_to_use) == wv.N_scales, "N_side_to_use has wrong shape"
         for j in range(wv.N_scales):
             assert N_side_to_use[j] <= N_side_inp, "N_side_to_use > N_side_inp"
-            #wv_maps[j] = hp.alm2map( hp.almxfl( inp_map_alm, wv.filters[j]*taper_func*beam_fac), nside=N_side_to_use[j])
             wv_maps.append( hp.alm2map( hp.almxfl( inp_map_alm, (wv.filters[j])*taper_func*beam_fac), nside=N_side_to_use[j]) )
     # return maps of wavelet coefficients (i.e., filtered maps) -- N.B. each one can have a different N_side
     return wv_maps
@@ -179,8 +169,6 @@ def waveletize(inp_map=None, wv=None, rebeam=False, inp_beam=None, new_beam=None
 # (N.B. power will be lost near ELLMAX if a taper has been applied in waveletize)
 # note that you will get nonsense if different wavelets are used here than in waveletize (obviously)
 def synthesize(wv_maps=None, wv=None, N_side_out=None):
-    #N_pix = len(wv_maps[0])
-    #N_side = hp.npix2nside(N_pix)
     assert wv is not None, "wavelets not defined"
     assert type(wv) is Wavelets, "Wavelets TypeError"
     assert N_side_out is not None, "N_side_out must be specified"
@@ -189,9 +177,7 @@ def synthesize(wv_maps=None, wv=None, N_side_out=None):
     assert wv.ELLMAX < 3*N_side_out-1, "ELLMAX too high"
     N_pix_out = 12*N_side_out**2
     out_map = np.zeros(N_pix_out)
-    print("length is",len(wv_maps))
     for j in range(wv.N_scales):
-        #out_map += hp.alm2map(hp.almxfl(hp.map2alm(wv_maps[j], lmax=wv.ELLMAX), wv.filters[j]), nside=N_side)
         N_pix_temp = len(wv_maps[j])
         N_side_temp = hp.npix2nside(N_pix_temp)
         temp_alm = hp.map2alm(wv_maps[j], lmax=np.amin(np.array([wv.ELLMAX, 3*N_side_temp-1])))
@@ -236,21 +222,18 @@ def _weights_filename(info,freq,scale):
                 a = freq
                 j = scale
                 weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.fits'
-                # Fiona edit: created different filenames for different ILC specs. This is useful and should be kept.
                 if type(info.N_deproj )is int:
                     if info.N_deproj>0:
                         weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.fits'
                 else:
                     if info.N_deproj[j]>0:
                         weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps[j])+'_crossILC'*info.cross_ILC+'.fits'
-                # Fiona local edit: change some filenames - these following edits should not be kept in final merge
                 if info.recompute_covmat_for_ndeproj:
                     if type(info.N_deproj) is int:
                         N_deproj = info.N_deproj
                     else:
                         N_deproj = info.N_deproj[j]
                     weight_filename = weight_filename[:-5] +'_Ndeproj'+str(N_deproj)+'.fits'
-                # Fiona edit: allow for inputting a suffix to the path. this is useful (it only appends to weights, not covmat, so you can recompute different combinations of weights with the same covmat) and should be kept
 
                 weight_filename = weight_filename[:-5]+info.output_suffix+'.fits'
                 return weight_filename
@@ -283,14 +266,9 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
         ell_F[i] = ell_peak + (np.abs( wv.filters[i][ell_peak:] - wavelet_beam_criterion )).argmin()
         if ell_F[i] > wv.ELLMAX:
             ell_F[i] = wv.ELLMAX
-        print("ell_F = ",ell_F[i])
     ell_F[-1] = ell_F[-2] #just use the second-to-last criterion for the last one #TODO: improve this
     for j in range(info.N_freqs):
-        #print(len(info.beams[j]))
-        #print((info.beams[j]).shape)
-        #print((info.beams[j])[:,1])
         ell_B[j] = (np.abs( (info.beams[j])[:,1] - wavelet_beam_criterion )).argmin()
-        print("ell_B = ",ell_B[j])
     for i in range(wv.N_scales):
         for j in range(info.N_freqs):
             if ell_F[i] <= ell_B[j]:
@@ -301,8 +279,6 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
         # check that number of frequencies is non-zero
         assert(N_freqs_to_use[i] > 0), "insufficient number of channels for high-resolution filter(s)"
         # check that we still have enough frequencies for desired deprojection at each filter scale
-        # Fiona edit below: allow for different components deprojected at different scales
-        # assert((info.N_deproj + 1) <= N_freqs_to_use[i]), "not enough frequency channels to deproject this many components"
         if type(info.N_deproj) is int:
             assert((info.N_deproj + 1) <= N_freqs_to_use[i]), "not enough frequency channels to deproject this many components"
         else:
@@ -314,11 +290,7 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
                 break
         if (N_side_to_use[i] > info.N_side):
             N_side_to_use[i] = info.N_side
-    print(freqs_to_use)
-    print(N_freqs_to_use)
-    print(N_side_to_use)
     N_pix_to_use = 12*(N_side_to_use)**2
-    print(N_pix_to_use)
     #may need to work N_side_to_use into the actual waveletize function, so that it does not use tons of memory unnecessarily (can see if we run into problems) -- DONE
     ##########################
     ##########################
@@ -327,7 +299,6 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
     FWHM_pix = np.zeros(wv.N_scales,dtype=float)
     if info.wavelet_type == 'GaussianNeedlets':
         ell, filts = wv.GaussianNeedlets(info.GN_FWHM_arcmin)
-    # Fiona addition HILC:
     elif info.wavelet_type == 'TopHatHarmonic':
         ell, filts = wv.TopHatHarmonic(info.ellbins)
     # TODO: implement these
@@ -340,7 +311,6 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
     N_modes = np.zeros(wv.N_scales, dtype=float)
     for i in range(wv.N_scales):
         N_modes[i] = np.sum( (2.*ell + np.ones(wv.ELLMAX+1)) * (filts[i])**2. )
-    #print(N_modes)
     # now find real-space Gaussian s.t. number of modes in that area satisfies ILC bias threshold
     # we use the flat-sky approximation here -- TODO: could improve this
     for i in range(wv.N_scales):
@@ -348,8 +318,6 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
         #   where N_modes_eff = N_modes * (2*pi*sigma_pix^2)/(4*pi)
         #   and then solving for sigma_pix
         # note that this corrects an error in Eq. 3 of Planck 2015 y-map paper -- the numerator should be (N_ch - 2) in their case (if they're deprojecting CMB)
-        # Fiona edit below: allow for different components deprojected at different scales
-        # sigma_pix_temp = np.sqrt( np.absolute( 2.*(float( (info.N_deproj + 1) - N_freqs_to_use[i] )) / (N_modes[i] * info.ILC_bias_tol) ) ) #result is in radians
         if type(info.N_deproj) is int:
             sigma_pix_temp = np.sqrt( np.absolute( 2.*(float( (info.N_deproj + 1) - N_freqs_to_use[i] )) / (N_modes[i] * info.ILC_bias_tol) ) ) #result is in radians
         else:
@@ -360,8 +328,6 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
         if sigma_pix_temp == 0.:
             sigma_pix_temp = np.sqrt( np.absolute( 2. / (N_modes[i] * info.ILC_bias_tol) ) ) #result is in radians
         FWHM_pix[i] = np.sqrt(8.*np.log(2.)) * sigma_pix_temp #in radians
-    print("FWHM_pix (deg):", FWHM_pix*180./np.pi)
-    #print("FWHM_pix (arcmin):", FWHM_pix * 180./np.pi * 60.)
     ##########################
     ##########################
     # compute wavelet decomposition of all frequency maps used at each filter scale
@@ -384,8 +350,6 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
                     flag=False
                     break
         if flag == False:
-             # Fiona edit: allow for performing ILC at a user-specified beam / resolution
-            #wv_maps_temp = waveletize(inp_map=(info.maps)[i], wv=wv,  rebeam=True, inp_beam=(info.beams)[i], new_beam=(info.beams)[-1], wv_filts_to_use=freqs_to_use[:,i], N_side_to_use=N_side_to_use)
             wv_maps_temp = waveletize(inp_map=(info.maps)[i], wv=wv, rebeam=True, inp_beam=(info.beams)[i], new_beam=info.common_beam, wv_filts_to_use=freqs_to_use[:,i], N_side_to_use=N_side_to_use)
             for j in range(wv.N_scales):
                 if freqs_to_use[j][i] == True:
@@ -399,7 +363,6 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
                     hp.mollview(wv_maps_temp[j], unit="K", title="Needlet Coefficient Map, Frequency "+str(i)+" Scale "+str(j), min=np.mean(wv_maps_temp[j])-2*np.std(wv_maps_temp[j]), max=np.mean(wv_maps_temp[j])+2*np.std(wv_maps_temp[j]))
                     plt.savefig(info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(i)+'_scale'+str(j)+'.pdf')
         print("done waveletizing frequency ", i, "...")
-        # Fiona cross-ILC implementation
         if info.cross_ILC:
             for season in [1,2]:
                 flag = True
@@ -426,7 +389,6 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
                         if freqs_to_use[j][i] == True:
                             filename = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(i)+'_scale'+str(j)+'_S'+str(season)+'.fits'
                             exists2 = os.path.isfile(filename)
-
                             if not exists2:
                                 hp.write_map(filename, wv_maps_temp[j], nest=False, dtype=np.float64, overwrite=False)
                     del(maps) #free up memory
@@ -436,24 +398,22 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
     ### MAIN ILC CALCULATION ###
     # TODO -- memory management could certainly be improved here (reduce file I/O overhead, reduce number of smoothing operations, etc...)
 
-    # Fiona apply weights to other maps implementation
     if info.apply_weights_to_other_maps:
          maps_for_weights_needlets=[]
          for i in range(info.N_freqs):
-             print("waveletizing other map",i)
+             print("waveletizing maps to apply weights", i)
              if info.perform_ILC_at_beam is not None:
                     newbeam = info.common_beam
              else:
                     newbeam = (info.beams)[-1]
-             maps_for_weights_needlets.append(waveletize(inp_map=(info.maps_for_weights)[i], wv=wv, taper=True, taper_width=200., rebeam=True, inp_beam=(info.beams)[i], new_beam=newbeam, wv_filts_to_use=freqs_to_use[:,i], N_side_to_use=N_side_to_use))
+             maps_for_weights_needlets.append(waveletize(inp_map=(info.maps_for_weights)[i], wv=wv, rebeam=True, inp_beam=(info.beams)[i], new_beam=newbeam, wv_filts_to_use=freqs_to_use[:,i], N_side_to_use=N_side_to_use))
+             print("waveletized ", i)
     else:
         print("not waveletizing any other maps")
-
 
     ILC_maps_per_scale = []
     for j in range(wv.N_scales):
         # first, check if the weights already exist, and skip everything if so
-        # Fiona edit below: allow for different components deprojected at different scales
         if type(info.N_deproj) is int:
             N_deproj = info.N_deproj
             if N_deproj>0:
@@ -466,8 +426,6 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
         count=0
         for a in range(info.N_freqs):
             if (freqs_to_use[j][a] == True):
-                # Fiona: make a new function with the weight filename
-                # weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'.fits'
                 weight_filename = _weights_filename(info,a,j)
                 exists = os.path.isfile(weight_filename)
                 if exists:
@@ -481,8 +439,6 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
             # this is the alpha^th component's SED evaluated at the i^th frequency
             # units of A_mix are K_CMB
             # Note: only include channels that are being used for this filter scale
-            # Fiona edit below: allow for different components deprojected at different scales
-            # N_comps = (info.N_deproj + 1)
             N_comps = (N_deproj + 1)
             A_mix = np.zeros((int(N_freqs_to_use[j]),N_comps))
             countt = 0
@@ -493,27 +449,17 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
                             if (info.bandpass_type == 'DeltaBandpasses'):
                                 # N.B. get_mix and get_mix_bandpassed assume the input maps are in uK_CMB, i.e., responses are computed in uK_CMB, but we are assuming in this code that all maps are in K_CMB, hence factor of 1.e-6 below
                                 # However, note that as a consequence an output NILC CMB map from this code has units of uK_CMB!
-                                #print(get_mix(150., 'tSZ',  param_dict_file='../input/fg_SEDs_default_params.yml', param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))
-                                #print(get_mix_bandpassed(['../data/HFI_BANDPASS_F143_reformat.txt'], 'tSZ', param_dict_file='../input/fg_SEDs_default_params.yml',param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))
-                                #
                                 A_mix[countt][b] = 1.e-6 * (get_mix([info.freqs_delta_ghz[a]], info.ILC_preserved_comp, param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
                             elif (info.bandpass_type == 'ActualBandpasses'):
                                 A_mix[countt][b] = 1.e-6 * (get_mix_bandpassed([info.freq_bp_files[a]], info.ILC_preserved_comp, param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
                         else:
                             if (info.bandpass_type == 'DeltaBandpasses'):
-                                # Fiona edit below: allow for different components deprojected at different scales
-                                # A_mix[countt][b] = 1.e-6 * (get_mix([info.freqs_delta_ghz[a]], info.ILC_deproj_comps[b-1], param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
                                 A_mix[countt][b] = 1.e-6 * (get_mix([info.freqs_delta_ghz[a]], ILC_deproj_comps[b-1], param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
                             elif (info.bandpass_type == 'ActualBandpasses'):
-                                # Fiona edit below: allow for different components deprojected at different scales
-                                # A_mix[countt][b] = 1.e-6 * (get_mix_bandpassed([info.freq_bp_files[a]], info.ILC_deproj_comps[b-1], param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
                                 A_mix[countt][b] = 1.e-6 * (get_mix_bandpassed([info.freq_bp_files[a]], ILC_deproj_comps[b-1], param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
                     countt += 1
             # normalize the columns of A_mix corresponding to the deprojected components so that they have values near unity
-            # Fiona edit below: allow for different components deprojected at different scales
-            # if (info.N_deproj != 0):
             if (N_deproj != 0):
-                # for b in range(1,info.N_deproj+1):
                 for b in range(1,N_deproj+1):
                     max_temp = np.amax(A_mix[:,b])
                     A_mix[:,b] = A_mix[:,b]/max_temp
@@ -523,15 +469,11 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
             cov_maps_temp = []
             flag=True
             for a in range(info.N_freqs):
-                # Fiona cross-ILC implementation: for cross_ILC the {S1,S2} covmat is not symmetric in frequency so we start the b forloop at 0
                 start_at = a
                 if info.cross_ILC:
                     start_at = 0
-                #for b in range(a, info.N_freqs):
                 for b in range(start_at, info.N_freqs):
                     if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True and flag==True):
-                        # Fiona : make a function with the covmat file name
-                        # cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_covmap_freq'+str(a)+'_freq'+str(b)+'_scale'+str(j)+'.fits'
                         cov_filename = _cov_filename(info,a,b,j)
                         exists = os.path.isfile(cov_filename)
                         if exists:
@@ -543,18 +485,13 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
                             break
             if flag == False:
                 for a in range(info.N_freqs):
-                    # Fiona cross-ILC implementation: for cross_ILC the {S1,S2} covmat is not symmetric in frequency so we start the b forloop at 0
                     start_at = a
                     if info.cross_ILC:
                         start_at = 0
-                    #for b in range(a, info.N_freqs):
                     for b in range(start_at, info.N_freqs):
                         if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True):
-                            # Fiona : make a function with the covmat file name
-                            # cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_covmap_freq'+str(a)+'_freq'+str(b)+'_scale'+str(j)+'.fits'
                             cov_filename = _cov_filename(info,a,b,j)
                             # read in wavelet coefficient maps constructed in previous step above
-                            # Fiona cross-ILC implementation
                             if not info.cross_ILC:
                                 filename_A = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(a)+'_scale'+str(j)+'.fits'
                                 filename_B = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(b)+'_scale'+str(j)+'.fits'
@@ -577,7 +514,6 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
             ##########################
             # invert the cov matrix in each pixel for each filter scale
             inv_cov_maps_temp = np.zeros((len(cov_maps_temp), int((N_pix_to_use[j]))))
-            print(len(cov_maps_temp))
             # determine lowest-resolution frequency used in the analysis for this scale -- N.B. freq maps are assumed to be in order from lowest to highest resolution (as elsewhere in the code)
             for a in range(info.N_freqs):
                 if (freqs_to_use[j][a] == True):
@@ -590,8 +526,6 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
             for a in range(info.N_freqs):
                 for b in range(a, info.N_freqs):
                     if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True and flag==True):
-                        # Fiona : make a new function with inv cov filename
-                        # inv_cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_invcovmap_freq'+str(a)+'_freq'+str(b)+'_scale'+str(j)+'.fits'
                         inv_cov_filename = _inv_cov_filename(info,j,a,b)
                         exists = os.path.isfile(inv_cov_filename)
                         if exists:
@@ -604,7 +538,6 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
                             break
             if (flag==True):
                 ### construct the matrix Q_{alpha beta} defined just before Eq. 12 for each pixel at this wavelet scale and evaluate Eq. 13 to get weights ###
-                #Qab = np.zeros((int(N_pix_to_use[j]),N_comps,N_comps)) #we don't actually need to keep Qab for every pixel
                 inv_covmat_temp = np.zeros((int(N_freqs_to_use[j]),int(N_freqs_to_use[j]), int(N_pix_to_use[j])))
                 count=0
                 for a in range(info.N_freqs):
@@ -617,7 +550,7 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
                             count+=1
                 tmp1 = np.einsum('ai,jip->ajp', np.transpose(A_mix), inv_covmat_temp)
                 Qab_pix = np.einsum('ajp,bj->abp', tmp1, np.transpose(A_mix))
-                # compute weights -- Eq. 13 of notes
+                # compute weights 
                 tempvec = np.zeros((N_comps, int(N_pix_to_use[j])))
                 # treat the no-deprojection case separately, since QSa_temp is empty in this case
                 if (N_comps == 1):
@@ -625,14 +558,10 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
                 else:
                     for a in range(N_comps):
                         QSa_temp = np.delete(np.delete(Qab_pix, a, 0), 0, 1) #remove the a^th row and zero^th column
-                        # Fiona edit: vectorizing
-                        #tempvec[a] = (-1.0)**float(a) * np.array([np.linalg.det(QSa_temp[:,:,p]) for p in range(int(N_pix_to_use[j]))])
                         tempvec[a] = (-1.0)**float(a) * np.linalg.det(np.transpose(QSa_temp,(2,0,1))) 
                 tmp2 = np.einsum('ia,ap->ip', A_mix, tempvec)
                 tmp3 = np.einsum('jip,ip->jp', inv_covmat_temp, tmp2)
-                # Fiona edit: vectorise
-                weights = 1.0/np.linalg.det(np.transpose(Qab_pix,(2,0,1)))[:,None]*np.transpose(tmp3) #N.B. 'weights' here only includes channels that passed beam_thresh criterion, todo: parallelize
-                # weights = np.array([(1.0 / np.linalg.det(Qab_pix[:,:,p]))*tmp3[:,p] for p in range(int(N_pix_to_use[j]))]) #N.B. 'weights' here only includes channels that passed beam_thresh criterion, todo: parallelize
+                weights = 1.0/np.linalg.det(np.transpose(Qab_pix,(2,0,1)))[:,None]*np.transpose(tmp3) #N.B. 'weights' here only includes channels that passed beam_thresh criterion, 
                 # response verification
                 response = np.einsum('pi,ia->ap', weights, A_mix) #dimensions N_comps x N_pix_to_use[j]
                 optimal_response_preserved_comp = np.ones(int(N_pix_to_use[j]))  #preserved component, want response=1
@@ -651,33 +580,24 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
                 covmat = np.zeros((int(N_freqs_to_use[j]),int(N_freqs_to_use[j]), int(N_pix_to_use[j])))
                 count=0
                 for a in range(info.N_freqs):
-                    # Fiona cross-ILC implementation: for cross_ILC the {S1,S2} covmat is not symmetric in frequency so we start the b forloop at 0
                     start_at = a
                     if info.cross_ILC:
                         start_at = 0
-                    #for b in range(a, info.N_freqs):
                     for b in range(start_at, info.N_freqs):
                         if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True):
                             # cov_maps_temp is in order 00, 01, 02, ..., 0(N_freqs_to_use[j]-1), 11, 12, ..., 1(N_freqs_to_use[j]-1), 22, 23, ...
                             covmat[a-a_min][b-a_min] = cov_maps_temp[count] #by construction we're going through cov_maps_temp in the same order as it was populated above
-                            # Fiona cross-ILC implementation: for cross_ILC covmat is not symmetric by design (until we symmetrize it later)
                             # TODO: maybe symmetrize it before saving so that we don't have to save twice as many covmats?
                             if (a-a_min) != (b-a_min) and not info.cross_ILC:
                                 covmat[b-a_min][a-a_min] = covmat[a-a_min][b-a_min] #symmetrize
                             count+=1
-                # Fiona cross-ILC implementation: symmetrize the covmat 
+                # cross-ILC : symmetrize the covmat 
                 if info.cross_ILC:
                     covmat = (covmat + np.transpose(covmat,(1,0,2)))/2
-                # Fiona edit: vectorization
-                # inv_covmat = np.array([np.linalg.inv(covmat[:,:,p]) for p in range(int(N_pix_to_use[j]))]) #dim pix,freqs,freqs
                 inv_covmat = np.linalg.inv(np.transpose(covmat,(2,0,1)))
                 inv_covmat = np.transpose(inv_covmat, axes=[1,2,0]) #new dim freq, freq, pix
 
-
-
-                # Fiona edit : vectorization
                 assert np.allclose(np.einsum('ijp,jkp->pik', inv_covmat, covmat), np.transpose(np.repeat(np.eye(N_freqs_to_use[j])[:,:,None],N_pix_to_use[j],axis=2),(2,0,1)), rtol=1.e-2, atol=1.e-2), "covmat inversion failed for scale "+str(j) #, covmat, inv_covmat, np.dot(inv_covmat, covmat)-np.eye(int(N_freqs_to_use[j]))
-                #assert np.allclose(np.einsum('ijp,jkp->pik', inv_covmat, covmat), np.array([np.eye(int(N_freqs_to_use[j]))]*int(N_pix_to_use[j])), rtol=1.e-3, atol=1.e-3), "covmat inversion failed for scale "+str(j) #, covmat, inv_covmat, np.dot(inv_covmat, covmat)-np.eye(int(N_freqs_to_use[j]))
                 count=0
                 for a in range(info.N_freqs):
                     for b in range(a, info.N_freqs):
@@ -688,7 +608,7 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
 
                 tmp1 = np.einsum('ai,jip->ajp', np.transpose(A_mix), inv_covmat)
                 Qab_pix = np.einsum('ajp,bj->abp', tmp1, np.transpose(A_mix))
-                # compute weights -- Eq. 13 of notes
+                # compute weights 
                 tempvec = np.zeros((N_comps, int(N_pix_to_use[j])))
                 # treat the no-deprojection case separately, since QSa_temp is empty in this case
                 if (N_comps == 1):
@@ -696,10 +616,10 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
                 else:
                     for a in range(N_comps):
                         QSa_temp = np.delete(np.delete(Qab_pix, a, 0), 0, 1) #remove the a^th row and zero^th column
-                        tempvec[a] = (-1.0)**float(a) * np.array([np.linalg.det(QSa_temp[:,:,p]) for p in range(int(N_pix_to_use[j]))])
+                        tempvec[a] = (-1.0)**float(a) * np.linalg.det(np.transpose(QSa_temp,(2,0,1)))
                 tmp2 = np.einsum('ia,ap->ip', A_mix, tempvec)
-                tmp3 = np.einsum('jip,ip->jp', inv_covmat, tmp2)
-                weights = np.array([(1.0 / np.linalg.det(Qab_pix[:,:,p]))*tmp3[:,p] for p in range(int(N_pix_to_use[j]))]) #N.B. 'weights' here only includes channels that passed beam_thresh criterion, todo: parallelize
+                tmp3 = np.einsum('jip,ip->jp', inv_covmat_temp, tmp2)
+                weights = 1.0/np.linalg.det(np.transpose(Qab_pix,(2,0,1)))[:,None]*np.transpose(tmp3) #N.B. 'weights' here only includes channels that passed beam_thresh criterion, 
                 # response verification
                 response = np.einsum('pi,ia->ap', weights, A_mix) #dimensions N_comps x N_pix_to_use[j]
                 optimal_response_preserved_comp = np.ones(int(N_pix_to_use[j]))  #preserved component, want response=1
@@ -716,8 +636,6 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
                 for a in range(info.N_freqs):
                     for b in range(a, info.N_freqs):
                         if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True):
-                            # Fiona : make a new function with the inv cov file name
-                            # inv_cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_invcovmap_freq'+str(a)+'_freq'+str(b)+'_scale'+str(j)+'.fits'
                             inv_cov_filename = _inv_cov_filename(info,j,a,b)
                             hp.write_map(inv_cov_filename, inv_cov_maps_temp[count], nest=False, dtype=np.float64, overwrite=False)
                             count+=1
@@ -731,28 +649,14 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
                 count=0
                 for a in range(info.N_freqs):
                     if (freqs_to_use[j][a] == True):
-                        # Fiona: make a new function with the weight filename
-                        # weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'.fits'
                         weight_filename = _weights_filename(info,a,j)
-
-
                         hp.write_map(weight_filename, weights[:,count], nest=False, dtype=np.float64, overwrite=False)
                         if map_images == True: #save images if requested
                             plt.clf()
                             hp.mollview(weights[:,count], unit="1/K", title="Needlet ILC Weight Map, Frequency "+str(a)+" Scale "+str(j))
-                            # Fiona cross-ILC implementation: save the cross_ILC weights with a different filename
-                            # plt.savefig(info.output_dir+info.output_prefix+'_needletILCweightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'.pdf')
-                            # Fiona: change filenames for different deprojections
-                            # plt.savefig(info.output_dir+info.output_prefix+'_needletILCweightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.pdf')
-                            # Fiona edit: add output_suffix
-                            # Fiona edit below: allow for different components deprojected at different scales
-                            # if info.N_deproj == 0:
                             if N_deproj == 0:
-                                #plt.savefig(info.output_dir+info.output_prefix+'_needletILCweightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.pdf')
                                 plt.savefig(info.output_dir+info.output_prefix+'_needletILCweightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+info.output_suffix+'.pdf')
                             else:
-                                # plt.savefig(info.output_dir+info.output_prefix+'_needletILCweightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.pdf')
-                                # plt.savefig(info.output_dir+info.output_prefix+'_needletILCweightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+info.output_suffix+'.pdf')
                                 plt.savefig(info.output_dir+info.output_prefix+'_needletILCweightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(ILC_deproj_comps)+'_crossILC'*info.cross_ILC+info.output_suffix+'.pdf')
 
                         count+=1
@@ -761,8 +665,6 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
             count=0
             for a in range(info.N_freqs):
                 if (freqs_to_use[j][a] == True):
-                    # Fiona: make a new function with the weight filename
-                    #weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'.fits'
                     weight_filename = _weights_filename(info,a,j)
                     weights[:,count] = hp.read_map(weight_filename, dtype=np.float64, )
                     count+=1
@@ -773,9 +675,7 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
         for a in range(info.N_freqs):
             if (freqs_to_use[j][a] == True):
                 filename_wavelet_coeff_map = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(a)+'_scale'+str(j)+'.fits'
-                # Fiona apply weights to other maps implementation
                 if not info.apply_weights_to_other_maps:
-
                     wavelet_coeff_map = hp.read_map(filename_wavelet_coeff_map, dtype=np.float64, verbose=False)
                 else:
                     wavelet_coeff_map =maps_for_weights_needlets[a][j]
@@ -787,24 +687,13 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
     # synthesize the per-needlet-scale ILC maps into the final combined ILC map (apply each needlet filter again and add them all together -- have to upgrade to all match the same Nside -- done in synthesize)
     ILC_map = synthesize(wv_maps=ILC_maps_per_scale, wv=wv, N_side_out=info.N_side)
     # save the final ILC map
-    # Fiona cross-ILC implementation: save the cross_ILC map with a different filename
-    # ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'.fits'
-    # Fiona edit: add output_suffix
-    # ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.fits'
     ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+info.output_suffix+'.fits'
-    # Fiona: change filenames for different deprojections
-    # Fiona edit below: allow for different components deprojected at different scales
-    # if info.N_deproj>0:
-        # ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.fits'
-        # ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+info.output_suffix+'.fits'
     if type(info.N_deproj) is int:
         if N_deproj>0:
-             # ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.fits'
             ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+info.output_suffix+'.fits'
     else:
          if info.N_deproj[0]>0:
-            # ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.fits'
-            # problem: ILCdeprojected file name is not so descriptive here. Need to describe it more in info.output_suffix.
+            # NOTE: ILCdeprojected file name is not so descriptive here. Need to describe it more in info.output_suffix.
             ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps[0])+'_crossILC'*info.cross_ILC+info.output_suffix+'.fits'
 
 
@@ -813,33 +702,15 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
     if map_images == True:
         plt.clf()
         hp.mollview(ILC_map, unit='dimensionless', title='Needlet ILC Map, Component '+info.ILC_preserved_comp)
-        # Fiona cross-ILC implementation: save the cross_ILC weights with a different filename
-        # plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'.pdf')
-        # Fiona: change filenames for different deprojections
-        # plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.pdf')
-        # Fiona edit: add output_suffix
-        # Fiona edit below: allow for different components deprojected at different scales
-        # if info.N_deproj==0:
-            # plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.pdf')
-          #  plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+info.output_suffix+'.pdf')
-        # else:
-            # plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.pdf')
-            # plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+info.output_suffix+'.pdf')
-
         if type(info.N_deproj) is int:
             if info.N_deproj==0:
-                # plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.pdf')
                 plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+info.output_suffix+'.pdf')
             else:
-                # plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.pdf')
                 plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+info.output_suffix+'.pdf')
         else:
             if info.N_deproj[0]==0:
-                # plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.pdf')
                 plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+info.output_suffix+'.pdf')
             else:
-                # plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.pdf')
-                # problem: ILCdeprojected file name is not so descriptive here. Need to describe it more in info.output_suffix.
                 plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps[0])+'_crossILC'*info.cross_ILC+info.output_suffix+'.pdf')
 
 
@@ -847,14 +718,15 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
     return 1
     ##########################
     ##########################
+
 # harmonic ILC
-def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3, map_images=False):
+def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
     # This function is copy-and-pasted from wavelet_ILC() above and edited.
     # It would be MUCH better to avoid such hard-coding by writing one wavelet_ILC() function that can do both (I have already done this on my local pyilc branch
     # However, the harmonic_ILC() function itself contains a lot of hard coded code-snippets (ie, it is a very long function with very few calls to subroutines).
     # Thus, my HILC had a lot very long if statements of the kind "if info.wavelet_type =='HILC': {do x} else {do y}" and it was very hard to follow the overall
     # function. So really, what should be done is to split wavelet_ILC() into many smaller subroutines and then it would be much easier to read the whole function
-    # in this way. However, I have not done this(yet!!) as it would take time - maybe we should do this (with low priority) before release (or at least for a v2)
+    # in this way. However, I have not done this(yet!!)  - TODO for an update
     assert wv is not None, "wavelets not defined"
     assert type(wv) is Wavelets, "Wavelets TypeError"
     assert info is not None, "ILC info not defined"
@@ -880,14 +752,9 @@ def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=
         ell_F[i] = ell_peak + (np.abs( wv.filters[i][ell_peak:] - wavelet_beam_criterion )).argmin()
         if ell_F[i] > wv.ELLMAX:
             ell_F[i] = wv.ELLMAX
-        print("ell_F = ",ell_F[i])
     ell_F[-1] = ell_F[-2] #just use the second-to-last criterion for the last one #TODO: improve this
     for j in range(info.N_freqs):
-        #print(len(info.beams[j]))
-        #print((info.beams[j]).shape)
-        #print((info.beams[j])[:,1])
         ell_B[j] = (np.abs( (info.beams[j])[:,1] - wavelet_beam_criterion )).argmin()
-        print("ell_B = ",ell_B[j])
     for i in range(wv.N_scales):
         for j in range(info.N_freqs):
             if ell_F[i] <= ell_B[j]:
@@ -909,19 +776,13 @@ def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=
                 break
         if (N_side_to_use[i] > info.N_side):
             N_side_to_use[i] = info.N_side
-    print(freqs_to_use)
-    print(N_freqs_to_use)
-    print(N_side_to_use)
     N_pix_to_use = 12*(N_side_to_use)**2
-    print(N_pix_to_use)
-    #may need to work N_side_to_use into the actual waveletize function, so that it does not use tons of memory unnecessarily (can see if we run into problems) -- DONE
     ##########################
     ##########################
     # criterion to determine the real-space gaussian FWHM used in wavelet ILC
     # based on ILC bias mode-counting
     FWHM_pix = np.zeros(wv.N_scales,dtype=float)
     ell, filts = wv.TopHatHarmonic(info.ellbins)
-
 
     # compute effective number of modes associated with each filter (on the full sky)
     # note that the weights we use are filt^2, since this is the quantity that sums to unity at each ell
@@ -937,7 +798,6 @@ def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=
     ##########################
     # compute wavelet decomposition of all frequency maps used at each filter scale
     # save the filtered maps (aka maps of "wavelet coefficients")
-    # remember to re-convolve all maps to the highest resolution map being used when passing into needlet filtering -- WHY?!  recall the y-map paper reconvolves to 10 arcmin, don't we just need to be consistent?
     for i in range(info.N_freqs):
         # N.B. maps are assumed to be in strictly decreasing order of FWHM! i.e. info.beams[-1] is highest-resolution beam
         print("waveletizing frequency ", i, "...")
@@ -955,22 +815,18 @@ def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=
                     flag=False
                     break
         if flag == False:
-             # Fiona edit: allow for performing ILC at a user-specified beam / resolution
-            #wv_maps_temp = waveletize(inp_map=(info.maps)[i], wv=wv, taper=True, taper_width=200., rebeam=True, inp_beam=(info.beams)[i], new_beam=(info.beams)[-1], wv_filts_to_use=freqs_to_use[:,i], N_side_to_use=N_side_to_use)
             wv_maps_temp = waveletize(inp_map=(info.maps)[i], wv=wv,  rebeam=True, inp_beam=(info.beams)[i], new_beam=info.common_beam, wv_filts_to_use=freqs_to_use[:,i], N_side_to_use=N_side_to_use)
             for j in range(wv.N_scales):
                 if freqs_to_use[j][i] == True:
                     filename = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(i)+'_scale'+str(j)+'.fits'
                     hp.write_map(filename, wv_maps_temp[j], nest=False, dtype=np.float64, overwrite=False)
         if map_images == True:
-            print(len(wv_maps_temp))
             for j in range(wv.N_scales):
                 if freqs_to_use[j][i] == True:
                     plt.clf()
                     hp.mollview(wv_maps_temp[j], unit="K", title="Needlet Coefficient Map, Frequency "+str(i)+" Scale "+str(j), min=np.mean(wv_maps_temp[j])-2*np.std(wv_maps_temp[j]), max=np.mean(wv_maps_temp[j])+2*np.std(wv_maps_temp[j]))
                     plt.savefig(info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(i)+'_scale'+str(j)+'.pdf')
         print("done waveletizing frequency ", i, "...")
-        # Fiona cross-ILC implementation
         if info.cross_ILC:
             for season in [1,2]:
                 flag = True
@@ -980,10 +836,8 @@ def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=
                         filename = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(i)+'_scale'+str(j)+'_S'+str(season)+'.fits'
                         exists = os.path.isfile(filename)
                         if exists:
-                            print('needlet coefficient map already exists:', filename,)
                             wv_maps_temp.append( hp.read_map(filename, dtype=np.float64, verbose=False) )
                         else:
-                            print('needlet coefficient map not previously computed; re-computing all '+str(season)+'maps for frequency '+str(i)+' now...',)
                             flag=False
                             break
                 if flag == False:
@@ -992,7 +846,7 @@ def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=
                     elif season==2:
                         maps = info.maps_s2
 
-                    wv_maps_temp = waveletize(inp_map=(maps)[i], wv=wv, taper=True, taper_width=200., rebeam=True, inp_beam=(info.beams)[i], new_beam=newbeam, wv_filts_to_use=freqs_to_use[:,i], N_side_to_use=N_side_to_use)
+                    wv_maps_temp = waveletize(inp_map=(maps)[i], wv=wv, rebeam=True, inp_beam=(info.beams)[i], new_beam=newbeam, wv_filts_to_use=freqs_to_use[:,i], N_side_to_use=N_side_to_use)
                     for j in range(wv.N_scales):
                         if freqs_to_use[j][i] == True:
                             filename = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(i)+'_scale'+str(j)+'_S'+str(season)+'.fits'
@@ -1017,12 +871,9 @@ def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=
         else:
             N_deproj = info.N_deproj[j]
             ILC_deproj_comps = info.ILC_deproj_comps[j]
-        # Fiona cross-ILC implementation: save the cross_ILC weights with a different filename
-        #weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'.fits'
         weight_filename = info.output_dir+info.output_prefix+'weightvector_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.txt'
 
 
-        # Fiona: change filenames for different deprojections
         if N_deproj>0:
             weight_filename = info.output_dir+info.output_prefix+'weightvector_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.txt'
         exists = os.path.isfile(weight_filename)
@@ -1046,11 +897,7 @@ def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=
                             if (info.bandpass_type == 'DeltaBandpasses'):
                                 # N.B. get_mix and get_mix_bandpassed assume the input maps are in uK_CMB, i.e., responses are computed in uK_CMB, but we are assuming in this code that all maps are in K_CMB, hence factor of 1.e-6 below
                                 # However, note that as a consequence an output NILC CMB map from this code has units of uK_CMB!
-                                #print(get_mix(150., 'tSZ',  param_dict_file='../input/fg_SEDs_default_params.yml', param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))
-                                #print(get_mix_bandpassed(['../data/HFI_BANDPASS_F143_reformat.txt'], 'tSZ', param_dict_file='../input/fg_SEDs_default_params.yml',param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))
-                                #
                                 A_mix[countt][b] = 1.e-6 * (get_mix([info.freqs_delta_ghz[a]], info.ILC_preserved_comp, param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
-                                print("amix is",A_mix)
                             elif (info.bandpass_type == 'ActualBandpasses'):
                                 A_mix[countt][b] = 1.e-6 * (get_mix_bandpassed([info.freq_bp_files[a]], info.ILC_preserved_comp, param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
                         else:
@@ -1070,11 +917,9 @@ def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=
             cov_maps_temp = []
             flag=True
             for a in range(info.N_freqs):
-                # Fiona cross-ILC implementation: for cross_ILC the {S1,S2} covmat is not symmetric in frequency so we start the b forloop at 0
                 start_at = a
                 if info.cross_ILC:
                     start_at = 0
-                #for b in range(a, info.N_freqs):
                 for b in range(start_at, info.N_freqs):
                     if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True and flag==True):
                         # Note that for HILC the covmat has no pixel index and only needs {freq1, freq2} indices at every scale. So we save it at every scale in a .txt file as a 2-d numpy array
@@ -1139,7 +984,6 @@ def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=
                 print("saving covmat",cov_filename)
                 np.savetxt(cov_filename,cov_matrix_harmonic)
 
-
             print('done computing the covariance matrix at scale'+str(j),flush=True)
             ##########################
             ##########################
@@ -1155,10 +999,9 @@ def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=
             ### for each filter scale, perform cov matrix inversion and compute maps of the ILC weights using the inverted cov matrix maps
             count=0
             ### construct the matrix Q_{alpha beta} defined just before Eq. 12 for each pixel at this wavelet scale and evaluate Eq. 13 to get weights ###
-            #Qab = np.zeros((int(N_pix_to_use[j]),N_comps,N_comps)) #we don't actually need to keep Qab for every pixel
             tmp1 = np.einsum('ai,jip->ajp', np.transpose(A_mix), inv_covmat_temp)
             Qab_pix = np.einsum('ajp,bj->abp', tmp1, np.transpose(A_mix))
-            # compute weights -- Eq. 13 of notes
+            # compute weights 
             tempvec = np.zeros((N_comps, 1))
             # treat the no-deprojection case separately, since QSa_temp is empty in this case
             if (N_comps == 1):
@@ -1166,14 +1009,10 @@ def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=
             else:
                 for a in range(N_comps):
                     QSa_temp = np.delete(np.delete(Qab_pix, a, 0), 0, 1) #remove the a^th row and zero^th column
-                    # Fiona edit: vectorising
                     tempvec[a] = (-1.0)**float(a) * np.linalg.det(np.transpose(QSa_temp,(2,0,1)))
-                    #tempvec[a] = (-1.0)**float(a) * np.array([np.linalg.det(QSa_temp[:,:,p]) for p in range(int(N_pix_to_use[j]))])
             tmp2 = np.einsum('ia,ap->ip', A_mix, tempvec)
             tmp3 = np.einsum('jip,ip->jp', inv_covmat_temp, tmp2)
-            # Fiona edit: vectorising
-            weights = 1.0/np.linalg.det(np.transpose(Qab_pix,(2,0,1)))[:,None] * np.transpose(tmp3) #N.B. 'weights' here only includes channels that passed beam_thresh criterion, todo: parallelize
-            #weights = np.array([(1.0 / np.linalg.det(Qab_pix[:,:,p]))*tmp3[:,p] for p in range(int(N_pix_to_use[j]))]) #N.B. 'weights' here only includes channels that passed beam_thresh criterion, todo: parallelize
+            weights = 1.0/np.linalg.det(np.transpose(Qab_pix,(2,0,1)))[:,None] * np.transpose(tmp3) #N.B. 'weights' here only includes channels that passed beam_thresh criterion
             # response verification
             response = np.einsum('pi,ia->ap', weights, A_mix) #dimensions N_comps x N_pix_to_use[j]
             optimal_response_preserved_comp = np.ones(1)
@@ -1195,9 +1034,6 @@ def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=
                     weight_filename = info.output_dir+info.output_prefix+'weightvector_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.txt'
                 np.savetxt(weight_filename, weights,)
         else:
-            # Fiona cross-ILC implementation: save the cross_ILC weights with a different filename
-            #weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'.fits'
-            # Fiona: change filenames for different deprojections
             weight_filename = info.output_dir+info.output_prefix+'weightvector_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.txt'
             if N_deproj>0:
                 weight_filename = info.output_dir+info.output_prefix+'weightvector_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.txt'
@@ -1218,10 +1054,7 @@ def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=
     # synthesize the per-needlet-scale ILC maps into the final combined ILC map (apply each needlet filter again and add them all together -- have to upgrade to all match the same Nside -- done in synthesize)
     ILC_map = synthesize(wv_maps=ILC_maps_per_scale, wv=wv, N_side_out=info.N_side)
     # save the final ILC map
-    # Fiona cross-ILC implementation: save the cross_ILC map with a different filename
-    # ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'.fits'
     ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.fits'
-    # Fiona: change filenames for different deprojections
     if type(info.N_deproj) is int:
         if info.N_deproj>0:
             ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.fits'
@@ -1233,10 +1066,6 @@ def harmonic_ILC(wv=None, info=None, ILC_bias_tol=1.e-3, wavelet_beam_criterion=
     if map_images == True:
         plt.clf()
         hp.mollview(ILC_map, unit='dimensionless', title='Needlet ILC Map, Component '+info.ILC_preserved_comp)
-        # Fiona cross-ILC implementation: save the cross_ILC weights with a different filename
-        # plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'.pdf')
-        # Fiona: change filenames for different deprojections
-        #plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.pdf')
         if type(info.N_deproj) is int:
             if info.N_deproj==0:
                 plt.savefig(info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.pdf')

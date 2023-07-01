@@ -50,7 +50,7 @@ else:
 # wavelet ILC
 # Fiona HILC implementation:
 if info.wavelet_type == 'TopHatHarmonic':
-    harmonic_ILC(wv, info, ILC_bias_tol=1.e-2, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3, map_images=False)
+    harmonic_ILC(wv, info, resp_tol=1.e-3, map_images=False)
 else:
     wavelet_ILC(wv, info, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3, map_images=False)
 ##########################
