@@ -144,9 +144,8 @@ def get_mix(nu_ghz, comp, param_dict_file=None, param_dict_override=None,
         resp = (nu/nu0_CIB)**(3.0+(p[dust_beta_param_name])) * ((np.exp(X0_CIB) - 1.0) / (np.exp(X_CIB) - 1.0))
         resp[np.where(nu_ghz == None)] = 0. #this case is appropriate for HI or other maps that contain no CMB-relevant signals (and also no CIB); they're assumed to be denoted by None in nu_ghz
         return resp
-    # Fiona edit below: CIB_moment1
     elif (comp =='CIB_dT'):
-        # dTCIB = first derivative (WRT T) of CIB black body
+        # CIB_dT = first derivative (WRT T) of CIB black body
         # CIB SED parameter choices in dict file: Tdust_CIB [K], beta_CIB, nu0_CIB [GHz]
         # N.B. overall amplitude is not meaningful here; output ILC map (if you tried to preserve this component) would not be in sensible units
         p = _setp()
@@ -158,8 +157,7 @@ def get_mix(nu_ghz, comp, param_dict_file=None, param_dict_override=None,
         resp = (nu/nu0_CIB)**(4.0+p[dust_beta_param_name]) * (-np.exp(-X0_CIB/2)+np.exp(X0_CIB/2))**2/ (-np.exp(-X_CIB/2)+np.exp(X_CIB/2))**2 * (ItoDeltaT(np.asarray(nu_ghz).astype(float))/ItoDeltaT(p['nu0_CIB_ghz']))
         resp[np.where(nu_ghz == None)] = 0.
         return resp
-    elif (comp =='CIB_Jysr_dT'):
-        # dTCIB = first derivative (WRT T) of CIB black body
+    elif (comp =='CIB_Jysr_dT'): #same as CIB_dT above but in 1e-26 Jy/sr (with arbitrary overall amplitude!) instead of uK_CMB
         # CIB SED parameter choices in dict file: Tdust_CIB [K], beta_CIB, nu0_CIB [GHz]
         # N.B. overall amplitude is not meaningful here; output ILC map (if you tried to preserve this component) would not be in sensible units
         p = _setp()
@@ -173,8 +171,7 @@ def get_mix(nu_ghz, comp, param_dict_file=None, param_dict_override=None,
         return resp
 
     elif (comp =='CIB_dbeta'):
-        # dbetaCIB = first derivative (WRT beta) of CIB black body
-        # TODO: add first derivative WRT T of CIB black body
+        # CIB_dbeta = first derivative (WRT beta) of CIB black body
         # CIB SED parameter choices in dict file: Tdust_CIB [K], beta_CIB, nu0_CIB [GHz]
         # N.B. overall amplitude is not meaningful here; output ILC map (if you tried to preserve this component) would not be in sensible units
         p = _setp()
@@ -185,8 +182,7 @@ def get_mix(nu_ghz, comp, param_dict_file=None, param_dict_override=None,
         resp = np.log(nu/nu0_CIB)*(nu/nu0_CIB)**(3.0+(p[dust_beta_param_name])) * ((np.exp(X0_CIB) - 1.0) / (np.exp(X_CIB) - 1.0)) * (ItoDeltaT(np.asarray(nu_ghz).astype(float))/ItoDeltaT(p['nu0_CIB_ghz']))
         resp[np.where(nu_ghz == None)] = 0.
         return resp
-    elif (comp == 'CIB_Jysr_dbeta'): #same as dbetaCIB above but in 1e-26 Jy/sr (with arbitrary overall amplitude!) instead of uK_CMB
-        # TODO: add first derivative WRT T of CIB black body
+    elif (comp == 'CIB_Jysr_dbeta'): #same as CIB_dbeta above but in 1e-26 Jy/sr (with arbitrary overall amplitude!) instead of uK_CMB
         # CIB SED parameter choices in dict file: Tdust_CIB [K], beta_CIB, nu0_CIB [GHz]
         # N.B. overall amplitude is not meaningful here; output ILC map (if you tried to preserve this component) would not be in sensible units
         p = _setp()
@@ -442,7 +438,6 @@ def get_mix_bandpassed(bp_list, comp, param_dict_file=None,bandpass_shifts=None,
                     # in Jy/sr from nu0_CIB to the "nominal frequency" nu_c that appears in 
                     # those equations (i.e., multiply by get_mix(nu_c, 'CIB_Jysr')).  
                     # The resulting cancellation leaves this simple expression which has no dependence on nu_c.
-                # Fiona dbeta CIB
                 elif (comp == 'CIB_dbeta'):
                     # following Sec. 3.2 of https://arxiv.org/pdf/1303.5070.pdf 
                     # -- N.B. IMPORTANT TYPO IN THEIR EQ. 35 -- see https://www.aanda.org/articles/aa/pdf/2014/11/aa21531-13.pdf
@@ -465,12 +460,6 @@ def get_mix_bandpassed(bp_list, comp, param_dict_file=None,bandpass_shifts=None,
 
                     vnorm = np.trapz(trans * dBnudT(nu_ghz), nu_ghz)
                     val = (np.trapz(trans * mixs * bnus , nu_ghz) / vnorm) / lbeam
-                    # N.B. this expression follows from Eqs. 32 and 35 of 
-                    # https://www.aanda.org/articles/aa/pdf/2014/11/aa21531-13.pdf , 
-                    # and then noting that one also needs to first rescale the CIB emission 
-                    # in Jy/sr from nu0_CIB to the "nominal frequency" nu_c that appears in 
-                    # those equations (i.e., multiply by get_mix(nu_c, 'CIB_Jysr')).  
-                    # The resulting cancellation leaves this simple expression which has no dependence on nu_c.
                 elif (comp == 'radio'):
                     # same logic/formalism as used for CIB component immediately above this
                     # radio SED parameter choices in dict file: beta_radio, nu0_radio [GHz]
