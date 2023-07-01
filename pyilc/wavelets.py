@@ -91,8 +91,6 @@ class Wavelets(object):
     #    FILL IN
     #    # simple check to ensure that sum of squared transmission is unity as needed for NILC algorithm
     #    assert (np.absolute( np.sum( self.filters**2., axis=0 ) - np.ones(self.ELLMAX+1,dtype=float)) < self.tol).all(), "wavelet filter transmission check failed"
-    #    return self.ell, self.filters
-    # Fiona edit: top hat bins for HILC
     def TopHatHarmonic(self, ellbins):
 
         self.filters = np.zeros((len(ellbins)-1,self.ELLMAX+1),dtype=float)

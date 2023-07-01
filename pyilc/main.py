@@ -4,7 +4,6 @@ import numpy as np
 import os
 import healpy as hp
 from input import ILCInfo
-# Fiona edit: allow for HILC
 from wavelets import Wavelets, wavelet_ILC, harmonic_ILC
 """
 main script for doing wavelet (MC)^2ILC analysis
@@ -37,7 +36,6 @@ info.read_beams()
 wv = Wavelets(N_scales=info.N_scales, ELLMAX=info.ELLMAX, tol=1.e-6, taper_width=info.taper_width)
 if info.wavelet_type == 'GaussianNeedlets':
     ell, filts = wv.GaussianNeedlets(FWHM_arcmin=info.GN_FWHM_arcmin)
-# Fiona HILC implementation
 elif info.wavelet_type == 'TopHatHarmonic':
     ell,filts = wv.TopHatHarmonic(info.ellbins)
 else:
@@ -48,7 +46,6 @@ else:
 
 ##########################
 # wavelet ILC
-# Fiona HILC implementation:
 if info.wavelet_type == 'TopHatHarmonic':
     harmonic_ILC(wv, info, resp_tol=1.e-3, map_images=False)
 else:

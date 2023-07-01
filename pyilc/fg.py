@@ -193,7 +193,6 @@ def get_mix(nu_ghz, comp, param_dict_file=None, param_dict_override=None,
         resp = np.log(nu/nu0_CIB)*(nu/nu0_CIB)**(3.0+(p[dust_beta_param_name])) * ((np.exp(X0_CIB) - 1.0) / (np.exp(X_CIB) - 1.0))
         resp[np.where(nu_ghz == None)] = 0. #this case is appropriate for HI or other maps that contain no CMB-relevant signals (and also no CIB); they're assumed to be denoted by None in nu_ghz
         return resp
-    # end Fionan edit
     elif (comp == 'radio'):
         # radio = power-law here (power-law SED in specific intensity units (W/m^2/Hz/sr), here converted to uK_CMB)
         # radio SED parameter choices in dict file: beta_radio, nu0_radio [GHz]
@@ -608,7 +607,7 @@ def get_mix_bandpassed(bp_list, comp, param_dict_file=None,bandpass_shifts=None,
 def get_test_fdict():
     import glob
     nus = np.geomspace(10,1000,100)
-    comps = ['CMB','kSZ','tSZ','mu','rSZ','CIB','CIB_Jysr','radio','radio_Jysr','CIB_Jysr_dbeta','CIB_dbeta','CIB_dT','CIB_Jysr_dT'] # Fiona edit: Added CIB moment 1 
+    comps = ['CMB','kSZ','tSZ','mu','rSZ','CIB','CIB_Jysr','radio','radio_Jysr','CIB_Jysr_dbeta','CIB_dbeta','CIB_dT','CIB_Jysr_dT'] 
     dirname = os.path.dirname(os.path.abspath(__file__))
     bp_list = glob.glob(dirname+"/../data/*.txt") + [None]
 
