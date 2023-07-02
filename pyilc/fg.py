@@ -5,9 +5,9 @@ import os
 from scipy.interpolate import interp1d
 
 """
-Utilities for unit conversions and foreground SED modeling, including Planck and ACT bandpasses.
-SEDs included: CMB, kSZ, tSZ, rSZ, mu, CIB, radio
-Imported from TILe-C: https://github.com/ACTCollaboration/tilec/blob/master/tilec/fg.py
+Utilities for unit conversions and foreground SED modeling, including Planck and ACT passbands.
+SEDs included: CMB, kSZ, tSZ, rSZ, mu, CIB (i.e., modified blackbody), first-order CIB moments, radio
+Some of this code imported from TILe-C (see Madhavacheril, Hill, Naess, ACT Collaboration 2020): https://github.com/ACTCollaboration/tilec/blob/master/tilec/fg.py
 """
 ######################################
 # global constants
