@@ -14,7 +14,7 @@ main script for doing needlet or harmonic (multiply constrained) ILC analysis
 try:
     input_file = (sys.argv)[1]
 except IndexError:
-    input_file = '../input/pyilc_input_Kristen_example.yml'
+    input_file = '../input/pyilc_input_example_general.yml'
 ##########################
 
 ##########################
