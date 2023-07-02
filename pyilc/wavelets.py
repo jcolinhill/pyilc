@@ -52,11 +52,11 @@ class Wavelets(object):
 
     # Planck 2015 NILC y-map Gaussian needlet filters: [600', 300', 120', 60', 30', 15', 10', 7.5', 5']
     # Planck 2016 GNILC Gaussian needlet filters: [300' , 120' , 60' , 45' , 30' , 15' , 10' , 7.5' , 5']
-    # (These are from email via M. Remazeilles 2/22/19 -- update: y-map filters are still slightly different at low ell than those in the paper)
-    # for the details of the construction,
+    # (Thanks to Mathieu Remazeilles for providing these numbers (2/22/19) -- although the y-map filters are still slightly different at low ell than those in the paper)
+    # For the details of the construction,
     #   see Eqs. (A.29)-(A.32) of http://arxiv.org/pdf/1605.09387.pdf
-    # note that these can be constructed for different (user-specified) choices of N_scales and ELLMAX also
-    # define the FWHM values used in the Gaussians -- default = Planck 2015 NILC y-map values
+    # Note that these can be constructed for different (user-specified) choices of N_scales and ELLMAX also.
+    # Define the FWHM values used in the Gaussians -- default = Planck 2015 NILC y-map values
     def GaussianNeedlets(self, FWHM_arcmin=np.array([600., 300., 120., 60., 30., 15., 10., 7.5, 5.])):
         # FWHM need to be in strictly decreasing order, otherwise you'll get nonsense
         if ( any( i <= j for i, j in zip(FWHM_arcmin, FWHM_arcmin[1:]))):
@@ -79,16 +79,16 @@ class Wavelets(object):
 
     # the cosine needlet filters used in the Planck 2015/2018 CMB analysis are described in
     #    App. B of https://arxiv.org/pdf/1502.05956.pdf and App. B of https://arxiv.org/pdf/1807.06208.pdf
-    #    (not yet implemented here)
+    #    TODO: (not yet implemented here)
     #def CosineNeedlets(self, ellmin=None, ellpeak=None, ellmax=None):
-    #    FILL IN
+    #    TODO: (not yet implemented here)
     #    # simple check to ensure that sum of squared transmission is unity as needed for NILC algorithm
     #    assert (np.absolute( np.sum( self.filters**2., axis=0 ) - np.ones(self.ELLMAX+1,dtype=float)) < self.tol).all(), "wavelet filter transmission check failed"
     #    return self.ell, self.filters
 
     # scale-discretized wavelets
-    #def ScaleDiscretizedWavelets(self, FILLIN):
-    #    FILL IN
+    #def ScaleDiscretizedWavelets(self, TODO):
+    #    TODO: (not yet implemented here)
     #    # simple check to ensure that sum of squared transmission is unity as needed for NILC algorithm
     #    assert (np.absolute( np.sum( self.filters**2., axis=0 ) - np.ones(self.ELLMAX+1,dtype=float)) < self.tol).all(), "wavelet filter transmission check failed"
     def TopHatHarmonic(self, ellbins):
@@ -289,7 +289,6 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
         if (N_side_to_use[i] > info.N_side):
             N_side_to_use[i] = info.N_side
     N_pix_to_use = 12*(N_side_to_use)**2
-    #may need to work N_side_to_use into the actual waveletize function, so that it does not use tons of memory unnecessarily (can see if we run into problems) -- DONE
     ##########################
     ##########################
     # criterion to determine the real-space gaussian FWHM used in wavelet ILC
@@ -330,7 +329,7 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
     ##########################
     # compute wavelet decomposition of all frequency maps used at each filter scale
     # save the filtered maps (aka maps of "wavelet coefficients")
-    # remember to re-convolve all maps to the highest resolution map being used when passing into needlet filtering -- WHY?!  recall the y-map paper reconvolves to 10 arcmin, don't we just need to be consistent?
+    # remember to re-convolve all maps to the highest resolution map being used when passing into needlet filtering, or to the user-specified input beam at which to compute the ILC
     for i in range(info.N_freqs):
         # N.B. maps are assumed to be in strictly decreasing order of FWHM! i.e. info.beams[-1] is highest-resolution beam
         print("waveletizing frequency ", i, "...")
@@ -535,7 +534,7 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
                             flag=False
                             break
             if (flag==True):
-                ### construct the matrix Q_{alpha beta} defined just before Eq. 12 for each pixel at this wavelet scale and evaluate Eq. 13 to get weights ###
+                ### construct the matrix Q_{alpha beta} defined in Eq. 30 of McCarthy & Hill 2023 for each pixel at this wavelet scale and evaluate Eq. 29 to get weights ###
                 inv_covmat_temp = np.zeros((int(N_freqs_to_use[j]),int(N_freqs_to_use[j]), int(N_pix_to_use[j])))
                 count=0
                 for a in range(info.N_freqs):
@@ -574,7 +573,7 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
 
             ##########
             ### if inverse covariance maps don't already exist ###
-            if (flag == False): # TODO -- this can almost certainly be done in a much more efficient way (vectorized somehow)
+            if (flag == False): # TODO -- this can almost certainly be done in a much more efficient way (vectorized)
                 covmat = np.zeros((int(N_freqs_to_use[j]),int(N_freqs_to_use[j]), int(N_pix_to_use[j])))
                 count=0
                 for a in range(info.N_freqs):
@@ -720,11 +719,11 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
 # harmonic ILC
 def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
     # This function is copy-and-pasted from wavelet_ILC() above and edited.
-    # It would be MUCH better to avoid such hard-coding by writing one wavelet_ILC() function that can do both (I have already done this on my local pyilc branch
-    # However, the harmonic_ILC() function itself contains a lot of hard coded code-snippets (ie, it is a very long function with very few calls to subroutines).
-    # Thus, my HILC had a lot very long if statements of the kind "if info.wavelet_type =='HILC': {do x} else {do y}" and it was very hard to follow the overall
+    # It would be much better to avoid such hard-coding by writing one wavelet_ILC() function that can do both (in progress on local branch).
+    # However, the harmonic_ILC() function itself contains a lot of hard coded code-snippets (i.e., it is a very long function with very few calls to subroutines).
+    # Thus, the HILC had a lot very long if statements of the kind "if info.wavelet_type =='HILC': {do x} else {do y}" and it was very hard to follow the overall
     # function. So really, what should be done is to split wavelet_ILC() into many smaller subroutines and then it would be much easier to read the whole function
-    # in this way. However, I have not done this(yet!!)  - TODO for an update
+    # in this way. However, this remains TODO for an update.
     assert wv is not None, "wavelets not defined"
     assert type(wv) is Wavelets, "Wavelets TypeError"
     assert info is not None, "ILC info not defined"
@@ -857,7 +856,7 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
     ##########################
     ##########################
     ### MAIN ILC CALCULATION ###
-    # TODO -- memory management could certainly be improved here (reduce file I/O overhead, reduce number of smoothing operations, etc...)
+    # TODO -- memory management could probably be improved here (reduce file I/O overhead, reduce number of smoothing operations, etc...)
     ILC_maps_per_scale = []
     print("doing main ILC!!",flush=True)
     for j in range(wv.N_scales):
@@ -987,7 +986,7 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
             ##########################
             # invert the cov matrix for each filter scale
             if info.cross_ILC: # symmetrize the covmat
-                    cov_matrix_harmonic= (cov_matrix_harmonic+ np.transpose(cov_matrix_harmonic))/2
+                    cov_matrix_harmonic= (cov_matrix_harmonic+ np.transpose(cov_matrix_harmonic))/2.
             inv_covmat_harmonic= np.linalg.inv(cov_matrix_harmonic) # we don't need to bother saving this because it is not expensive to invert this covmat (TODO: check this)
 
             identity = np.eye(N_freqs_to_use[j])
@@ -996,7 +995,7 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
 
             ### for each filter scale, perform cov matrix inversion and compute maps of the ILC weights using the inverted cov matrix maps
             count=0
-            ### construct the matrix Q_{alpha beta} defined just before Eq. 12 for each pixel at this wavelet scale and evaluate Eq. 13 to get weights ###
+            ### construct the matrix Q_{alpha beta} defined in Eq. 30 of McCarthy & Hill 2023 for each pixel at this wavelet scale and evaluate Eq. 29 to get weights ###
             tmp1 = np.einsum('ai,jip->ajp', np.transpose(A_mix), inv_covmat_temp)
             Qab_pix = np.einsum('ajp,bj->abp', tmp1, np.transpose(A_mix))
             # compute weights 
@@ -1101,9 +1100,8 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
 ##print(wv.filters[0])
 #assert type(wv) is Wavelets, "Wavelets TypeError"
 
-# # plot -- try to match Fig. A.2 of https://arxiv.org/pdf/1605.09387.pdf
+# # plot -- match Fig. A.2 of https://arxiv.org/pdf/1605.09387.pdf
 # # can also match Fig. 1 of Planck 2015 y-map paper by also including 10 arcmin beam
-# # see emails from Mathieu Remazeilles on 2/20/19
 # bl10arcmin = hp.sphtfunc.gauss_beam(10.* np.pi/(180.*60.), lmax=len(ell)-1) #FWHM=10 arcmin (in radian)
 # plt.clf()
 # for i in xrange(10):
@@ -1132,8 +1130,7 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
 #         NILC_bands[i][j] = (hdulist[1].data)[j-1][i]
 # hdulist.close()
 
-# # plot the NILC bands -- doesn't seem to match Fig. 1 of the 2015 y-map paper
-# # UPDATE: Remazeilles told me that Fig. 1 of the paper is actually a plot of (h^j_ell)^2 * b_ell (filter bands squared times 10 arcmin beam)
+# # plot the NILC bands -- note that Fig. 1 of the 2015 y-map paper is actually a plot of (h^j_ell)^2 * b_ell (filter bands squared times 10 arcmin beam) [info from Mathieu Remazeilles]
 # plt.clf()
 # for i in xrange(Nbands_NILC):
 #     plt.semilogx(ell_NILC, NILC_bands[i], 'k', lw=0.75)
