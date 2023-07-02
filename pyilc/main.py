@@ -6,7 +6,7 @@ import healpy as hp
 from input import ILCInfo
 from wavelets import Wavelets, wavelet_ILC, harmonic_ILC
 """
-main script for doing wavelet (MC)^2ILC analysis
+main script for doing needlet or harmonic (multiply constrained) ILC analysis
 """
 ##########################
 # main input file
