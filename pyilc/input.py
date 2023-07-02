@@ -110,7 +110,6 @@ class ILCInfo(object):
             assert type(self.N_scales) is int and self.N_scales > 0, "N_scales"
 
         # parameters for each wavelet type
-        # TODO: implement passing of these to the wavelet construction (probably in the main ILC script)
         if self.wavelet_type == 'GaussianNeedlets':
             # FWHM values defining the gaussian needlets
             self.GN_FWHM_arcmin = np.asarray(p['GN_FWHM_arcmin'])
@@ -146,7 +145,7 @@ class ILCInfo(object):
         if 'param_dict_file' in p.keys():
             self.param_dict_file = p['param_dict_file']
 
-        # delta-function bandpasses or actual bandpasses
+        # delta-function bandpasses/passbands or actual bandpasses/passbands
         self.bandpass_type = p['bandpass_type']
         assert self.bandpass_type in BP_TYPES, "unsupported bandpass type"
         if self.bandpass_type == 'DeltaBandpasses':
@@ -201,7 +200,7 @@ class ILCInfo(object):
             self.perform_ILC_at_beam = p['perform_ILC_at_beam']  
 
         # N_side value of highest-resolution input map (and presumed output map N_side)
-        # be conservative and assume N_side must be a power of 2 (stricly speaking only necessary for nest-ordering)
+        # be conservative and assume N_side must be a power of 2 (stricly speaking, only necessary for nest-ordering)
         # https://healpy.readthedocs.io/en/latest/generated/healpy.pixelfunc.isnsideok.html
         self.N_side = p['N_side']
         assert hp.pixelfunc.isnsideok(self.N_side, nest=True), "invalid N_side"
