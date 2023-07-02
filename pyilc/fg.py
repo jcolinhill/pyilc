@@ -16,7 +16,6 @@ Some of this code imported from TILe-C (see Madhavacheril, Hill, Naess, ACT Coll
 TCMB = 2.726 #Kelvin
 TCMB_uK = 2.726e6 #micro-Kelvin
 
-
 hplanck=6.626068e-34 #MKS
 kboltz=1.3806503e-23 #MKS
 clight=299792458.0 #MKS
@@ -169,7 +168,6 @@ def get_mix(nu_ghz, comp, param_dict_file=None, param_dict_override=None,
         resp = (nu/nu0_CIB)**(4.0+p[dust_beta_param_name]) * (-np.exp(-X0_CIB/2)+np.exp(X0_CIB/2))**2/ (-np.exp(-X_CIB/2)+np.exp(X_CIB/2))**2 
         resp[np.where(nu_ghz == None)] = 0.
         return resp
-
     elif (comp =='CIB_dbeta'):
         # CIB_dbeta = first derivative (WRT beta) of CIB black body
         # CIB SED parameter choices in dict file: Tdust_CIB [K], beta_CIB, nu0_CIB [GHz]
@@ -215,7 +213,6 @@ def get_mix(nu_ghz, comp, param_dict_file=None, param_dict_override=None,
         # TODO: the line below may be wrong for radio maps!
         resp[np.where(nu_ghz == None)] = 0. #this case is appropriate for HI or other maps that contain no CMB-relevant signals (and also no CIB); they're assumed to be denoted by None in nu_ghz
         return resp
-
     else:
         print("unknown component specified")
         raise NotImplementedError
@@ -430,7 +427,6 @@ def get_mix_bandpassed(bp_list, comp, param_dict_file=None,bandpass_shifts=None,
 
                     vnorm = np.trapz(trans * dBnudT(nu_ghz), nu_ghz)
                     val = (np.trapz(trans * mixs * bnus , nu_ghz) / vnorm) / lbeam
-
                     # N.B. this expression follows from Eqs. 32 and 35 of 
                     # https://www.aanda.org/articles/aa/pdf/2014/11/aa21531-13.pdf , 
                     # and then noting that one also needs to first rescale the CIB emission 
