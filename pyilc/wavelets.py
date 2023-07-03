@@ -573,7 +573,7 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
 
             ##########
             ### if inverse covariance maps don't already exist ###
-            if (flag == False): # TODO -- this can almost certainly be done in a much more efficient way (vectorized)
+            if (flag == False):
                 covmat = np.zeros((int(N_freqs_to_use[j]),int(N_freqs_to_use[j]), int(N_pix_to_use[j])))
                 count=0
                 for a in range(info.N_freqs):
