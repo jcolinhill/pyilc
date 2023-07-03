@@ -1,0 +1,35 @@
+output_dir: '/Users/kristen/Documents/NILC_plots/outputs_high_noise/pyilc_outputs_tmp/'
+output_prefix: ''
+save_weights: 'yes'
+
+ELLMAX: 250
+wavelet_type: 'GaussianNeedlets'
+N_scales: 4
+GN_FWHM_arcmin: [300.0, 120.0, 30.0]
+taper_width: 50 #set to zero for no high ell taper of filters
+
+N_freqs: 2
+bandpass_type: 'DeltaBandpasses'
+freqs_delta_ghz: [90., 150.]
+
+freq_map_files: [/Users/kristen/Documents/NILC_plots/outputs_high_noise/maps/sim0_freq1.fits,
+  /Users/kristen/Documents/NILC_plots/outputs_high_noise/maps/sim0_freq2.fits]
+
+beam_type: 'Gaussians'
+beam_FWHM_arcmin: [1.4, 1.4] #update with whatever beam FWHM was used in the sim map construction; note that ordering should always be from lowest-res to highest-res maps (here and in the lists of maps, freqs, etc above)
+
+N_side: 256
+
+ILC_preserved_comp: 'CMB'
+ILC_bias_tol: 0.01
+N_deproj: 0
+ILC_deproj_comps: []
+N_SED_params: 0
+SED_params: []
+SED_params_vals: []
+SED_params_priors: []
+SED_params_priors_params: []
+
+N_maps_xcorr: 0
+maps_xcorr_files: []
+masks_xcorr_files:

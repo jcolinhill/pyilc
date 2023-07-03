@@ -1,0 +1,35 @@
+output_dir: '/data/jch/pyilc_output/'
+output_prefix: 'test'
+#'wavelet_MCILC_Sehgal_skymapnoradptswsynchffAME_6freqs_noise_beam_fullsky_tSZpreserve_nodeproj_ELLMAX4096_Rijfix_beamthresh_almfix'
+save_weights: 'yes'
+
+ELLMAX: 4096
+wavelet_type: 'GaussianNeedlets'
+N_scales: 10
+GN_FWHM_arcmin: [600., 300., 120., 60., 30., 15., 10., 7.5, 5.]
+taper_width: 200 #set to zero for no high ell taper of filters
+
+N_freqs: 7
+bandpass_type: 'ActualBandpasses'
+freq_bp_files: ['/home/jch/Peyton/Dropbox/Thesis_Projects/yNILC/MCILC/wavelet_MCILC/pyilc/data/LFI_BANDPASS_F030_reformat.txt','/home/jch/Peyton/Dropbox/Thesis_Projects/yNILC/MCILC/wavelet_MCILC/pyilc/data/LFI_BANDPASS_F044_reformat.txt','/home/jch/Peyton/Dropbox/Thesis_Projects/yNILC/MCILC/wavelet_MCILC/pyilc/data/LFI_BANDPASS_F070_reformat.txt','/home/jch/Peyton/Dropbox/Thesis_Projects/yNILC/MCILC/wavelet_MCILC/pyilc/data/HFI_BANDPASS_F100_reformat.txt','/home/jch/Peyton/Dropbox/Thesis_Projects/yNILC/MCILC/wavelet_MCILC/pyilc/data/HFI_BANDPASS_F143_reformat.txt','/home/jch/Peyton/Dropbox/Thesis_Projects/yNILC/MCILC/wavelet_MCILC/pyilc/data/HFI_BANDPASS_F217_reformat.txt','/home/jch/Peyton/Dropbox/Thesis_Projects/yNILC/MCILC/wavelet_MCILC/pyilc/data/HFI_BANDPASS_F353_reformat.txt']
+
+freq_map_files: ['/data/jch/Planckdata/LFI_SkyMap_030_1024_R2.01_full_INPAINTED_nilc_ymaps_mask_nilc_CMB_PS_mask_combined.fits','/data/jch/Planckdata/LFI_SkyMap_044_1024_R2.01_full_INPAINTED_nilc_ymaps_mask_nilc_CMB_PS_mask_combined.fits','/data/jch/Planckdata/LFI_SkyMap_070_2048_R2.01_full_INPAINTED_nilc_ymaps_mask_nilc_CMB_PS_mask_combined.fits','/data/jch/Planckdata/HFI_SkyMap_100_2048_R2.02_full_INPAINTED_nilc_ymaps_mask_nilc_CMB_PS_mask_combined.fits','/data/jch/Planckdata/HFI_SkyMap_143_2048_R2.02_full_INPAINTED_nilc_ymaps_mask_nilc_CMB_PS_mask_combined.fits','/data/jch/Planckdata/HFI_SkyMap_217_2048_R2.02_full_INPAINTED_nilc_ymaps_mask_nilc_CMB_PS_mask_combined.fits','/data/jch/Planckdata/HFI_SkyMap_353_2048_R2.02_full_INPAINTED_nilc_ymaps_mask_nilc_CMB_PS_mask_combined.fits']
+
+beam_type: 'Gaussians'
+beam_FWHM_arcmin: [32.293, 27.005, 13.252, 9.69, 7.30, 5.02, 4.94]
+
+N_side: 2048
+
+ILC_preserved_comp: 'tSZ'
+ILC_bias_tol: 0.001
+N_deproj: 2
+ILC_deproj_comps: ['CMB','CIB']
+N_SED_params: 1
+SED_params: ['beta_CIB']
+SED_params_vals: [1.2]
+SED_params_priors: ['TopHat']
+SED_params_priors_params: [0.5]
+
+N_maps_xcorr: 1
+maps_xcorr_files: ['/data/jch/Sehgal_sims/030_tsz_healpix_2048_DeltaT.fits']
+masks_xcorr_files: 

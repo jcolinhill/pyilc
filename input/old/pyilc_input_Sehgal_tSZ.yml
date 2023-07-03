@@ -1,0 +1,34 @@
+output_dir: '/data/jch/pyilc_output/'
+output_prefix: 'GaussianNeedlet_MCILC_Sehgal_skymapnoradptswsynchffAME_6freqs_noise_beam_fullsky_tSZpreserve_nodeproj_ELLMAX4096'
+save_weights: 'yes'
+
+ELLMAX: 4096
+wavelet_type: 'GaussianNeedlets'
+N_scales: 10
+GN_FWHM_arcmin: [600., 300., 120., 60., 30., 15., 10., 7.5, 5.]
+taper_width: 200 #set to zero for no high ell taper of filters
+
+N_freqs: 6
+bandpass_type: 'DeltaBandpasses'
+freqs_delta_ghz: [30., 350., 90., 148., 219., 277.] #N.B. strange ordering here because code assumes maps are ordered from lowest- to highest-resolution (and the 350 GHz map here is assumed to have Planck resolution, while all others are ACT/SO resolution)
+
+freq_map_files: ['/data/jch/Sehgal_sims/030_skymapnoradpts_healpix_2048_DeltaT_beamed_plusnoise_IRrescale_synchffAME.fits','/data/jch/Sehgal_sims/350_skymapnoradpts_healpix_2048_DeltaT_beamed_plusnoise_IRrescale_synchffAME.fits','/data/jch/Sehgal_sims/090_skymapnoradpts_healpix_2048_DeltaT_beamed_plusnoise_IRrescale_synchffAME.fits','/data/jch/Sehgal_sims/148_skymapnoradpts_healpix_2048_DeltaT_beamed_plusnoise_IRrescale_synchffAME.fits','/data/jch/Sehgal_sims/219_skymapnoradpts_healpix_2048_DeltaT_beamed_plusnoise_IRrescale_synchffAME.fits','/data/jch/Sehgal_sims/277_skymapnoradpts_healpix_2048_DeltaT_beamed_plusnoise_IRrescale_synchffAME.fits']
+
+beam_type: 'Gaussians'
+beam_FWHM_arcmin: [7.1, 4.94, 2.2, 1.3, 0.9, 0.7]
+
+N_side: 2048
+
+ILC_preserved_comp: 'tSZ'
+ILC_bias_tol: 0.001
+N_deproj: 0
+ILC_deproj_comps: []
+N_SED_params: 0
+SED_params: []
+SED_params_vals: []
+SED_params_priors: []
+SED_params_priors_params: []
+
+N_maps_xcorr: 1
+maps_xcorr_files: ['/data/jch/Sehgal_sims/030_tsz_healpix_2048_DeltaT.fits']
+masks_xcorr_files: 
