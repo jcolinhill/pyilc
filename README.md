@@ -1,6 +1,6 @@
 # pyilc
 
-pyilc is a pure-python implementation of the needlet internal linear combination (NILC) algorithm for CMB component separation.  Harmonic-space ILC is also implemented in the code.  For details, see McCarthy & Hill (2023) [arXiv:XXXX.YYYYY](https://arxiv.org/XXXX.YYYYY).
+pyilc is a pure-python implementation of the needlet internal linear combination (NILC) algorithm for CMB component separation.  Harmonic-space ILC is also implemented in the code.  For details, see McCarthy & Hill (2023) [arXiv:XXXX.YYYYY](https://arxiv.org/2307.01043).
 
 ## diffusive_inpaint
 This repository also includes an inpainting code, diffusive_inpaint, that diffusively inpaints a masked region with the mean of the unmasked neighboring pixels. This README is intended for pyilc, not diffusive_inpaint; in the diffusive_inpaint sub-directory, we include a sample .py file `diffusive_inpaint/diffusive_inpaint_example.py`, which should make clear how to use `diffusive_inpaint/diffusive_inpaint.py`.
@@ -11,7 +11,7 @@ This repository also includes an inpainting code, diffusive_inpaint, that diffus
 
 # Using the code
 
-`pyilc` is public; if you use it in a publication, please cite the paper [arXiv:XXXX.YYYYY](https://arxiv.org/XXXX.YYYYY) and (optionally) [arXiv:XXXX.YYYY2](https://arxiv.org/XXXX.YYYY2). 
+`pyilc` is public; if you use it in a publication, please cite the paper [arXiv:2307.01043](https://arxiv.org/2307.01043) and (optionally) [arXiv:XXXX.YYYY2](https://arxiv.org/XXXX.YYYY2). 
 
 Additionally, if you use NILC you should cite the original NILC reference, https://ui.adsabs.harvard.edu/abs/arXiv:0807.0773.
 
