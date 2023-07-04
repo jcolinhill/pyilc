@@ -264,7 +264,9 @@ Sometimes it is useful to apply the weights calculated from one map to a separat
 ```
 maps_to_apply_weights: [...]
 ```
-where maps_to_apply_weights is a list of filenames in the same format as freq_map_files. Note that it is important to directly change the output suffix if you are using this option, as doing this does not automatically change the output file name of the ILC map (recall that changing the output suffix does not change the covariance files read in as long as the output prefix is unchanged).
+where maps_to_apply_weights is a list of filenames in the same format as freq_map_files. If the weights have been previously calculated and saved, they will be read in and applied to these maps. If they have not been, they will be calculated from the maps in input_maps and applied to the maps in maps_to_apply_weights.
+
+Note that it is important to directly change the output suffix if you are using this option, as doing this does not automatically change the output file name of the ILC map (recall that changing the output suffix does not change the covariance files read in as long as the output prefix is unchanged).
 
 
 ## Cross-ILC
