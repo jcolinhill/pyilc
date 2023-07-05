@@ -615,7 +615,7 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
                         QSa_temp = np.delete(np.delete(Qab_pix, a, 0), 0, 1) #remove the a^th row and zero^th column
                         tempvec[a] = (-1.0)**float(a) * np.linalg.det(np.transpose(QSa_temp,(2,0,1)))
                 tmp2 = np.einsum('ia,ap->ip', A_mix, tempvec)
-                tmp3 = np.einsum('jip,ip->jp', inv_covmat_temp, tmp2)
+                tmp3 = np.einsum('jip,ip->jp', inv_covmat, tmp2)
                 weights = 1.0/np.linalg.det(np.transpose(Qab_pix,(2,0,1)))[:,None]*np.transpose(tmp3) #N.B. 'weights' here only includes channels that passed beam_thresh criterion, 
                 # response verification
                 response = np.einsum('pi,ia->ap', weights, A_mix) #dimensions N_comps x N_pix_to_use[j]
