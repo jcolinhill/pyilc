@@ -2,7 +2,7 @@ output_dir: '/mnt/home/fmccarthy/ceph/pyilc_test/tsz/' # the directory where the
 output_prefix: 'Pl15_nodipole_newbeams'   # the prefix for all the files that will be saved
 save_weights: 'no'                        # set to yes to save the weight maps
 
-param_dict_file: '../input/fg_SEDs_bestfit1.5.yml'  # the file where you save the params of the SEDs
+param_dict_file: '../input/fg_SEDs_default_params.yml'  # the file where you save the params of the SEDs
 
 ELLMAX: 4096                                       
 wavelet_type: 'GaussianNeedlets'                    
