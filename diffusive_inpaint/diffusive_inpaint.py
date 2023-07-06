@@ -143,7 +143,7 @@ def diff_inpaint_vectorized(map_inp, MASK_VAL=-1.e30,N_nabes_req=4):
 
 
         # now we explicitly take the mean of the NNs at each pixel. the final array will be the new inpainted values
-        mean_of_nns = np.sum((map_out[nabes])*mapoutmask,axis=0)/np.sum(mapoutmask,axis=0)
+        mean_of_nns = np.sum((map_out[nabes])*mapoutmask,axis=0)[cutmask]/np.sum(mapoutmask,axis=0)[cutmask]
 
         nm = map_new[mask_pix].copy() # an array with all of the masked pixels
 
