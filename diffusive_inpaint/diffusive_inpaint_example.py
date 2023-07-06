@@ -13,9 +13,9 @@ if __name__ == "__main__":
     mask = hp.fitsfunc.read_map(file_for_mask)
 
     map_to_inpaint  = hp.fitsfunc.read_map(file_for_map)
-    planck_intensity = hp.remove_monopole(planck_intensity)
+    map_to_inpaint = hp.remove_monopole(map_to_inpaint)
 
-    map_raw = planck_intensity.copy()
+    map_raw = map_to_inpaint.copy()
 
     map_raw[np.where(mask == 0.)] = MASK_VAL
     inpainted = diffusive_inpaint.diff_inpaint_vectorized(map_raw, MASK_VAL=MASK_VAL)
