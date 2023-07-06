@@ -20,5 +20,5 @@ if __name__ == "__main__":
     map_raw[np.where(mask == 0.)] = MASK_VAL
     inpainted = diffusive_inpaint.diff_inpaint_vectorized(map_raw, MASK_VAL=MASK_VAL)
 
-    hp.fitsfunc.write_map(new_inpainted_map_filename)
+    hp.fitsfunc.write_map(new_inpainted_map_filename,inpainted)
   
