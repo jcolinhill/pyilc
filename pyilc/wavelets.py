@@ -370,7 +370,7 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
                         exists = os.path.isfile(filename)
                         if exists:
                             print('needlet coefficient map already exists:', filename,)
-                            wv_maps_temp.append( hp.read_map(filename, dtype=np.float64, verbose=False) )
+                            wv_maps_temp.append( hp.read_map(filename, dtype=np.float64) )
                         else:
                             print('needlet coefficient map not previously computed; re-computing all '+str(season)+'maps for frequency '+str(i)+' now...',)
                             flag=False
@@ -495,8 +495,8 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
                             else:
                                 filename_A = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(a)+'_scale'+str(j)+'_S1.fits'
                                 filename_B = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(b)+'_scale'+str(j)+'_S2.fits'
-                            wavelet_map_A = hp.read_map(filename_A, dtype=np.float64, verbose=False)
-                            wavelet_map_B = hp.read_map(filename_B, dtype=np.float64, verbose=False)
+                            wavelet_map_A = hp.read_map(filename_A, dtype=np.float64)
+                            wavelet_map_B = hp.read_map(filename_B, dtype=np.float64)
                             assert len(wavelet_map_A) == len(wavelet_map_B), "cov mat map calculation: wavelet coefficient maps have different N_side"
                             # first perform smoothing operation to get the "mean" maps
                             wavelet_map_A_smoothed = hp.sphtfunc.smoothing(wavelet_map_A, FWHM_pix[j])
@@ -673,7 +673,7 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
             if (freqs_to_use[j][a] == True):
                 filename_wavelet_coeff_map = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(a)+'_scale'+str(j)+'.fits'
                 if not info.apply_weights_to_other_maps:
-                    wavelet_coeff_map = hp.read_map(filename_wavelet_coeff_map, dtype=np.float64, verbose=False)
+                    wavelet_coeff_map = hp.read_map(filename_wavelet_coeff_map, dtype=np.float64)
                 else:
                     wavelet_coeff_map =maps_for_weights_needlets[a][j]
                 wavelet_coeff_map = hp.read_map(filename_wavelet_coeff_map, dtype=np.float64)
@@ -806,7 +806,7 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
                 exists = os.path.isfile(filename)
                 if exists:
                     print('needlet coefficient map already exists:', filename)
-                    wv_maps_temp.append( hp.read_map(filename, dtype=np.float64, verbose=False) )
+                    wv_maps_temp.append( hp.read_map(filename, dtype=np.float64) )
                 else:
                     print('needlet coefficient map not previously computed; re-computing all maps for frequency '+str(i)+' now...')
                     flag=False
@@ -833,7 +833,7 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
                         filename = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(i)+'_scale'+str(j)+'_S'+str(season)+'.fits'
                         exists = os.path.isfile(filename)
                         if exists:
-                            wv_maps_temp.append( hp.read_map(filename, dtype=np.float64, verbose=False) )
+                            wv_maps_temp.append( hp.read_map(filename, dtype=np.float64) )
                         else:
                             flag=False
                             break
@@ -1043,7 +1043,7 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
         for a in range(info.N_freqs):
             if (freqs_to_use[j][a] == True):
                 filename_wavelet_coeff_map = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(a)+'_scale'+str(j)+'.fits'
-                wavelet_coeff_map = hp.read_map(filename_wavelet_coeff_map, dtype=np.float64, verbose=False)
+                wavelet_coeff_map = hp.read_map(filename_wavelet_coeff_map, dtype=np.float64)
                 ILC_map_temp += weights[:,count] * wavelet_coeff_map
                 count+=1
         ILC_maps_per_scale.append(ILC_map_temp)
