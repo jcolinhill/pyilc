@@ -317,9 +317,9 @@ class ILCInfo(object):
             for i in range(self.N_freqs):
                 # TODO: allow reading in of maps not in field=0 in the fits file
                 # TODO: allow specification of nested or ring ordering (although will already work here if fits keyword ORDERING is present)
-                temp_map_s1 = hp.fitsfunc.read_map(self.freq_map_files_s1[i], field=0, verbose=False)
+                temp_map_s1 = hp.fitsfunc.read_map(self.freq_map_files_s1[i], field=0)
                 assert len(temp_map_s1) <= self.N_pix, "input map at higher resolution than specified N_side"
-                temp_map_s2 = hp.fitsfunc.read_map(self.freq_map_files_s2[i], field=0, verbose=False)
+                temp_map_s2 = hp.fitsfunc.read_map(self.freq_map_files_s2[i], field=0)
                 assert len(temp_map_s2) <= self.N_pix, "input map at higher resolution than specified N_side"
                 if (len(temp_map_s1) == self.N_pix):
                     self.maps_s1[i] = np.copy(temp_map_s1)
@@ -341,7 +341,7 @@ class ILCInfo(object):
             for i in range(self.N_freqs):
                 # TODO: allow reading in of maps not in field=0 in the fits file
                 # TODO: allow specification of nested or ring ordering (although will already work here if fits keyword ORDERING is present)
-                temp_map = hp.fitsfunc.read_map(self.freq_map_files_for_weights[i], field=0, verbose=False)
+                temp_map = hp.fitsfunc.read_map(self.freq_map_files_for_weights[i], field=0)
                 assert len(temp_map) <= self.N_pix, "input map at higher resolution than specified N_side"
                 if (len(temp_map) == self.N_pix):
                     self.maps_for_weights[i] = np.copy(temp_map)
