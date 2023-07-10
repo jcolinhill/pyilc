@@ -947,7 +947,7 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
 
                             else:
                                 map_A = hp.fitsfunc.read_map(info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(a)+'_scale'+str(j)+'_S1.fits')
-                                map_B = hp.fitsfunc.read_map(info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(a)+'_scale'+str(j)+'_S1.fits')
+                                map_B = hp.fitsfunc.read_map(info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(a)+'_scale'+str(j)+'_S2.fits')
                                 smooth_map_A =  hp.sphtfunc.smoothing(map_A, FWHM_pix[j])
                                 smooth_map_B =  hp.sphtfunc.smoothing(map_B, FWHM_pix[j])
                             all_maps_A.append(map_A)
