@@ -3,4 +3,4 @@ beta_CIB: 1.2         #CIB modified blackbody spectral index (Table 9 of http://
 nu0_CIB_ghz: 353.0    #CIB pivot frequency [GHz]
 kT_e_keV: 5.0         #electron temperature for relativistic SZ evaluation [keV] (for reference, 5 keV is rough temperature for a 3x10^14 Msun/h cluster at z=0 (e.g., Arnaud+2005))
 nu0_radio_ghz: 150.0  #radio pivot frequency [GHz]
-beta_radio: -0.5      #radio power-law index
+beta_radio: -0.5      #radio power-law index (matching ACT DR4 radio SED model, cf. Eq. D6 of Choi et al., https://arxiv.org/pdf/2007.07289.pdf)
