@@ -193,6 +193,7 @@ def get_mix(nu_ghz, comp, param_dict_file=None, param_dict_override=None,
         return resp
     elif (comp == 'radio'):
         # radio = power-law here (power-law SED in specific intensity units (W/m^2/Hz/sr), here converted to uK_CMB)
+        # the model here (power-law in specific intensity) matches that used in the ACT DR4 analysis (cf. Eq. D6 of https://arxiv.org/pdf/2007.07289.pdf)
         # radio SED parameter choices in dict file: beta_radio, nu0_radio [GHz]
         # N.B. overall amplitude is not meaningful here; output ILC map (if you tried to preserve this component) would not be in sensible units
         p = _setp()
@@ -204,6 +205,7 @@ def get_mix(nu_ghz, comp, param_dict_file=None, param_dict_override=None,
         return resp
     elif (comp == 'radio_Jysr'): #same as radio above but in 1e-26 Jy/sr (with arbitrary overall amplitude!) instead of uK_CMB
         # radio = power-law here (power-law SED in specific intensity units (W/m^2/Hz/sr))
+        # the model here (power-law in specific intensity) matches that used in the ACT DR4 analysis (cf. Eq. D6 of https://arxiv.org/pdf/2007.07289.pdf)
         # radio SED parameter choices in dict file: beta_radio, nu0_radio [GHz]
         # N.B. overall amplitude is not meaningful here; output ILC map (if you tried to preserve this component) would not be in sensible units
         p = _setp()
