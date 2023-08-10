@@ -94,9 +94,10 @@ class ILCInfo(object):
         assert type(self.wavelet_type) is str, "TypeError: wavelet_type"
         assert self.wavelet_type in WV_TYPES, "unsupported wavelet type"
 
-        # number of wavelet filter scales used
-        self.N_scales = p['N_scales']
-        assert type(self.N_scales) is int and self.N_scales > 0, "N_scales"
+        ## number of wavelet filter scales used
+        #Remove this an donly read it if the wavelt_type is not TopHatarmonic (below)
+        #self.N_scales = p['N_scales']
+        #assert type(self.N_scales) is int and self.N_scales > 0, "N_scales"
 
         # width of high ell taper for filters, set to 0 if no taper desired. Default is 200
         self.taper_width = 200
