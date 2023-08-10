@@ -730,7 +730,7 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
     assert type(info) is ILCInfo, "ILCInfo TypeError"
     assert wv.N_scales == info.N_scales, "N_scales must match"
     assert wv.ELLMAX == info.ELLMAX, "ELLMAX must match"
-    assert(wavelet_beam_criterion > 0. and wavelet_beam_criterion < 1.)
+    assert(info.wavelet_beam_criterion > 0. and info.wavelet_beam_criterion < 1.)
     assert info.N_side > 0, "N_side cannot be negative or zero"
     ##########################
     # criterion to determine which frequency maps to use for each wavelet filter scale
@@ -745,12 +745,12 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
     ell_B = np.zeros(info.N_freqs)
     for i in range(wv.N_scales-1):
         ell_peak = np.argmax(wv.filters[i]) #we'll use this to ensure we're on the decreasing side of the filter
-        ell_F[i] = ell_peak + (np.abs( wv.filters[i][ell_peak:] - wavelet_beam_criterion )).argmin()
+        ell_F[i] = ell_peak + (np.abs( wv.filters[i][ell_peak:] - info.wavelet_beam_criterion )).argmin()
         if ell_F[i] > wv.ELLMAX:
             ell_F[i] = wv.ELLMAX
     ell_F[-1] = ell_F[-2] #just use the second-to-last criterion for the last one #TODO: improve this
     for j in range(info.N_freqs):
-        ell_B[j] = (np.abs( (info.beams[j])[:,1] - wavelet_beam_criterion )).argmin()
+        ell_B[j] = (np.abs( (info.beams[j])[:,1] - info.wavelet_beam_criterion )).argmin()
     for i in range(wv.N_scales):
         for j in range(info.N_freqs):
             if ell_F[i] <= ell_B[j]:
