@@ -863,10 +863,12 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
         weights_exist = True
         if type(info.N_deproj) is int:
             N_deproj = info.N_deproj
-            ILC_deproj_comps = info.ILC_deproj_comps
+            if info.N_deproj>0:
+                ILC_deproj_comps = info.ILC_deproj_comps
         else:
             N_deproj = info.N_deproj[j]
-            ILC_deproj_comps = info.ILC_deproj_comps[j]
+            if N_deproj>0:
+                ILC_deproj_comps = info.ILC_deproj_comps[j]
         weight_filename = info.output_dir+info.output_prefix+'weightvector_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.txt'
 
 
