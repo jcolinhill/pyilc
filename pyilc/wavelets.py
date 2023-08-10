@@ -730,7 +730,6 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
     assert type(info) is ILCInfo, "ILCInfo TypeError"
     assert wv.N_scales == info.N_scales, "N_scales must match"
     assert wv.ELLMAX == info.ELLMAX, "ELLMAX must match"
-    assert(ILC_bias_tol > 0. and ILC_bias_tol < 1.)
     assert(wavelet_beam_criterion > 0. and wavelet_beam_criterion < 1.)
     assert info.N_side > 0, "N_side cannot be negative or zero"
     ##########################
