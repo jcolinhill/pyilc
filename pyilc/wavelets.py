@@ -676,7 +676,7 @@ def wavelet_ILC(wv=None, info=None, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3
                     wavelet_coeff_map = hp.read_map(filename_wavelet_coeff_map, dtype=np.float64)
                 else:
                     wavelet_coeff_map =maps_for_weights_needlets[a][j]
-                wavelet_coeff_map = hp.read_map(filename_wavelet_coeff_map, dtype=np.float64)
+                #wavelet_coeff_map = hp.read_map(filename_wavelet_coeff_map, dtype=np.float64)
                 ILC_map_temp += weights[:,count] * wavelet_coeff_map
                 count+=1
         ILC_maps_per_scale.append(ILC_map_temp)
