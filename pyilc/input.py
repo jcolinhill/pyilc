@@ -98,7 +98,12 @@ class ILCInfo(object):
         #Remove this an donly read it if the wavelt_type is not TopHatarmonic (below)
         #self.N_scales = p['N_scales']
         #assert type(self.N_scales) is int and self.N_scales > 0, "N_scales"
-
+        
+        # wavelet_beam_criterion, set to 1e-3 by default
+        if 'wavelet_beam_criterion' in p.keys():
+            self.wavelet_beam_criterion = p['wavelet_beam_criterion']
+        else:
+            self.wavelet_beam_criterion = 1.e-3
         # width of high ell taper for filters, set to 0 if no taper desired. Default is 200
         self.taper_width = 200
         if 'taper_width' in p.keys():
@@ -131,11 +136,7 @@ class ILCInfo(object):
             #self.B_param = p['B_param']
             #self.J_min = p['J_min']
 
-        # waveletbeamcriterion
-        if 'wavelet_beam_criterion' in p.keys():
-            self.wavelet_beam_criterion = p['wavelet_beam_criterion']
-        else:
-            self.wavelet_beam_criterion = 1.e-3
+        
         # flag to perform cross-ILC 
         self.cross_ILC = False
         if 'cross_ILC' in p.keys():
