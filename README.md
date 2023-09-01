@@ -11,7 +11,7 @@ This repository also includes an inpainting code, diffusive_inpaint, that diffus
 
 # Using the code
 
-`pyilc` is public; if you use it in a publication, please cite the paper [arXiv:2307.01043](https://arxiv.org/abs/2307.01043) and (optionally) [arXiv:XXXX.YYYY2](https://arxiv.org/XXXX.YYYY2). 
+`pyilc` is public; if you use it in a publication, please cite the paper [arXiv:2307.01043](https://arxiv.org/abs/2307.01043) and (optionally) [arXiv:2308.16260](https://arxiv.org/2308.16260). 
 
 Additionally, if you use NILC you should cite the original NILC reference, https://ui.adsabs.harvard.edu/abs/arXiv:0807.0773.
 
