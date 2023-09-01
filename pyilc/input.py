@@ -262,7 +262,10 @@ class ILCInfo(object):
         ###   instead, we currently just get the SED parameter info from fg_SEDs_default_params.yml
         ###   if we wanted to do something fancy like sample over SED parameters, we would want to make use of this code
         # ILC: SED parameters
-        self.N_SED_params = p['N_SED_params']
+        if 'N_SED_params' in p.keys():
+            self.N_SED_params = p['N_SED_params']
+        else:
+             self.N_SED_params = 0
         assert type(self.N_SED_params) is int and self.N_SED_params >= 0, "N_SED_params"
         if (self.N_SED_params > 0):
             #TODO: implement checks that only SED parameters are called here for components that are being explicitly deprojected
@@ -286,7 +289,10 @@ class ILCInfo(object):
         ####################
         # TODO: cross-correlation not yet implemented (not hard to do)
         # file names of maps with which to cross-correlate
-        self.N_maps_xcorr = p['N_maps_xcorr']
+        if 'N_maps_xcorr' in p.keys():
+            self.N_maps_xcorr = p['N_maps_xcorr']
+        else:
+             self.N_maps_xcorr = 0
         assert type(self.N_maps_xcorr) is int and self.N_maps_xcorr >= 0, "N_maps_xcorr"
         if (self.N_maps_xcorr > 0):
             self.maps_xcorr_files = p['maps_xcorr_files']
