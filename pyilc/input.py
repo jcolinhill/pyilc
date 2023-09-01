@@ -131,6 +131,11 @@ class ILCInfo(object):
             #self.B_param = p['B_param']
             #self.J_min = p['J_min']
 
+        # waveletbeamcriterion
+        if 'wavelet_beam_criterion' in p.keys():
+            self.wavelet_beam_criterion = p['wavelet_beam_criterion']
+        else:
+            self.wavelet_beam_criterion = 1.e-3
         # flag to perform cross-ILC 
         self.cross_ILC = False
         if 'cross_ILC' in p.keys():
