@@ -777,19 +777,8 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
     ##########################
     # criterion to determine the real-space gaussian FWHM used in wavelet ILC
     # based on ILC bias mode-counting
-    FWHM_pix = np.zeros(wv.N_scales,dtype=float)
     ell, filts = wv.TopHatHarmonic(info.ellbins)
 
-    # compute effective number of modes associated with each filter (on the full sky)
-    # note that the weights we use are filt^2, since this is the quantity that sums to unity at each ell
-    N_modes = np.zeros(wv.N_scales, dtype=float)
-    for i in range(wv.N_scales):
-        N_modes[i] = np.sum( (2.*ell + np.ones(wv.ELLMAX+1)) * (filts[i])**2. )
-    # we use the entire sphere to calculate the covmat - there is no realspace filter
-    # so just set these to a large number
-    for i in range(wv.N_scales):
-        sigma_pix_temp = np.pi * 4
-        FWHM_pix[i] = np.sqrt(8.*np.log(2.)) * sigma_pix_temp #in radians
     ##########################
     ##########################
     # compute wavelet decomposition of all frequency maps used at each filter scale
