@@ -163,6 +163,50 @@ def waveletize(inp_map=None, wv=None, rebeam=False, inp_beam=None, new_beam=None
     # return maps of wavelet coefficients (i.e., filtered maps) -- N.B. each one can have a different N_side
     return wv_maps
 
+# Find nth wavelet coefficients of a map
+def find_nth_wavelet_coefficient(scale,inp_map=None,inp_map_alm=None, wv=None, rebeam=False, inp_beam=None, new_beam=None, wv_filts_to_use=None, N_side_to_use=None):
+    assert inp_map is not None, "no input alms specified"
+    N_pix = len(inp_map)
+    N_side_inp = hp.npix2nside(N_pix)
+    assert wv is not None, "wavelets not defined"
+    assert type(wv) is Wavelets, "Wavelets TypeError"
+    assert wv.ELLMAX < 3*N_side_inp-1, "ELLMAX too high"
+    assert wv.ELLMAX > 200, "ELLMAX too low"
+    if (N_side_to_use is None):
+        N_side_to_use = np.ones(wv.N_scales, dtype=int)*N_side_inp
+    if(rebeam):
+        assert inp_beam is not None, "no input beam defined"
+        assert new_beam is not None, "no new beam defined"
+        assert len(inp_beam) == len(new_beam), "input and new beams have different ell_max"
+        assert inp_beam[0][0] == 0 and new_beam[0][0] == 0, "beam profiles must start at ell=0"
+        assert inp_beam[-1][0] == wv.ELLMAX and new_beam[-1][0] == wv.ELLMAX, "beam profiles must end at ELLMAX"
+        beam_fac = new_beam[:,1]/inp_beam[:,1]
+    else:
+        beam_fac = np.ones(wv.ELLMAX+1,dtype=float)
+    if(wv.taper_width):
+        assert wv.ELLMAX - wv.taper_width > 10., "desired taper is too broad for given ELLMAX"
+        taper_func = (1.0 - 0.5*(np.tanh(0.025*(wv.ell - (wv.ELLMAX - wv.taper_width))) + 1.0)) #smooth taper to zero from ELLMAX-taper_width to ELLMAX
+    else:
+        taper_func = np.ones(wv.ELLMAX+1,dtype=float)
+    # convert map to alm, apply wavelet filters (and taper and rebeam)
+    if inp_map_alm is not None:
+        inp_map_alm = hp.map2alm(inp_map, lmax=wv.ELLMAX)
+    wv_maps = []
+    if wv_filts_to_use is not None: #allow user to only output maps for some of the filter scales
+        assert len(wv_filts_to_use) == wv.N_scales, "wv_filts_to_use has wrong shape"
+        assert len(N_side_to_use) == wv.N_scales, "N_side_to_use has wrong shape"
+        for j in [scale]:
+            assert N_side_to_use[j] <= N_side_inp, "N_side_to_use > N_side_inp"
+            if wv_filts_to_use[j] == True:
+                wv_maps.append( hp.alm2map( hp.almxfl( inp_map_alm, (wv.filters[j])*taper_func*beam_fac), nside=N_side_to_use[j]) )
+    else:
+        assert len(N_side_to_use) == wv.N_scales, "N_side_to_use has wrong shape"
+        for j in [scale]:
+            assert N_side_to_use[j] <= N_side_inp, "N_side_to_use > N_side_inp"
+            wv_maps.append( hp.alm2map( hp.almxfl( inp_map_alm, (wv.filters[j])*taper_func*beam_fac), nside=N_side_to_use[j]) )
+    # return maps of wavelet coefficients (i.e., filtered maps) -- N.B. each one can have a different N_side
+    return wv_maps[0]
+
 # synthesize map from wavelet coefficients
 # (N.B. power will be lost near ELLMAX if a taper has been applied in waveletize)
 # note that you will get nonsense if different wavelets are used here than in waveletize (obviously)
@@ -780,69 +824,6 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
     ell, filts = wv.TopHatHarmonic(info.ellbins)
 
     ##########################
-    ##########################
-    # compute wavelet decomposition of all frequency maps used at each filter scale
-    # save the filtered maps (aka maps of "wavelet coefficients")
-    for i in range(info.N_freqs):
-        # N.B. maps are assumed to be in strictly decreasing order of FWHM! i.e. info.beams[-1] is highest-resolution beam
-        print("waveletizing frequency ", i, "...")
-        wv_maps_temp = []
-        flag=True
-        for j in range(wv.N_scales):
-            if freqs_to_use[j][i] == True:
-                filename = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(i)+'_scale'+str(j)+'.fits'
-                exists = os.path.isfile(filename)
-                if exists:
-                    print('needlet coefficient map already exists:', filename)
-                    wv_maps_temp.append( hp.read_map(filename, dtype=np.float64) )
-                else:
-                    print('needlet coefficient map not previously computed; re-computing all maps for frequency '+str(i)+' now...')
-                    flag=False
-                    break
-        if flag == False:
-            wv_maps_temp = waveletize(inp_map=(info.maps)[i], wv=wv,  rebeam=True, inp_beam=(info.beams)[i], new_beam=info.common_beam, wv_filts_to_use=freqs_to_use[:,i], N_side_to_use=N_side_to_use)
-            for j in range(wv.N_scales):
-                if freqs_to_use[j][i] == True:
-                    filename = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(i)+'_scale'+str(j)+'.fits'
-                    hp.write_map(filename, wv_maps_temp[j], nest=False, dtype=np.float64, overwrite=False)
-        if map_images == True:
-            for j in range(wv.N_scales):
-                if freqs_to_use[j][i] == True:
-                    plt.clf()
-                    hp.mollview(wv_maps_temp[j], unit="K", title="Needlet Coefficient Map, Frequency "+str(i)+" Scale "+str(j), min=np.mean(wv_maps_temp[j])-2*np.std(wv_maps_temp[j]), max=np.mean(wv_maps_temp[j])+2*np.std(wv_maps_temp[j]))
-                    plt.savefig(info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(i)+'_scale'+str(j)+'.pdf')
-        print("done waveletizing frequency ", i, "...")
-        if info.cross_ILC:
-            for season in [1,2]:
-                flag = True
-                wv_maps_temp = []
-                for j in range(wv.N_scales):
-                    if freqs_to_use[j][i] == True:
-                        filename = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(i)+'_scale'+str(j)+'_S'+str(season)+'.fits'
-                        exists = os.path.isfile(filename)
-                        if exists:
-                            wv_maps_temp.append( hp.read_map(filename, dtype=np.float64) )
-                        else:
-                            flag=False
-                            break
-                if flag == False:
-                    if season==1:
-                        maps = info.maps_s1
-                    elif season==2:
-                        maps = info.maps_s2
-
-                    wv_maps_temp = waveletize(inp_map=(maps)[i], wv=wv, rebeam=True, inp_beam=(info.beams)[i], new_beam=newbeam, wv_filts_to_use=freqs_to_use[:,i], N_side_to_use=N_side_to_use)
-                    for j in range(wv.N_scales):
-                        if freqs_to_use[j][i] == True:
-                            filename = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(i)+'_scale'+str(j)+'_S'+str(season)+'.fits'
-                            exists2 = os.path.isfile(filename)
-
-                            if not exists2:
-                                hp.write_map(filename, wv_maps_temp[j], nest=False, dtype=np.float64, overwrite=False)
-                    del(maps) #free up memory
-        del wv_maps_temp #free up memory
-    ##########################
-    ##########################
     ### MAIN ILC CALCULATION ###
     # TODO -- memory management could probably be improved here (reduce file I/O overhead, reduce number of smoothing operations, etc...)
     ILC_maps_per_scale = []
@@ -920,35 +901,35 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
                             flag=False
                             break
             if flag == False:
+                cov_matrix_harmonic = np.zeros((int(N_freqs_to_use[j]),int(N_freqs_to_use[j])))
+                counta = 0
+                all_maps_A = []
+                all_maps_B = []
+
+                all_maps_A_smoothed = []
+                all_maps_B_smoothed = []
                 for a in range(info.N_freqs):
                     cov_matrix_harmonic = np.zeros((int(N_freqs_to_use[j]),int(N_freqs_to_use[j])))
-                    counta = 0
-                    all_maps_A = []
-                    all_maps_B = []
+                    if freqs_to_use[j][a] :
+                        if not info.cross_ILC:
+                            map_A = find_nth_wavelet_coefficient(j,inp_map=(info.maps)[a], inp_map_alm=(info.alms)[a],wv=wv,  rebeam=True, inp_beam=(info.beams)[a], new_beam=info.common_beam, wv_filts_to_use=freqs_to_use[:,a], N_side_to_use=N_side_to_use)
+                            map_B = map_A.copy()
+                            smooth_map_A = smooth_map_B = np.mean(map_A)
 
-                    all_maps_A_smoothed = []
-                    all_maps_B_smoothed = []
-                    for a in range(0,info.N_freqs):
-                        if freqs_to_use[j][a] :
-                            if not info.cross_ILC:
-                                map_A = hp.fitsfunc.read_map(info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(a)+'_scale'+str(j)+'.fits')
-                                map_B = map_A.copy()
-                                smooth_map_A = smooth_map_B = np.mean(map_A)
-
-                            else:
-                                map_A = hp.fitsfunc.read_map(info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(a)+'_scale'+str(j)+'_S1.fits')
-                                map_B = hp.fitsfunc.read_map(info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(a)+'_scale'+str(j)+'_S2.fits')
-                                smooth_map_A =  np.mean(map_A,)
-                                smooth_map_B =  np.mean(map_B,)
-                            all_maps_A.append(map_A)
-                            all_maps_B.append(map_B)
-                            all_maps_A_smoothed.append(smooth_map_A)
-                            all_maps_B_smoothed.append(smooth_map_B)
                         else:
-                            all_maps_A.append(0)
-                            all_maps_B.append(0)
-                            all_maps_A_smoothed.append(0)
-                            all_maps_B_smoothed.append(0)
+                            map_A = find_nth_wavelet_coefficient(j,inp_map=(info.maps_s1)[a], inp_map_alm=(info.alms_s1)[a], wv=wv,  rebeam=True, inp_beam=(info.beams)[a], new_beam=info.common_beam, wv_filts_to_use=freqs_to_use[:,i], N_side_to_use=N_side_to_use)
+                            map_B = find_nth_wavelet_coefficient(j,inp_map=(info.maps_s2)[a], inp_map_alm=(info.alms_s2)[a], wv=wv,  rebeam=True, inp_beam=(info.beams)[a], new_beam=info.common_beam, wv_filts_to_use=freqs_to_use[:,a], N_side_to_use=N_side_to_use)
+                            smooth_map_A =  np.mean(map_A,)
+                            smooth_map_B =  np.mean(map_B,)
+                        all_maps_A.append(map_A)
+                        all_maps_B.append(map_B)
+                        all_maps_A_smoothed.append(smooth_map_A)
+                        all_maps_B_smoothed.append(smooth_map_B)
+                    else:
+                        all_maps_A.append(0)
+                        all_maps_B.append(0)
+                        all_maps_A_smoothed.append(0)
+                        all_maps_B_smoothed.append(0)
 
 
                 for a in range(info.N_freqs):
@@ -1032,8 +1013,10 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
         count=0
         for a in range(info.N_freqs):
             if (freqs_to_use[j][a] == True):
-                filename_wavelet_coeff_map = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(a)+'_scale'+str(j)+'.fits'
-                wavelet_coeff_map = hp.read_map(filename_wavelet_coeff_map, dtype=np.float64)
+                if not info.cross_ILC:
+                    wavelet_coeff_map = all_maps_A[a]
+                else:
+                    wavelet_coeff_map = find_nth_wavelet_coefficient(j,inp_map=(info.maps)[a], inp_map_alm=(info.alms)[a],wv=wv,  rebeam=True, inp_beam=(info.beams)[a], new_beam=info.common_beam, wv_filts_to_use=freqs_to_use[:,a], N_side_to_use=N_side_to_use)
                 ILC_map_temp += weights[:,count] * wavelet_coeff_map
                 count+=1
         ILC_maps_per_scale.append(ILC_map_temp)

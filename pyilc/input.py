@@ -417,3 +417,15 @@ class ILCInfo(object):
                 if ((self.beams)[i][-1][0] > self.ELLMAX):
                     (self.beams)[i] = (self.beams)[i][0:ELLMAX+1]
                 assert (len((self.beams)[i]) == ELLMAX+1), "beam profiles must contain all integer ells up to ELLMAX"
+    # method for turning maps to alms
+    def maps2alms(self):
+        self.alms=[]
+        for mapp in self.maps:
+            self.alms.append(hp.map2alm(mapp, lmax=self.ELLMAX))
+        if self.cross_ILC:
+            self.alms_s1 = []
+            self.alms_s2 = []
+            for mapp in self.maps_s1:
+                self.alms_s1.append(hp.map2alm(mapp, lmax=self.ELLMAX))
+            for mapp in self.maps_s2:
+                self.alms_s2.append(hp.map2alm(mapp, lmax=self.ELLMAX))
