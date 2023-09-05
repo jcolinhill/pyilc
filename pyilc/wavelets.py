@@ -944,13 +944,13 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
                             if not info.cross_ILC:
                                 map_A = hp.fitsfunc.read_map(info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(a)+'_scale'+str(j)+'.fits')
                                 map_B = map_A.copy()
-                                smooth_map_A = smooth_map_B = hp.sphtfunc.smoothing(map_A, FWHM_pix[j])
+                                smooth_map_A = smooth_map_B = np.mean(map_A)
 
                             else:
                                 map_A = hp.fitsfunc.read_map(info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(a)+'_scale'+str(j)+'_S1.fits')
                                 map_B = hp.fitsfunc.read_map(info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(a)+'_scale'+str(j)+'_S2.fits')
-                                smooth_map_A =  hp.sphtfunc.smoothing(map_A, FWHM_pix[j])
-                                smooth_map_B =  hp.sphtfunc.smoothing(map_B, FWHM_pix[j])
+                                smooth_map_A =  np.mean(map_A,)
+                                smooth_map_B =  np.mean(map_B,)
                             all_maps_A.append(map_A)
                             all_maps_B.append(map_B)
                             all_maps_A_smoothed.append(smooth_map_A)
@@ -973,7 +973,7 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
                                     wavelet_map_B_smoothed = all_maps_B_smoothed[b].copy()
                                     # then construct the smoothed real-space freq-freq cov matrix element for this pair of frequency maps
                                     # note that the overall normalization of this cov matrix is irrelevant for the ILC weight calculation (it always cancels out)
-                                    cov_map_temp = hp.sphtfunc.smoothing( (wavelet_map_A - wavelet_map_A_smoothed)*(wavelet_map_B - wavelet_map_B_smoothed) , FWHM_pix[j])
+                                    cov_map_temp = np.mean( (wavelet_map_A - wavelet_map_A_smoothed)*(wavelet_map_B - wavelet_map_B_smoothed))
                                     cov_matrix_harmonic[counta,countb] = np.mean(cov_map_temp) # Actually the map is a constant so we don't need to take the mean, we could also take any arbitrary value
                                     countb +=1
                             if (freqs_to_use[j][a] == True):
