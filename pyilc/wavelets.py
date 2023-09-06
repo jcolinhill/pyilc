@@ -841,7 +841,9 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
         taper_func = (1.0 - 0.5*(np.tanh(0.025*(wv.ell - (wv.ELLMAX - wv.taper_width))) + 1.0)) #smooth taper to zero from ELLMAX-taper_width to ELLMAX
     else:
         taper_func = np.ones(wv.ELLMAX+1,dtype=float)
+    import time
     for j in range(wv.N_scales):
+        t1j=time.time()
         # first, check if the weights already exist, and skip everything if so
         weights_exist = True
         if type(info.N_deproj) is int:
@@ -999,6 +1001,7 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
                 ILC_filters[a] += weights[:,count]*taper_func*beam_fac*wv.filters[j]
                 #ILC_alms += hp.almxfl(wavelet_coeff_alm ,weights[:,count]*taper_func*beam_fac*wv.filters[j])
                 count+=1
+        print("done scale",j,"in",t1j-time.time(),"seconds")
         #ILC_alms_per_scale.append(ILC_alm_temp)
     ##########################
     # synthesize the per-needlet-scale ILC maps into the final combined ILC map (apply each needlet filter again and add them all together -- have to upgrade to all match the same Nside -- done in synthesize)

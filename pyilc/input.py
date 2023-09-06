@@ -134,6 +134,10 @@ class ILCInfo(object):
             if 'save_harmonic_covmat' in p.keys():
                 if p['save_harmonic_covmat'].lower() in ['true','yes','y']:
                     self.save_harmonic_covmat = True
+            self.save_alms = False
+            if 'save_alms' in p.keys():
+                if p['save_alms'].lower() in ['true','yes','y']:
+                    self.save_alms = True
         # TODO: implement these
         #elif self.wavelet_type == 'CosineNeedlets':
         #elif self.wavelet_type == 'ScaleDiscretizedWavelets':
@@ -427,8 +431,15 @@ class ILCInfo(object):
     # method for turning maps to alms
     def maps2alms(self):
         self.alms=[]
-        for mapp in self.maps:
-            self.alms.append(hp.map2alm(mapp, lmax=self.ELLMAX))
+        for freqind,mapp in enumerate(self.maps):
+            filename = self.output_dir + self.output_prefix + '_alm_freq'+str(freqind)+'.fits'
+            exists = os.path.isfile(filename)
+            if exists:
+                    self.alms.append(hp.fitsfunc.read_alm(filename))
+            else:
+                self.alms.append(hp.map2alm(mapp, lmax=self.ELLMAX))
+                if self.save_alms:
+                    hp.fitsfunc.write_alm(filename,self.alms[freqind])
         if self.cross_ILC:
             self.alms_s1 = []
             self.alms_s2 = []
