@@ -886,18 +886,20 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
             # for each filter scale, compute maps of the smoothed real-space frequency-frequency covariance matrix using the Gaussians determined above
             cov_maps_temp = []
             flag=True
+            cont = False
             for a in range(info.N_freqs):
                 start_at = a
                 if info.cross_ILC:
                     start_at = 0
                 for b in range(start_at, info.N_freqs):
-                    if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True and flag==True):
+                    if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True and flag==True and not cont):
                         # Note that for HILC the covmat has no pixel index and only needs {freq1, freq2} indices at every scale. So we save it at every scale in a .txt file as a 2-d numpy array
                         cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_covmap_scale'+str(j)+'_crossILC'*info.cross_ILC+'.txt' 
                         exists = os.path.isfile(cov_filename)
                         if exists:
                             print('needlet coefficient covariance map already exists:', cov_filename)
                             cov_matrix_harmonic = np.loadtxt(cov_filename)
+                            cont = True
                         else:
                             print('needlet coefficient covariance map not previously computed; re-computing all covariance maps at scale'+str(j)+' now...')
                             flag=False
@@ -967,7 +969,8 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
                                  counta +=1
                 cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_covmap_scale'+str(j)+'_crossILC'*info.cross_ILC+'.txt'
                 print("saving covmat",cov_filename)
-                #np.savetxt(cov_filename,cov_matrix_harmonic)
+                if info.save_harmonic_covmat:
+                    np.savetxt(cov_filename,cov_matrix_harmonic)
 
             print('done computing the covariance matrix at scale'+str(j),flush=True)
             ##########################
@@ -1035,6 +1038,11 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
                 inp_beam_a = (info.beams)[a]
                 new_beam = info.common_beam
                 beam_fac = new_beam[:,1]/inp_beam_a[:,1]
+                if(wv.taper_width):
+                                        assert wv.ELLMAX - wv.taper_width > 10., "desired taper is too broad for given ELLMAX"
+                                        taper_func = (1.0 - 0.5*(np.tanh(0.025*(wv.ell - (wv.ELLMAX - wv.taper_width))) + 1.0)) #smooth taper to zero from ELLMAX-taper_width to ELLMAX
+                else:
+                                        taper_func = np.ones(wv.ELLMAX+1,dtype=float)
                 ILC_alms += hp.almxfl(wavelet_coeff_alm *weights[:,count] ,taper_func*beam_fac*wv.filters[j])
                 count+=1
         #ILC_alms_per_scale.append(ILC_alm_temp)
@@ -1043,13 +1051,13 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
     ILC_map = hp.alm2map(ILC_alms,nside=info.N_side)
     #ILC_map = synthesize(wv_maps=ILC_maps_per_scale, wv=wv, N_side_out=info.N_side)
     # save the final ILC map
-    ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'.fits'
+    ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+info.output_suffix+'.fits'
     if type(info.N_deproj) is int:
         if info.N_deproj>0:
-            ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.fits'
+            ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+info.output_suffix+'.fits'
     else:
         if info.N_deproj[0]>0:
-            ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps[0])+'_crossILC'*info.cross_ILC+'.fits'
+            ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps[0])+'_crossILC'*info.cross_ILC+info.output_suffix+'.fits'
     hp.write_map(ILC_map_filename, ILC_map, nest=False, dtype=np.float64, overwrite=False)
     # make image if requested
     if map_images == True:

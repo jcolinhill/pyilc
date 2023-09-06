@@ -128,6 +128,12 @@ class ILCInfo(object):
             self.ellbins = np.arange(0,self.ELLMAX+1,self.Delta_ell_HILC)
             self.N_scales = len(self.ellbins)-1
             assert type(self.N_scales) is int and self.N_scales > 0, "N_scales"
+
+            # Option to save the harmonic covmat; by default it is False
+            self.save_harmonic_covmat = False
+            if 'save_harmonic_covmat' in p.keys():
+                if p['save_harmonic_covmat'].lower() in ['true','yes','y']:
+                    self.save_harmonic_covmat = True
         # TODO: implement these
         #elif self.wavelet_type == 'CosineNeedlets':
         #elif self.wavelet_type == 'ScaleDiscretizedWavelets':
@@ -146,6 +152,7 @@ class ILCInfo(object):
         # number of frequency maps used
         self.N_freqs = p['N_freqs']
         assert type(self.N_freqs) is int and self.N_freqs > 0, "N_freqs"
+
 
         # optionally input the param_dict_file. The default is '../input/fg_SEDs_default_params.yml'
         self.param_dict_file = '../input/fg_SEDs_default_params.yml'
