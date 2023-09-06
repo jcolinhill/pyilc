@@ -429,3 +429,14 @@ class ILCInfo(object):
                 self.alms_s1.append(hp.map2alm(mapp, lmax=self.ELLMAX))
             for mapp in self.maps_s2:
                 self.alms_s2.append(hp.map2alm(mapp, lmax=self.ELLMAX))
+    def alms2cls(self):
+        self.cls = np.zeros((len(self.alms),len(self.alms),self.ELLMAX+1))
+        for a in range(len(self.maps)):
+            for b in range(a,len(self.maps)):
+                 self.cls[a,b]=self.cls[b,a] = hp.alm2cl(self.alms[a],self.alms[b],lmax=self.ELLMAX)
+        if self.cross_ILC:
+            self.cls_s1s2= np.zeros((len(self.alms),len(self.alms),self.ELLMAX+1))
+            for a in range(len(self.maps)):
+                for b in range(len(self.maps)):
+                    self.cls_s1s2[a,b]=hp.alm2cl(self.alms_s1[a],self.alms_s2[b],lmax=self.ELLMAX)
+

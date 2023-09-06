@@ -37,7 +37,6 @@ wv = Wavelets(N_scales=info.N_scales, ELLMAX=info.ELLMAX, tol=1.e-6, taper_width
 if info.wavelet_type == 'GaussianNeedlets':
     ell, filts = wv.GaussianNeedlets(FWHM_arcmin=info.GN_FWHM_arcmin)
 elif info.wavelet_type == 'TopHatHarmonic':
-    info.maps2alms()
     ell,filts = wv.TopHatHarmonic(info.ellbins)
 else:
     raise TypeError('unsupported wavelet type')
@@ -48,6 +47,8 @@ else:
 ##########################
 # wavelet ILC
 if info.wavelet_type == 'TopHatHarmonic':
+    info.maps2alms()
+    info.alms2cls()
     harmonic_ILC(wv, info, resp_tol=1.e-3, map_images=False)
 else:
     wavelet_ILC(wv, info, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3, map_images=False)
