@@ -967,7 +967,7 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
                                  counta +=1
                 cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_covmap_scale'+str(j)+'_crossILC'*info.cross_ILC+'.txt'
                 print("saving covmat",cov_filename)
-                np.savetxt(cov_filename,cov_matrix_harmonic)
+                #np.savetxt(cov_filename,cov_matrix_harmonic)
 
             print('done computing the covariance matrix at scale'+str(j),flush=True)
             ##########################
