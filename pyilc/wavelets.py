@@ -967,10 +967,10 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
             optimal_response_preserved_comp = np.ones(1)
             optimal_response_deproj_comp = np.zeros((N_comps-1, 1))
             if not (np.absolute(response[0]-optimal_response_preserved_comp) < resp_tol).all():
-                print(f'preserved component response failed at wavelet scale {j}')
+                print('preserved component response failed at wavelet scale '+str(j)+'; these should be zero: '+str(np.absolute(response[0]-optimal_response_preserved_comp))+' (tol is '+str(resp_tol)+')')
                 quit()
             if not (np.absolute(response[1:]-optimal_response_deproj_comp) < resp_tol).all():
-                print(f'deprojected component response failed at wavelet scale {j}')
+                print('deprojected component response failed at wavelet scale '+str(j)+'; these should be zero:'+str(np.absolute(response[1:]-optimal_response_deproj_comp))+' (tol is '+str(resp_tol)+')')
                 quit()
 
 
