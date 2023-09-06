@@ -98,7 +98,13 @@ class ILCInfo(object):
         #Remove this an donly read it if the wavelt_type is not TopHatarmonic (below)
         #self.N_scales = p['N_scales']
         #assert type(self.N_scales) is int and self.N_scales > 0, "N_scales"
-        
+
+        # tolerance for the checks for the responses: preserved component should be within resp_tol of 1, 
+        # deprojected components should be within resp_tol of 0
+        # defalt is 1e-3
+        self.resp_tol = 1e-3
+        if 'resp_tol' in p.keys():
+            self.resp_tol = p['resp_tol']
         # wavelet_beam_criterion, set to 1e-3 by default
         if 'wavelet_beam_criterion' in p.keys():
             self.wavelet_beam_criterion = p['wavelet_beam_criterion']
