@@ -438,12 +438,21 @@ class ILCInfo(object):
                 self.alms_s2.append(hp.map2alm(mapp, lmax=self.ELLMAX))
     def alms2cls(self):
         self.cls = np.zeros((len(self.alms),len(self.alms),self.ELLMAX+1))
+        new_beam = self.common_beam
         for a in range(len(self.maps)):
+            inp_beam_a = (self.beams)[a]
+            beam_fac_a = new_beam[:,1]/inp_beam_a[:,1]
             for b in range(a,len(self.maps)):
-                 self.cls[a,b]=self.cls[b,a] = hp.alm2cl(self.alms[a],self.alms[b],lmax=self.ELLMAX)
+                 inp_beam_b = (self.beams)[b]
+                 beam_fac_b = new_beam[:,1]/inp_beam_b[:,1]
+                 self.cls[a,b]=self.cls[b,a] = hp.alm2cl(self.alms[a],self.alms[b],lmax=self.ELLMAX) * beam_fac_b * beam_fac_a 
         if self.cross_ILC:
             self.cls_s1s2= np.zeros((len(self.alms),len(self.alms),self.ELLMAX+1))
             for a in range(len(self.maps)):
+                inp_beam_a = (self.beams)[a]
+                beam_fac_a = new_beam[:,1]/inp_beam_a[:,1]
                 for b in range(len(self.maps)):
-                    self.cls_s1s2[a,b]=hp.alm2cl(self.alms_s1[a],self.alms_s2[b],lmax=self.ELLMAX)
+                    inp_beam_b = (self.beams)[b]
+                    beam_fac_b = new_beam[:,1]/inp_beam_b[:,1]
 
+                    self.cls_s1s2[a,b]=hp.alm2cl(self.alms_s1[a],self.alms_s2[b],lmax=self.ELLMAX) * beam_fac_b * beam_fac_a 

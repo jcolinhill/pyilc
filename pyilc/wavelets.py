@@ -829,7 +829,18 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
     ILC_maps_per_scale = []
     ILC_alms_per_scale = []
     ILC_alms = np.zeros(int(hp.sphtfunc.Alm.getsize(wv.ELLMAX)),dtype=np.complex_)
+    ILC_filters = []
+    for a in range(info.N_freqs):
+        ILC_filters.append(np.zeros(wv.ELLMAX+1))
     print("doing main ILC!!",flush=True)
+    ells=np.arange(wv.ELLMAX+1)
+
+    new_beam = info.common_beam
+    if(wv.taper_width):
+        assert wv.ELLMAX - wv.taper_width > 10., "desired taper is too broad for given ELLMAX"
+        taper_func = (1.0 - 0.5*(np.tanh(0.025*(wv.ell - (wv.ELLMAX - wv.taper_width))) + 1.0)) #smooth taper to zero from ELLMAX-taper_width to ELLMAX
+    else:
+        taper_func = np.ones(wv.ELLMAX+1,dtype=float)
     for j in range(wv.N_scales):
         # first, check if the weights already exist, and skip everything if so
         weights_exist = True
@@ -907,66 +918,14 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
             if flag == False:
                 cov_matrix_harmonic = np.zeros((int(N_freqs_to_use[j]),int(N_freqs_to_use[j])))
                 counta = 0
-                '''
-                all_maps_A = []
-                all_maps_B = []
-
-                all_maps_A_smoothed = []
-                all_maps_B_smoothed = []
                 for a in range(info.N_freqs):
-                    cov_matrix_harmonic = np.zeros((int(N_freqs_to_use[j]),int(N_freqs_to_use[j])))
-                    if freqs_to_use[j][a] :
-                        if not info.cross_ILC:
-                            map_A = find_nth_wavelet_coefficient(j,inp_map=(info.maps)[a], inp_map_alm=(info.alms)[a],wv=wv,  rebeam=True, inp_beam=(info.beams)[a], new_beam=info.common_beam, wv_filts_to_use=freqs_to_use[:,a], N_side_to_use=N_side_to_use)
-                            map_B = map_A.copy()
-                            smooth_map_A = smooth_map_B = np.mean(map_A)
-
-                        else:
-                            map_A = find_nth_wavelet_coefficient(j,inp_map=(info.maps_s1)[a], inp_map_alm=(info.alms_s1)[a], wv=wv,  rebeam=True, inp_beam=(info.beams)[a], new_beam=info.common_beam, wv_filts_to_use=freqs_to_use[:,i], N_side_to_use=N_side_to_use)
-                            map_B = find_nth_wavelet_coefficient(j,inp_map=(info.maps_s2)[a], inp_map_alm=(info.alms_s2)[a], wv=wv,  rebeam=True, inp_beam=(info.beams)[a], new_beam=info.common_beam, wv_filts_to_use=freqs_to_use[:,a], N_side_to_use=N_side_to_use)
-                            smooth_map_A =  np.mean(map_A,)
-                            smooth_map_B =  np.mean(map_B,)
-                        all_maps_A.append(map_A)
-                        all_maps_B.append(map_B)
-                        all_maps_A_smoothed.append(smooth_map_A)
-                        all_maps_B_smoothed.append(smooth_map_B)
-                    else:
-                        all_maps_A.append(0)
-                        all_maps_B.append(0)
-                        all_maps_A_smoothed.append(0)
-                        all_maps_B_smoothed.append(0)
-
-                '''
-                for a in range(info.N_freqs):
-                            countb = 0
-                            for b in range(0, info.N_freqs): #  Could probably do this quicker by starting at a instead of 0 when not doing cross_ILC but would have to keep track of count_a and count_b
-                                if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True):
-                                    '''
-                                    wavelet_map_A = all_maps_A[a].copy()
-                                    wavelet_map_B = all_maps_B[b].copy()
-                                    assert len(wavelet_map_A) == len(wavelet_map_B), "cov mat map calculation: wavelet coefficient maps have different N_side"
-                                    wavelet_map_A_smoothed = all_maps_A_smoothed[a].copy()
-                                    wavelet_map_B_smoothed = all_maps_B_smoothed[b].copy()
-                                    # then construct the smoothed real-space freq-freq cov matrix element for this pair of frequency maps
-                                    # note that the overall normalization of this cov matrix is irrelevant for the ILC weight calculation (it always cancels out)
-                                    cov_map_temp = np.mean( (wavelet_map_A - wavelet_map_A_smoothed)*(wavelet_map_B - wavelet_map_B_smoothed))
-                                    cov_matrix_harmonic[counta,countb] = np.mean(cov_map_temp) 
-                                    '''
-                                    inp_beam_a = (info.beams)[a]
-                                    new_beam = info.common_beam
-                                    inp_beam_b = (info.beams)[b]
-                                    beam_fac_a = new_beam[:,1]/inp_beam_a[:,1]
-                                    beam_fac_b = new_beam[:,1]/inp_beam_b[:,1] 
-                                    if(wv.taper_width):
-                                        assert wv.ELLMAX - wv.taper_width > 10., "desired taper is too broad for given ELLMAX"
-                                        taper_func = (1.0 - 0.5*(np.tanh(0.025*(wv.ell - (wv.ELLMAX - wv.taper_width))) + 1.0)) #smooth taper to zero from ELLMAX-taper_width to ELLMAX
-                                    else:
-                                        taper_func = np.ones(wv.ELLMAX+1,dtype=float)
-                                    ells=np.arange(wv.ELLMAX+1)
-                                    cov_matrix_harmonic[counta,countb] = np.sum((2+ells+1)/(4*np.pi)*info.cls[a,b]* (wv.filters[j])**2*taper_func**2*beam_fac_a*beam_fac_b)/np.sum(wv.filters[j]**2)
-                                    countb +=1
-                            if (freqs_to_use[j][a] == True):
-                                 counta +=1
+                    countb = 0
+                    for b in range(0, info.N_freqs): #  Could probably do this quicker by starting at a instead of 0 when not doing cross_ILC but would have to keep track of count_a and count_b
+                        if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True):
+                            cov_matrix_harmonic[counta,countb] = np.sum((2+ells+1)/(4*np.pi)*info.cls[a,b]* (wv.filters[j])**2*taper_func**2)/np.sum(wv.filters[j]**2)
+                            countb +=1
+                    if (freqs_to_use[j][a] == True):
+                        counta +=1
                 cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_covmap_scale'+str(j)+'_crossILC'*info.cross_ILC+'.txt'
                 print("saving covmat",cov_filename)
                 if info.save_harmonic_covmat:
@@ -1035,20 +994,19 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
         for a in range(info.N_freqs):
             if (freqs_to_use[j][a] == True):
                 wavelet_coeff_alm = info.alms[a]
-                inp_beam_a = (info.beams)[a]
-                new_beam = info.common_beam
-                beam_fac = new_beam[:,1]/inp_beam_a[:,1]
-                if(wv.taper_width):
-                                        assert wv.ELLMAX - wv.taper_width > 10., "desired taper is too broad for given ELLMAX"
-                                        taper_func = (1.0 - 0.5*(np.tanh(0.025*(wv.ell - (wv.ELLMAX - wv.taper_width))) + 1.0)) #smooth taper to zero from ELLMAX-taper_width to ELLMAX
-                else:
-                                        taper_func = np.ones(wv.ELLMAX+1,dtype=float)
-                ILC_alms += hp.almxfl(wavelet_coeff_alm *weights[:,count] ,taper_func*beam_fac*wv.filters[j])
+                inp_beam = (info.beams)[a]
+                beam_fac = new_beam[:,1]/inp_beam[:,1]
+                ILC_filters[a] += weights[:,count]*taper_func*beam_fac*wv.filters[j]
+                #ILC_alms += hp.almxfl(wavelet_coeff_alm ,weights[:,count]*taper_func*beam_fac*wv.filters[j])
                 count+=1
         #ILC_alms_per_scale.append(ILC_alm_temp)
     ##########################
     # synthesize the per-needlet-scale ILC maps into the final combined ILC map (apply each needlet filter again and add them all together -- have to upgrade to all match the same Nside -- done in synthesize)
-    ILC_map = hp.alm2map(ILC_alms,nside=info.N_side)
+    ILC_alm = np.zeros(int(hp.sphtfunc.Alm.getsize(wv.ELLMAX)),dtype=np.complex_)
+    for a in range(info.N_freqs):
+        wavelet_coeff_alm = info.alms[a]
+        ILC_alm += hp.almxfl(wavelet_coeff_alm ,ILC_filters[a])
+    ILC_map = hp.alm2map(ILC_alm,nside=info.N_side)
     #ILC_map = synthesize(wv_maps=ILC_maps_per_scale, wv=wv, N_side_out=info.N_side)
     # save the final ILC map
     ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+info.output_suffix+'.fits'
