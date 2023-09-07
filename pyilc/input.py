@@ -190,7 +190,7 @@ class ILCInfo(object):
             for x in self.N_freqs_to_use:
                 assert x is int
                 assert x>0
-                assert <=self.N_freqs
+                assert x<=self.N_freqs
 
 
         # optionally input the param_dict_file. The default is '../input/fg_SEDs_default_params.yml'
