@@ -345,6 +345,15 @@ def wavelet_ILC(wv=None, info=None,  resp_tol=1.e-3, map_images=False):
                 N_freqs_to_use[i] += 1
             else:
                 freqs_to_use[i][j] = False
+        # Fiona override N_freqstouse
+        if info.override_N_freqs_to_use:
+            print("overriding N_freqs_to_use")
+            N_freqs_to_use[i] = info.N_freqs_to_use[i]
+            for j in range(N_freqs_to_use[i]):
+                freqs_to_use[i][info.N_freqs-j-1]=True
+            for j in range(info.N_freqs-N_freqs_to_use[i]):
+                    freqs_to_use[i][j] = False
+
         # check that number of frequencies is non-zero
         assert(N_freqs_to_use[i] > 0), "insufficient number of channels for high-resolution filter(s)"
         # check that we still have enough frequencies for desired deprojection at each filter scale

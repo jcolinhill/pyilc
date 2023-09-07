@@ -106,11 +106,7 @@ class ILCInfo(object):
         self.resp_tol = 1e-3
         if 'resp_tol' in p.keys():
             self.resp_tol = p['resp_tol']
-        # wavelet_beam_criterion, set to 1e-3 by default
-        if 'wavelet_beam_criterion' in p.keys():
-            self.wavelet_beam_criterion = p['wavelet_beam_criterion']
-        else:
-            self.wavelet_beam_criterion = 1.e-3
+
         # width of high ell taper for filters, set to 0 if no taper desired. Default is 200
         self.taper_width = 200
         if 'taper_width' in p.keys():
@@ -154,7 +150,6 @@ class ILCInfo(object):
                 if p['save_alms'].lower() in ['true','yes','y']:
                     self.save_alms = True
         # TODO: implement these
-        #elif self.wavelet_type == 'CosineNeedlets':
         #elif self.wavelet_type == 'ScaleDiscretizedWavelets':
             # parameters defining these wavelets
             # TODO: add relevant assertions
@@ -171,6 +166,31 @@ class ILCInfo(object):
         # number of frequency maps used
         self.N_freqs = p['N_freqs']
         assert type(self.N_freqs) is int and self.N_freqs > 0, "N_freqs"
+
+        # wavelet_beam_criterion, set to 1e-3 by default. This removes frequencies from the NILC
+        # whose beams are a certain fraction smaller than the appropriate needlet filter within the range
+        # of ells appropriate for the filter.
+        if 'wavelet_beam_criterion' in p.keys():
+            self.wavelet_beam_criterion = p['wavelet_beam_criterion']
+        else:
+            self.wavelet_beam_criterion = 1.e-3
+
+        # override_N_freqs_to_use OVERRIDES information from wavlet_beam_criterion
+        # and allows you to explicitly specify how many frequencies to use at each wavelet scale
+        # this should be a list of ints, of length N_scales, where each entry in the list specifies 
+        # how many frequency channels one should use at the scale corresponding to that entry. 
+        # if the entry is less than N_freqs, the lowest resolution maps will be dropped from the NILC
+        # such that there are the appropriate number of frequency channels used in each scale
+        self.override_N_freqs_to_use = False
+        if 'override_N_freqs_to_use' in p.keys():
+            self.override_N_freqs_to_use = True
+            self.N_freqs_to_use = p['override_N_freqs_to_use']
+            assert type(self.N_freqs_to_use) is list
+            assert len(self.N_freqs_to_use) == self.N_scales
+            for x in self.N_freqs_to_use:
+                assert x is int
+                assert x>0
+                assert <=self.N_freqs
 
 
         # optionally input the param_dict_file. The default is '../input/fg_SEDs_default_params.yml'
