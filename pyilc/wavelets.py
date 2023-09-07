@@ -79,12 +79,39 @@ class Wavelets(object):
 
     # the cosine needlet filters used in the Planck 2015/2018 CMB analysis are described in
     #    App. B of https://arxiv.org/pdf/1502.05956.pdf and App. B of https://arxiv.org/pdf/1807.06208.pdf
-    #    TODO: (not yet implemented here)
-    #def CosineNeedlets(self, ellmin=None, ellpeak=None, ellmax=None):
-    #    TODO: (not yet implemented here)
-    #    # simple check to ensure that sum of squared transmission is unity as needed for NILC algorithm
-    #    assert (np.absolute( np.sum( self.filters**2., axis=0 ) - np.ones(self.ELLMAX+1,dtype=float)) < self.tol).all(), "wavelet filter transmission check failed"
-    #    return self.ell, self.filters
+    def CosineNeedlets(self,ellmin=None, ellpeaks=None, ): # Fiona added CosineNeedlets
+        '''
+
+        '''
+
+        ellpeaks = [ellmin]+list(ellpeaks)
+        # ellpeaks need to be in strictly increasing order, otherwise you'll get nonsense
+        if ( any( i >= j for i, j in zip(ellpeaks, ellpeaks[1:]))):
+            raise AssertionError
+
+         # check consistency with N_scales
+        assert self.N_scales == len(ellpeaks)
+
+        assert ellpeaks[-1] == self.ELLMAX+1
+
+        self.filters= np.zeros((self.N_scales,self.ELLMAX+1))
+        ells=np.arange(self.ELLMAX+1)
+
+        for i in range(0,self.N_scales-1):
+            filt1 = np.logical_and(ells<ellpeaks[i],ells>=ellpeaks[i-1])
+            filt2 = np.logical_and(ells<ellpeaks[i+1],ells>=ellpeaks[i])
+            self.filters[i,filt1] = np.cos(np.pi/2*(ellpeaks[i]-ells[filt1])/(ellpeaks[i]-ellpeaks[i-1]))#hp.gauss_beam(FWHM[i], lmax=ELLMAX)
+            self.filters[i,filt2] = np.cos(np.pi/2*(ells[filt2]-ellpeaks[i])/(ellpeaks[i+1]-ellpeaks[i]))#hp.gauss_beam(FWHM[i], lmax=ELLMAX)
+
+        i=i+1
+        filt1 = np.logical_and(ells<ellpeaks[i],ells>=ellpeaks[i-1])
+
+        self.filters[i,filt1] = np.cos(np.pi/2*(ellpeaks[i]-ells[filt1])/(ellpeaks[i]-ellpeaks[i-1]))#hp.gauss_beam(FWHM[i], lmax=ELLMAX)
+
+        # simple check to ensure that sum of squared transmission is unity as needed for NILC algorithm 
+        assert (np.absolute( np.sum( self.filters**2., axis=0 ) - np.ones(self.ELLMAX+1,dtype=float)) < self.tol).all(), "wavelet filter transmission check failed"
+        self.ell = ells
+        return self.ell, self.filters
 
     # scale-discretized wavelets
     #def ScaleDiscretizedWavelets(self, TODO):
@@ -342,8 +369,9 @@ def wavelet_ILC(wv=None, info=None,  resp_tol=1.e-3, map_images=False):
         ell, filts = wv.GaussianNeedlets(info.GN_FWHM_arcmin)
     elif info.wavelet_type == 'TopHatHarmonic':
         ell, filts = wv.TopHatHarmonic(info.ellbins)
+    elif info.wavelet_type == 'CosineNeedlets': # Fiona added CosineNeedlets
+            ell, filts = wv.CosineNeedlets(ellmin = info.ellmin,ellpeaks = info.ellpeaks)
     # TODO: implement these
-    #elif info.wavelet_type == 'CosineNeedlets':
     #elif info.wavelet_type == 'ScaleDiscretizedWavelets':
     else:
         raise NotImplementedError
