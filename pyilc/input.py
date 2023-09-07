@@ -99,7 +99,13 @@ class ILCInfo(object):
         #Remove this an donly read it if the wavelt_type is not TopHatarmonic (below)
         #self.N_scales = p['N_scales']
         #assert type(self.N_scales) is int and self.N_scales > 0, "N_scales"
-        
+
+        # tolerance for the checks for the responses: preserved component should be within resp_tol of 1, 
+        # deprojected components should be within resp_tol of 0
+        # defalt is 1e-3
+        self.resp_tol = 1e-3
+        if 'resp_tol' in p.keys():
+            self.resp_tol = p['resp_tol']
         # wavelet_beam_criterion, set to 1e-3 by default
         if 'wavelet_beam_criterion' in p.keys():
             self.wavelet_beam_criterion = p['wavelet_beam_criterion']
@@ -137,6 +143,16 @@ class ILCInfo(object):
             self.ellbins = np.arange(0,self.ELLMAX+1,self.Delta_ell_HILC)
             self.N_scales = len(self.ellbins)-1
             assert type(self.N_scales) is int and self.N_scales > 0, "N_scales"
+
+            # Option to save the harmonic covmat; by default it is False
+            self.save_harmonic_covmat = False
+            if 'save_harmonic_covmat' in p.keys():
+                if p['save_harmonic_covmat'].lower() in ['true','yes','y']:
+                    self.save_harmonic_covmat = True
+            self.save_alms = False
+            if 'save_alms' in p.keys():
+                if p['save_alms'].lower() in ['true','yes','y']:
+                    self.save_alms = True
         # TODO: implement these
         #elif self.wavelet_type == 'CosineNeedlets':
         #elif self.wavelet_type == 'ScaleDiscretizedWavelets':
@@ -155,6 +171,7 @@ class ILCInfo(object):
         # number of frequency maps used
         self.N_freqs = p['N_freqs']
         assert type(self.N_freqs) is int and self.N_freqs > 0, "N_freqs"
+
 
         # optionally input the param_dict_file. The default is '../input/fg_SEDs_default_params.yml'
         self.param_dict_file = '../input/fg_SEDs_default_params.yml'
@@ -429,8 +446,15 @@ class ILCInfo(object):
     # method for turning maps to alms
     def maps2alms(self):
         self.alms=[]
-        for mapp in self.maps:
-            self.alms.append(hp.map2alm(mapp, lmax=self.ELLMAX))
+        for freqind,mapp in enumerate(self.maps):
+            filename = self.output_dir + self.output_prefix + '_alm_freq'+str(freqind)+'.fits'
+            exists = os.path.isfile(filename)
+            if exists:
+                    self.alms.append(hp.fitsfunc.read_alm(filename))
+            else:
+                self.alms.append(hp.map2alm(mapp, lmax=self.ELLMAX))
+                if self.save_alms:
+                    hp.fitsfunc.write_alm(filename,self.alms[freqind])
         if self.cross_ILC:
             self.alms_s1 = []
             self.alms_s2 = []
@@ -440,12 +464,21 @@ class ILCInfo(object):
                 self.alms_s2.append(hp.map2alm(mapp, lmax=self.ELLMAX))
     def alms2cls(self):
         self.cls = np.zeros((len(self.alms),len(self.alms),self.ELLMAX+1))
+        new_beam = self.common_beam
         for a in range(len(self.maps)):
+            inp_beam_a = (self.beams)[a]
+            beam_fac_a = new_beam[:,1]/inp_beam_a[:,1]
             for b in range(a,len(self.maps)):
-                 self.cls[a,b]=self.cls[b,a] = hp.alm2cl(self.alms[a],self.alms[b],lmax=self.ELLMAX)
+                 inp_beam_b = (self.beams)[b]
+                 beam_fac_b = new_beam[:,1]/inp_beam_b[:,1]
+                 self.cls[a,b]=self.cls[b,a] = hp.alm2cl(self.alms[a],self.alms[b],lmax=self.ELLMAX) * beam_fac_b * beam_fac_a 
         if self.cross_ILC:
             self.cls_s1s2= np.zeros((len(self.alms),len(self.alms),self.ELLMAX+1))
             for a in range(len(self.maps)):
+                inp_beam_a = (self.beams)[a]
+                beam_fac_a = new_beam[:,1]/inp_beam_a[:,1]
                 for b in range(len(self.maps)):
-                    self.cls_s1s2[a,b]=hp.alm2cl(self.alms_s1[a],self.alms_s2[b],lmax=self.ELLMAX)
+                    inp_beam_b = (self.beams)[b]
+                    beam_fac_b = new_beam[:,1]/inp_beam_b[:,1]
 
+                    self.cls_s1s2[a,b]=hp.alm2cl(self.alms_s1[a],self.alms_s2[b],lmax=self.ELLMAX) * beam_fac_b * beam_fac_a 

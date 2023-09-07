@@ -51,9 +51,9 @@ else:
 if info.wavelet_type == 'TopHatHarmonic':
     info.maps2alms()
     info.alms2cls()
-    harmonic_ILC(wv, info, resp_tol=1.e-3, map_images=False)
+    harmonic_ILC(wv, info, resp_tol=info.resp_tol, map_images=False)
 else:
-    wavelet_ILC(wv, info, wavelet_beam_criterion=1.e-3, resp_tol=1.e-3, map_images=False)
+    wavelet_ILC(wv, info, wavelet_beam_criterion=1.e-3, resp_tol=info.resp_tol, map_images=False)
 ##########################
 
 
