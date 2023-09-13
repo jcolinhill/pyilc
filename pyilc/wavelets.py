@@ -562,6 +562,17 @@ def _weights_filename(info,freq,scale):
                 weight_filename = weight_filename[:-5]+info.output_suffix+'.fits'
                 return weight_filename
 
+def _ILC_map_filename(info):
+    ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+info.output_suffix+'.fits'
+    if type(info.N_deproj) is int:
+        if info.N_deproj>0:
+            ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+info.output_suffix+'.fits'
+    else:
+         if info.N_deproj[0]>0:
+            # NOTE: ILCdeprojected file name is not so descriptive here. Need to describe it more in info.output_suffix.
+            ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps[0])+'_crossILC'*info.cross_ILC+info.output_suffix+'.fits'
+
+    return ILC_map_filename
 
 
 # wavelet ILC
@@ -820,16 +831,9 @@ def wavelet_ILC(wv=None, info=None,  resp_tol=1.e-3, map_images=False):
     ##########################
     # synthesize the per-needlet-scale ILC maps into the final combined ILC map (apply each needlet filter again and add them all together -- have to upgrade to all match the same Nside -- done in synthesize)
     ILC_map = synthesize(wv_maps=ILC_maps_per_scale, wv=wv, N_side_out=info.N_side)
-    # save the final ILC map
-    ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+info.output_suffix+'.fits'
-    if type(info.N_deproj) is int:
-        if N_deproj>0:
-            ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+info.output_suffix+'.fits'
-    else:
-         if info.N_deproj[0]>0:
-            # NOTE: ILCdeprojected file name is not so descriptive here. Need to describe it more in info.output_suffix.
-            ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap'+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps[0])+'_crossILC'*info.cross_ILC+info.output_suffix+'.fits'
 
+    # save the final ILC map
+    ILC_map_filename = _ILC_map_filename(info)
 
     hp.write_map(ILC_map_filename, ILC_map, nest=False, dtype=np.float64, overwrite=False)
     # make image if requested
