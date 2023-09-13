@@ -216,7 +216,14 @@ class ILCInfo(object):
         if 'wavelet_maps_exist' in p.keys():
             if p['wavelet_maps_exist'].lower() in ['true','yes','y']:
                 self.wavelet_maps_exist = True
-        
+
+        # do the covariance maps already exist as saved files? we can tell the code to skip the check for this, if 
+        # we know this alredy. Deafults to False
+        self.inv_covmat_exists= False
+        if 'inv_covmat_exists' in p.keys():
+            if p['inv_covmat_exists'].lower() in ['true','yes','y']:
+                self.inv_covmat_exists= True
+ 
         # frequency map file names
         self.freq_map_files = p['freq_map_files']
         assert len(self.freq_map_files) == self.N_freqs, "freq_map_files"

@@ -96,6 +96,10 @@ freq_map_files_s1: []
 # A list of files where you have saved the second split of the frequency maps for the same order as freqs_delta_ghz (only for a cross-ILC)
 freq_map_files_s2: []
 
+# If you have already run the code, it will have saved the needlet coefficients of all the maps. We can skip the check that they already exist by 
+# optionally telling the code they already exist
+# wavelet_maps_exist: 'true'
+
 # A list of files where you have saved the frequency maps to apply WEIGHTS to (for weights calculated using the covariance of the maps in freq_map_files)
 # The weights will not be calculated from these maps, just applied to them
 # Make sure to change the output_suffix if you use this option as it will otherwise be saved with the same filename as the standard maps

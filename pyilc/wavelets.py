@@ -375,7 +375,7 @@ def waveletize_input_maps(info,scale_info_wvs,wv,map_images = False):
                         print('needlet coefficient map already exists:', filename)
                         wv_maps_temp.append( hp.read_map(filename, dtype=np.float64) )
                     else:
-                        print('needlet coefficient map not previously computed; re-computing all maps for frequency '+str(i)+' now...')
+                        print('needlet coefficient map not previously computed; computing all maps for frequency '+str(i)+' now...')
                         flag=False
                         break
             if flag == False:
@@ -403,7 +403,7 @@ def waveletize_input_maps(info,scale_info_wvs,wv,map_images = False):
                                 print('needlet coefficient map already exists:', filename,)
                                 wv_maps_temp.append( hp.read_map(filename, dtype=np.float64, verbose=False) )
                             else:
-                                print('needlet coefficient map not previously computed; re-computing all '+str(season)+'maps for frequency '+str(i)+' now...',)
+                                print('needlet coefficient map not previously computed; computing all '+str(season)+'maps for frequency '+str(i)+' now...',)
                                 flag=False
                                 break
                     if flag == False:
@@ -457,7 +457,6 @@ def compute_covariance_at_scale(info,scale,FWHM_pix,scale_info_wvs):
     return cov_maps_temp
 
 def compute_weights_at_scale(info,scale,inv_cov_maps_temp,A_mix,scale_info_wvs,resp_tol):
-    print("in compute weights at scale")
 
     if type(info.N_deproj) is int:
             N_deproj = info.N_deproj
@@ -674,22 +673,26 @@ def wavelet_ILC(wv=None, info=None,  resp_tol=1.e-3, map_images=False):
             cov_maps_temp = []
             flag=True
             for a in range(info.N_freqs):
-                start_at = a
-                if info.cross_ILC:
-                    start_at = 0
-                for b in range(start_at, info.N_freqs):
-                    if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True and flag==True):
-                        cov_filename = _cov_filename(info,a,b,j)
-                        exists = os.path.isfile(cov_filename)
-                        if exists:
-                            print('needlet coefficient covariance map already exists:', cov_filename)
-                            cov_maps_temp.append( hp.read_map(cov_filename, dtype=np.float64) )
-                        else:
-                            print('needlet coefficient covariance map not previously computed; re-computing all covariance maps at scale '+str(j)+' now...')
-                            flag=False
-                            break
+                    start_at = a
+                    if info.cross_ILC:
+                        start_at = 0
+                    for b in range(start_at, info.N_freqs):
+                        if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True and flag==True):
+                            cov_filename = _cov_filename(info,a,b,j)
+                            exists = os.path.isfile(cov_filename)
+                            if exists:
+                                if not info.inv_covmat_exists:
+                                    print('needlet coefficient covariance map already exists:', cov_filename)
+                                    cov_maps_temp.append( hp.read_map(cov_filename, dtype=np.float64) )
+                                else:
+                                    cov_maps_temp.append(0)
+
+                            else:
+                                print('needlet coefficient covariance map not previously computed; computing all covariance maps at scale '+str(j)+' now...')
+                                flag=False
+                                break
             if flag == False:
-                cov_maps_temp = compute_covariance_at_scale(info,j,FWHM_pix,scale_info_wvs)
+                    cov_maps_temp = compute_covariance_at_scale(info,j,FWHM_pix,scale_info_wvs)
             ##########################
             ##########################
             # invert the cov matrix in each pixel for each filter scale
@@ -713,7 +716,7 @@ def wavelet_ILC(wv=None, info=None,  resp_tol=1.e-3, map_images=False):
                             inv_cov_maps_temp[count] = hp.read_map(inv_cov_filename, dtype=np.float64) #by construction we're going through cov_maps_temp in the same order as it was populated above
                             count+=1
                         else:
-                            print('needlet coefficient inverse covariance map not previously computed; re-computing all inverse covariance maps at scale '+str(j)+' now...')
+                            print('needlet coefficient inverse covariance map not previously computed; computing all inverse covariance maps at scale '+str(j)+' now...')
                             flag=False
                             break
             if (flag==True):
@@ -770,10 +773,10 @@ def wavelet_ILC(wv=None, info=None,  resp_tol=1.e-3, map_images=False):
                             inv_cov_filename = _inv_cov_filename(info,j,a,b)
                             hp.write_map(inv_cov_filename, inv_cov_maps_temp[count], nest=False, dtype=np.float64, overwrite=False)
                             count+=1
-                print('done computing all inverse covariance maps at scale'+str(j))
+                print('done computing all inverse covariance maps at scale '+str(j))
                 del cov_maps_temp #free up memory
             del inv_cov_maps_temp #free up memory
-            print('done computing all ILC weights at scale'+str(j))
+            print('done computing all ILC weights at scale '+str(j))
             ##########################
             # only save these maps of the ILC weights if requested
             if (info.save_weights == 'yes' or info.save_weights == 'Yes' or info.save_weights == 'YES'):
@@ -1000,11 +1003,9 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
                         cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_covmap_scale'+str(j)+'_crossILC'*info.cross_ILC+'.txt' 
                         exists = os.path.isfile(cov_filename)
                         if exists:
-                            print('needlet coefficient covariance map already exists:', cov_filename)
                             cov_matrix_harmonic = np.loadtxt(cov_filename)
                             cont = True
                         else:
-                            print('needlet coefficient covariance map not previously computed; re-computing all covariance maps at scale '+str(j)+' now...')
                             flag=False
                             break
             if flag == False:
@@ -1023,7 +1024,6 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
                     print("saving covmat",cov_filename)
                     np.savetxt(cov_filename,cov_matrix_harmonic)
 
-            print('done computing the covariance matrix at scale'+str(j),flush=True)
             ##########################
             ##########################
             # invert the cov matrix for each filter scale
@@ -1064,7 +1064,6 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
                 quit()
 
 
-            print('done computing all ILC weights at scale'+str(j))
             ##########################
             # only save these ILC weights if requested
             if (info.save_weights == 'yes' or info.save_weights == 'Yes' or info.save_weights == 'YES'):
@@ -1091,7 +1090,6 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
                 ILC_filters[a] += weights[:,count]*taper_func*beam_fac*wv.filters[j]
                 #ILC_alms += hp.almxfl(wavelet_coeff_alm ,weights[:,count]*taper_func*beam_fac*wv.filters[j])
                 count+=1
-        print("done scale",j,"in",t1j-time.time(),"seconds")
         #ILC_alms_per_scale.append(ILC_alm_temp)
     ##########################
     # synthesize the per-needlet-scale ILC maps into the final combined ILC map (apply each needlet filter again and add them all together -- have to upgrade to all match the same Nside -- done in synthesize)
