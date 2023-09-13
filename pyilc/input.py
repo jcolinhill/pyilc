@@ -190,7 +190,7 @@ class ILCInfo(object):
             for x in self.N_freqs_to_use:
                 assert x is int
                 assert x>0
-                assert <=self.N_freqs
+                assert x <=self.N_freqs
 
 
         # optionally input the param_dict_file. The default is '../input/fg_SEDs_default_params.yml'
@@ -210,6 +210,13 @@ class ILCInfo(object):
             self.freq_bp_files = p['freq_bp_files']
             assert len(self.freq_bp_files) == self.N_freqs, "freq_bp_files"
 
+        # do the wavelet maps already exist as saved files? we can tell the code to skip the check for this, if 
+        # we know this alredy. Deafults to False
+        self.wavelet_maps_exist = False
+        if 'wavelet_maps_exist' in p.keys():
+            if p['wavelet_maps_exist'].lower() in ['true','yes','y']:
+                self.wavelet_maps_exist = True
+        
         # frequency map file names
         self.freq_map_files = p['freq_map_files']
         assert len(self.freq_map_files) == self.N_freqs, "freq_map_files"
