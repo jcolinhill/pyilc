@@ -61,6 +61,10 @@ N_deproj: 0
 ILC_deproj_comps: []
 # ILC_deproj_comps: [['tSZ'],['tSZ'],['tSZ'],[],[],[],[]]
 
+# resp_tol sets the tolerance for the checks that the responses to indeed sum to 1 (for the preserved component) of 0 (for the deprojected components).
+# if unspecified, defaults to 1e-3
+resp_tol: 0.001
+
 # Whether or not to perform a cross-ILC, ie to calculate the covariances from split maps (thus not including instrumental noise).
 # If this is unspecified, a standard ILC will be performed.
 # If this is one of ['true','yes','y'] (captalized or uncapitalized), a cross_ILC will be performed.
@@ -92,6 +96,10 @@ freq_map_files_s1: []
 # A list of files where you have saved the second split of the frequency maps for the same order as freqs_delta_ghz (only for a cross-ILC)
 freq_map_files_s2: []
 
+# If you have already run the code, it will have saved the needlet coefficients of all the maps. We can skip the check that they already exist by 
+# optionally telling the code they already exist
+# wavelet_maps_exist: 'true'
+
 # A list of files where you have saved the frequency maps to apply WEIGHTS to (for weights calculated using the covariance of the maps in freq_map_files)
 # The weights will not be calculated from these maps, just applied to them
 # Make sure to change the output_suffix if you use this option as it will otherwise be saved with the same filename as the standard maps
@@ -105,6 +113,18 @@ beam_FWHM_arcmin: [1.4, 1.4] #update with whatever beam FWHM was used in the sim
 
 # a list of files containing the 1-D beam profiles to deconvolve from each map (only if beam_type is '1Dbeams') for the same order as freqs_delta_ghz
 beam_files: []
+
+#  wavelet_beam_criterion sets a number which is related to how much smaller than the needlet filters the beam of a certain frequency channel should be
+# in order to be dropped from the NILC in this needlet filter. If unspecified, defaults to 1e-3
+wavelet_beam_criterion: 0.001
+
+# override_N_freqs_to_use OVERRIDES wavleet_beam_criterion by explicitly specifying how many frequencies to use in each needlet scale in the NILC
+# it should be a list of ints of length N_scales
+# at scale j, the N highest-resolution frequency maps will be used in the ILC where N= override_N_freqs_to_use[j]
+# (recall the input frequency maps must be inputed in order of increasing resolution so this is equivalent to the N last maps in the list)
+# override_N_freqs_to_use: [2,2,2,2,2,2,2]
+
+
 
 #----------------------------------------------------#
 # Info about maps to cross-correlate the output with #

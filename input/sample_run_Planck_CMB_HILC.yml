@@ -1,17 +1,17 @@
-output_dir: '//mnt/ceph/users/fmccarthy/pyilc_planck_tsz/standard_frequency_full/' # the directory where the covariances, needlet coefficients, and maps will be saved
+output_dir: '///mnt/ceph/users/fmccarthy/pyilc_test_harmonic//' # the directory where the covariances, needlet coefficients, and maps will be saved
 output_prefix: ''   # the prefix for all the files that will be saved
+output_suffix: ''   # the prefix for all the files that will be saved
 save_weights: 'no'                        # set to yes to save the weight maps
-
-param_dict_file: '../input/fg_SEDs_default_params.yml'  # the file where you save the params of the SEDs
+param_dict_file: './fg_SEDs_default_params.yml'  # the file where you save the params of the SEDs
 
 ELLMAX: 4096                                       
-wavelet_type: 'GaussianNeedlets'                    
-N_scales: 10
-GN_FWHM_arcmin: [600., 300., 120., 60., 30., 15., 10., 7.5, 5.]
+wavelet_type: 'TopHatHarmonic'                    
+BinSize: 50
 
 N_freqs: 8
 bandpass_type: 'ActualBandpasses'   # can be actual or delta bandpasses
 freqs_delta_ghz: [30,44,70,100,143,353,217,545]
+
 # the files where you have saved the bandpasses:
 freq_bp_files: ['../data/LFI_BANDPASS_F030_reformat.txt' ,
 '../data/LFI_BANDPASS_F044_reformat.txt',
@@ -20,7 +20,7 @@ freq_bp_files: ['../data/LFI_BANDPASS_F030_reformat.txt' ,
 '../data/HFI_BANDPASS_F143_reformat.txt',
 '../data/HFI_BANDPASS_F353_reformat.txt',
 '../data/HFI_BANDPASS_F217_reformat.txt',
-'../data/HFI_BANDPASS_F545_reformat.txt']     
+'../data/HFI_BANDPASS_F545_reformat.txt']
 
 # the files where you have saved the frequency maps
 freq_map_files: ['../data/30_full_1024.fits',
@@ -39,7 +39,7 @@ perform_ILC_at_beam: 10  # the FWHM of the common beam to convolve to before per
 
 N_side: 2048
 
-ILC_preserved_comp: 'tSZ'
+ILC_preserved_comp: 'CMB'
 N_deproj: 0
 ILC_deproj_comps: []
 N_SED_params: 0
