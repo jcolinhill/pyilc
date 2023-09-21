@@ -188,7 +188,8 @@ class ILCInfo(object):
             assert type(self.N_freqs_to_use) is list
             assert len(self.N_freqs_to_use) == self.N_scales
             for x in self.N_freqs_to_use:
-                assert x is int
+                print(x)
+                assert type(x) is int
                 assert x>0
                 assert x<=self.N_freqs
 

@@ -457,14 +457,13 @@ def compute_covariance_at_scale(info,scale,FWHM_pix,scale_info_wvs):
     return cov_maps_temp
 
 def compute_weights_at_scale(info,scale,inv_cov_maps_temp,A_mix,scale_info_wvs,resp_tol):
-
+    j = scale
     if type(info.N_deproj) is int:
             N_deproj = info.N_deproj
     else:
             N_deproj = info.N_deproj[j]
 
     N_comps = (N_deproj + 1)
-    j = scale
     N_pix_to_use = scale_info_wvs.N_pix_to_use
     N_freqs_to_use = scale_info_wvs.N_freqs_to_use
     freqs_to_use = scale_info_wvs.freqs_to_use
