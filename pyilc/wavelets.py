@@ -211,7 +211,6 @@ class scale_info(object):
         elif info.wavelet_type == 'CosineNeedlets':
             ell, filts = wv.CosineNeedlets(ellmin = info.ellmin,ellpeaks = info.ellpeaks)
         # TODO: implement these
-        #elif info.wavelet_type == 'CosineNeedlets':
         #elif info.wavelet_type == 'ScaleDiscretizedWavelets':
         else:
             raise NotImplementedError
