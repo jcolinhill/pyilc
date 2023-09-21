@@ -125,7 +125,7 @@ class ILCInfo(object):
             assert len(self.GN_FWHM_arcmin) == self.N_scales - 1, "GN_FWHM_arcmin"
             assert all(FWHM_val > 0. for FWHM_val in self.GN_FWHM_arcmin), "GN_FWHM_arcmin"
         elif self.wavelet_type == 'CosineNeedlets':  #Fiona added CosineNeedlets
-            # ellpeak values defining the gaussian needlets
+            # ellpeak values defining the cosine needlets
             self.ellpeaks = np.asarray(p['ellpeaks'])
             self.ellmin = np.asarray(p['ellmin'])
             assert len(self.ellpeaks) == self.N_scales - 1, "ellpeaks"
