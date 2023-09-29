@@ -237,7 +237,7 @@ class ILCInfo(object):
         assert len(self.freq_map_files) == self.N_freqs, "freq_map_files"
          
         self.freq_map_field = 0
-        if ['freq_map_field'] in p.keys():
+        if 'freq_map_field' in p.keys():
             self.freq_map_field = p['freq_map_field']
 
         # S1 and S2 maps for the cross-ILC
