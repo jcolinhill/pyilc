@@ -37,6 +37,10 @@ We go into detail about the input and output structure below. In general, an inp
 As the covariance matrix computation/inversion is often the most computationally expensive step in performing NILC, this allows several versions of ILC maps (different deprojections, SEDs, etc.) to be computed with the same input without recomputing the covariances.
 
 
+### Examples
+
+There are some examples of usage in the notebooks/ folder, where we explicitly run a .yaml file from the input/ folder which will reproduce the ILC calculation undeprojected y map in [arXiv:2307.01043](https://arxiv.org/abs/2307.01043) . Note that it first downloads the preprocessed input single-frequency maps from https://users.flatironinstitute.org/~fmccarthy/ymaps_PR4_McCH23/inpainted_input_maps/ (the preprocessing is done with diffusive_inpaint.py and is described in  [arXiv:2307.01043](https://arxiv.org/abs/2307.01043) . There is also an example notebook which performs HILC on the Planck data to create a temperature map. The HILC calculation is much faster than the NILC calculation, and this can be run very quickly.
+
 ## Input structure
 
 
