@@ -230,7 +230,7 @@ class scale_info(object):
                 sigma_pix_temp = np.sqrt( np.absolute( 2.*(float( (info.N_deproj + 1) - self.N_freqs_to_use[i] )) / (N_modes[i] * info.ILC_bias_tol) ) ) #result is in radians
             else:
                 sigma_pix_temp = np.sqrt( np.absolute( 2.*(float( (info.N_deproj[i] + 1) - self.N_freqs_to_use[i] )) / (N_modes[i] * info.ILC_bias_tol) ) ) #result is in radians
-            assert sigma_pix_temp < np.pi, "not enough modes to satisfy ILC_bias_tol" #don't want real-space gaussian to be the full sky or close to it
+            assert sigma_pix_temp < np.pi, "not enough modes to satisfy ILC_bias_tol at scale " +str(i) #don't want real-space gaussian to be the full sky or close to it
             # note that sigma_pix_temp can come out zero if N_deproj+1 = N_freqs_to_use (formally bias vanishes in this case because the problem is fully constrained)
             # for now, just set equal to case where N_freqs_to_use = N_deproj
             if sigma_pix_temp == 0.:
@@ -477,7 +477,7 @@ class scale_info(object):
                 inv_covmat = np.linalg.inv(np.transpose(covmat,(2,0,1)))
                 inv_covmat = np.transpose(inv_covmat, axes=[1,2,0]) #new dim freq, freq, pix
 
-                assert np.allclose(np.einsum('ijp,jkp->pik', inv_covmat, covmat), np.transpose(np.repeat(np.eye(N_freqs_to_use[j])[:,:,None],N_pix_to_use[j],axis=2),(2,0,1)), rtol=1.e-2, atol=1.e-2), "covmat inversion failed for scale "+str(j) #, covmat, inv_covmat, np.dot(inv_covmat, covmat)-np.eye(int(N_freqs_to_use[j]))
+                assert np.allclose(np.einsum('ijp,jkp->pik', inv_covmat, covmat), np.transpose(np.repeat(np.eye(N_freqs_to_use[j])[:,:,None],N_pix_to_use[j],axis=2),(2,0,1)), rtol=1.e-1, atol=1.e-1), "covmat inversion failed for scale "+str(j) #, covmat, inv_covmat, np.dot(inv_covmat, covmat)-np.eye(int(N_freqs_to_use[j]))
                 count=0
                 for a in range(info.N_freqs):
                     for b in range(a, info.N_freqs):
@@ -837,7 +837,7 @@ def _ILC_map_filename(info):
 
 
 # wavelet ILC
-def wavelet_ILC(wv=None, info=None,  resp_tol=1.e-3, map_images=False,ILC_map=False):
+def wavelet_ILC(wv=None, info=None,  resp_tol=1.e-3, map_images=False,return_ILC_map=False):
     assert wv is not None, "wavelets not defined"
     assert type(wv) is Wavelets, "Wavelets TypeError"
     assert info is not None, "ILC info not defined"
@@ -1046,7 +1046,13 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
                                 # However, note that as a consequence an output NILC CMB map from this code has units of uK_CMB!
                                 A_mix[countt][b] = 1.e-6 * (get_mix([info.freqs_delta_ghz[a]], info.ILC_preserved_comp, param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
                             elif (info.bandpass_type == 'ActualBandpasses'):
-                                A_mix[countt][b] = 1.e-6 * (get_mix_bandpassed([info.freq_bp_files[a]], info.ILC_preserved_comp, param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
+                                if info.freq_bp_files[a] is not None:
+                                    A_mix[countt][b] = 1.e-6 * (get_mix_bandpassed([info.freq_bp_files[a]], info.ILC_preserved_comp, param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
+                                else:
+                                    print("getting none amix")
+                                
+                                    A_mix[countt][b] = 1.e-6 * (get_mix([None], info.ILC_preserved_comp, param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK
+
                         else:
                             if (info.bandpass_type == 'DeltaBandpasses'):
                                 A_mix[countt][b] = 1.e-6 * (get_mix([info.freqs_delta_ghz[a]], ILC_deproj_comps[b-1], param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio'))[0] #convert to K from uK

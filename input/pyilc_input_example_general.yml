@@ -91,6 +91,9 @@ freq_bp_files: ['/mnt/home/fmccarthy/comp_separation/pyilc/data/HFI_BANDPASS_F14
 freq_map_files: ['/moto/hill/users/kms2320/repositories/NILC-Power-Spectrum/sim_maps/sim_map_90GHz_tSZamp1_nside1024_K.fits',
 '/moto/hill/users/kms2320/repositories/NILC-Power-Spectrum/sim_maps/sim_map_150GHz_tSZamp1_nside1024_K.fits']
 
+# the field of the maps above that you want to read. Defaults to 0 if not specified
+freq_map_field: 0
+
 # A list of files where you have saved the first split of the frequency maps for the same order as freqs_delta_ghz (only for a cross-ILC)
 freq_map_files_s1: []
 # A list of files where you have saved the second split of the frequency maps for the same order as freqs_delta_ghz (only for a cross-ILC)

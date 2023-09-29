@@ -209,7 +209,14 @@ class ILCInfo(object):
         elif self.bandpass_type == 'ActualBandpasses':
             # actual bandpasses: list of bandpass file names, each containing two columns: [freq [GHz]] [transmission [arbitrary norm.]]
             self.freq_bp_files = p['freq_bp_files']
+            for xind,x in enumerate(self.freq_bp_files):
+                if x.lower()=="none":
+                    self.freq_bp_files[xind] = None
+
+                print("freqbpfiles are",self.freq_bp_files)
+                
             assert len(self.freq_bp_files) == self.N_freqs, "freq_bp_files"
+
 
         # do the wavelet maps already exist as saved files? we can tell the code to skip the check for this, if 
         # we know this alredy. Deafults to False
@@ -228,6 +235,10 @@ class ILCInfo(object):
         # frequency map file names
         self.freq_map_files = p['freq_map_files']
         assert len(self.freq_map_files) == self.N_freqs, "freq_map_files"
+         
+        self.freq_map_field = 0
+        if ['freq_map_field'] in p.keys():
+            self.freq_map_field = p['freq_map_field']
 
         # S1 and S2 maps for the cross-ILC
         if self.cross_ILC:
@@ -375,9 +386,8 @@ class ILCInfo(object):
     def read_maps(self):
         self.maps = np.zeros((self.N_freqs,self.N_pix), dtype=np.float64)
         for i in range(self.N_freqs):
-            # TODO: allow reading in of maps not in field=0 in the fits file
             # TODO: allow specification of nested or ring ordering (although will already work here if fits keyword ORDERING is present)
-            temp_map = hp.fitsfunc.read_map(self.freq_map_files[i], field=0)
+            temp_map = hp.fitsfunc.read_map(self.freq_map_files[i], field=self.freq_map_field)
             assert len(temp_map) <= self.N_pix, "input map at higher resolution than specified N_side"
             if (len(temp_map) == self.N_pix):
                 self.maps[i] = np.copy(temp_map)
@@ -389,11 +399,10 @@ class ILCInfo(object):
             self.maps_s1 = np.zeros((self.N_freqs,self.N_pix), dtype=np.float64)
             self.maps_s2 = np.zeros((self.N_freqs,self.N_pix), dtype=np.float64)
             for i in range(self.N_freqs):
-                # TODO: allow reading in of maps not in field=0 in the fits file
                 # TODO: allow specification of nested or ring ordering (although will already work here if fits keyword ORDERING is present)
-                temp_map_s1 = hp.fitsfunc.read_map(self.freq_map_files_s1[i], field=0)
+                temp_map_s1 = hp.fitsfunc.read_map(self.freq_map_files_s1[i], field=self.freq_map_field)
                 assert len(temp_map_s1) <= self.N_pix, "input map at higher resolution than specified N_side"
-                temp_map_s2 = hp.fitsfunc.read_map(self.freq_map_files_s2[i], field=0)
+                temp_map_s2 = hp.fitsfunc.read_map(self.freq_map_files_s2[i], field=self.freq_map_field)
                 assert len(temp_map_s2) <= self.N_pix, "input map at higher resolution than specified N_side"
                 if (len(temp_map_s1) == self.N_pix):
                     self.maps_s1[i] = np.copy(temp_map_s1)
@@ -413,9 +422,8 @@ class ILCInfo(object):
             print("reading in maps for weights")
             self.maps_for_weights = np.zeros((self.N_freqs,self.N_pix), dtype=np.float64)
             for i in range(self.N_freqs):
-                # TODO: allow reading in of maps not in field=0 in the fits file
                 # TODO: allow specification of nested or ring ordering (although will already work here if fits keyword ORDERING is present)
-                temp_map = hp.fitsfunc.read_map(self.freq_map_files_for_weights[i], field=0)
+                temp_map = hp.fitsfunc.read_map(self.freq_map_files_for_weights[i], field=self.freq_map_field)
                 assert len(temp_map) <= self.N_pix, "input map at higher resolution than specified N_side"
                 if (len(temp_map) == self.N_pix):
                     self.maps_for_weights[i] = np.copy(temp_map)
@@ -454,7 +462,10 @@ class ILCInfo(object):
         if self.bandpass_type == 'ActualBandpasses':
             self.bandpasses = [] #initialize empty list
             for i in range(self.N_freqs):
-                (self.bandpasses).append(np.loadtxt(self.freq_bp_files[i], unpack=True, usecols=(0,1)))
+                if self.freq_bp_files[i] is not None:
+                    (self.bandpasses).append(np.loadtxt(self.freq_bp_files[i], unpack=True, usecols=(0,1)))
+                else:
+                    self.bandpasses.append(None)
 
     # method for reading in beams
     # self.beams is a list of length self.N_freqs where each entry is an (ELLMAX+1) x 2 array
