@@ -243,14 +243,6 @@ class scale_info(object):
             # this is the alpha^th component's SED evaluated at the i^th frequency
             # units of A_mix are K_CMB
             # Note: only include channels that are being used for this filter scale
-
-
-            freqs_to_use = self.freqs_to_use
-            N_freqs_to_use = self.N_freqs_to_use
-            FWHM_pix = self.FWHM_pix
-            N_side_to_use = self.N_side_to_use
-            N_pix_to_use = self.N_pix_to_use
-
             if type(info.N_deproj) is int:
                 N_deproj = info.N_deproj
                 if N_deproj>0:
@@ -260,10 +252,10 @@ class scale_info(object):
                 if N_deproj>0:
                     ILC_deproj_comps = info.ILC_deproj_comps[j]
             N_comps = (N_deproj + 1)
-            A_mix = np.zeros((int(N_freqs_to_use[j]),N_comps))
+            A_mix = np.zeros((int(self.N_freqs_to_use[j]),N_comps))
             countt = 0
             for a in range(info.N_freqs):
-                if (freqs_to_use[j][a] == True):
+                if (self.freqs_to_use[j][a] == True):
                     for b in range(N_comps):
                         if (b == 0): # zero^th component is special (this is the one being preserved in the ILC)
                             if (info.bandpass_type == 'DeltaBandpasses'):
@@ -284,6 +276,7 @@ class scale_info(object):
                     max_temp = np.amax(A_mix[:,b])
                     A_mix[:,b] = A_mix[:,b]/max_temp
             return A_mix
+
     def compute_covariance_at_scale(self,info,scale,FWHM_pix):
         j = scale
         cov_maps_temp=[]
@@ -314,6 +307,7 @@ class scale_info(object):
                             hp.write_map(cov_filename, cov_map_temp, nest=False, dtype=np.float64, overwrite=False)
         print('done computing all covariance maps at scale'+str(j),flush=True)
         return cov_maps_temp
+
     def weights_from_invcovmat_at_scale_j(self,info,scale,inv_cov_maps_temp,A_mix,resp_tol):
         j = scale
         if type(info.N_deproj) is int:
@@ -322,22 +316,19 @@ class scale_info(object):
             N_deproj = info.N_deproj[j]
 
         N_comps = (N_deproj + 1)
-        N_pix_to_use = self.N_pix_to_use
-        N_freqs_to_use = self.N_freqs_to_use
-        freqs_to_use = self.freqs_to_use
         for a in range(info.N_freqs):
-            if (freqs_to_use[j][a] == True):
+            if (self.freqs_to_use[j][a] == True):
                 a_min = a
                 break
         ### for each filter scale, perform cov matrix inversion and compute maps of the ILC weights using the inverted cov matrix maps
-        weights = np.zeros((int(N_pix_to_use[j]),int(N_freqs_to_use[j])))
+        weights = np.zeros((int(self.N_pix_to_use[j]),int(self.N_freqs_to_use[j])))
 
         ### construct the matrix Q_{alpha beta} defined in Eq. 30 of McCarthy & Hill 2023 for each pixel at this wavelet scale and evaluate Eq. 29 to get weights ###
-        inv_covmat_temp = np.zeros((int(N_freqs_to_use[j]),int(N_freqs_to_use[j]), int(N_pix_to_use[j])))
+        inv_covmat_temp = np.zeros((int(self.N_freqs_to_use[j]),int(self.N_freqs_to_use[j]), int(self.N_pix_to_use[j])))
         count=0
         for a in range(info.N_freqs):
             for b in range(a, info.N_freqs):
-                if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True):
+                if (self.freqs_to_use[j][a] == True) and (self.freqs_to_use[j][b] == True):
                     # inv_cov_maps_temp is in order 00, 01, 02, ..., 0(N_freqs_to_use[j]-1), 11, 12, ..., 1(N_freqs_to_use[j]-1), 22, 23, ...
                     inv_covmat_temp[a-a_min][b-a_min] = inv_cov_maps_temp[count] #by construction we're going through inv_cov_maps_temp in the same order as it was populated when computed (see below)
                     if (a-a_min) != (b-a_min):
@@ -346,10 +337,10 @@ class scale_info(object):
         tmp1 = np.einsum('ai,jip->ajp', np.transpose(A_mix), inv_covmat_temp)
         Qab_pix = np.einsum('ajp,bj->abp', tmp1, np.transpose(A_mix))
         # compute weights
-        tempvec = np.zeros((N_comps, int(N_pix_to_use[j])))
+        tempvec = np.zeros((N_comps, int(self.N_pix_to_use[j])))
         # treat the no-deprojection case separately, since QSa_temp is empty in this case
         if (N_comps == 1):
-            tempvec[0] = [1.0]*int(N_pix_to_use[j])
+            tempvec[0] = [1.0]*int(self.N_pix_to_use[j])
         else:
             for a in range(N_comps):
                 QSa_temp = np.delete(np.delete(Qab_pix, a, 0), 0, 1) #remove the a^th row and zero^th column
@@ -359,8 +350,8 @@ class scale_info(object):
         weights = 1.0/np.linalg.det(np.transpose(Qab_pix,(2,0,1)))[:,None]*np.transpose(tmp3) #N.B. 'weights' here only includes channels that passed beam_thresh criterion,
         # response verification
         response = np.einsum('pi,ia->ap', weights, A_mix) #dimensions N_comps x N_pix_to_use[j]
-        optimal_response_preserved_comp = np.ones(int(N_pix_to_use[j]))  #preserved component, want response=1
-        optimal_response_deproj_comp = np.zeros((N_comps-1, int(N_pix_to_use[j]))) #deprojected components, want response=0
+        optimal_response_preserved_comp = np.ones(int(self.N_pix_to_use[j]))  #preserved component, want response=1
+        optimal_response_deproj_comp = np.zeros((N_comps-1, int(self.N_pix_to_use[j]))) #deprojected components, want response=0
         if not (np.absolute(response[0]-optimal_response_preserved_comp) < resp_tol).all():
             print(f'preserved component response failed at wavelet scale {j}')
             quit()
@@ -369,13 +360,128 @@ class scale_info(object):
             quit()
         return weights
 
-    def compute_weights_at_scale_j(self,j,info,resp_tol,map_images = False):
+    def weights_from_covmat_at_scale_j(self,info,scale,cov_maps_temp,A_mix,resp_tol):
+        print("getting weights from covmat")
+        j = scale
+        if type(info.N_deproj) is int:
+            N_deproj = info.N_deproj
+        else:
+            N_deproj = info.N_deproj[j]
+
+        N_comps = (N_deproj + 1)
+        for a in range(info.N_freqs):
+            if (self.freqs_to_use[j][a] == True):
+                a_min = a
+                break
+        ### for each filter scale, perform cov matrix inversion and compute maps of the ILC weights using the inverted cov matrix maps
+        weights = np.zeros((int(self.N_pix_to_use[j]),int(self.N_freqs_to_use[j])))
+
+        ### construct the matrix Q_{alpha beta} defined in Eq. 30 of McCarthy & Hill 2023 for each pixel at this wavelet scale and evaluate Eq. 29 to get weights ###
+        covmat_temp = np.zeros((int(self.N_freqs_to_use[j]),int(self.N_freqs_to_use[j]), int(self.N_pix_to_use[j])))
+        count=0
+        for a in range(info.N_freqs):
+            for b in range(a, info.N_freqs):
+                if (self.freqs_to_use[j][a] == True) and (self.freqs_to_use[j][b] == True):
+                    # inv_cov_maps_temp is in order 00, 01, 02, ..., 0(N_freqs_to_use[j]-1), 11, 12, ..., 1(N_freqs_to_use[j]-1), 22, 23, ...
+                    covmat_temp[a-a_min][b-a_min] = cov_maps_temp[count] #by construction we're going through inv_cov_maps_temp in the same order as it was populated when computed (see below)
+                    if (a-a_min) != (b-a_min):
+                        covmat_temp[b-a_min][a-a_min] = covmat_temp[a-a_min][b-a_min] #symmetrize
+                    count+=1
+        covmat_temp_transpose=np.transpose(covmat_temp,(2,1,0))
+        tmp1 = np.transpose(np.linalg.solve(covmat_temp_transpose,np.transpose(A_mix)))
+        Qab_pix = np.einsum('ajp,bj->abp', tmp1[None,:,:], np.transpose(A_mix))
+        # compute weights
+        tempvec = np.zeros((N_comps, int(self.N_pix_to_use[j])))
+        # treat the no-deprojection case separately, since QSa_temp is empty in this case
+        if (N_comps == 1):
+            tempvec[0] = [1.0]*int(self.N_pix_to_use[j])
+        else:
+            for a in range(N_comps):
+                QSa_temp = np.delete(np.delete(Qab_pix, a, 0), 0, 1) #remove the a^th row and zero^th column
+                tempvec[a] = (-1.0)**float(a) * np.linalg.det(np.transpose(QSa_temp,(2,0,1)))
+        tmp2 = np.einsum('ia,ap->ip', A_mix, tempvec)
+        tmp3 =  np.transpose(np.linalg.solve(covmat_temp_transpose,np.transpose(tmp2)))
+        weights = 1.0/np.linalg.det(np.transpose(Qab_pix,(2,0,1)))[:,None]*np.transpose(tmp3) #N.B. 'weights' here only includes channels that passed beam_thresh criterion,
+        # response verification
+        response = np.einsum('pi,ia->ap', weights, A_mix) #dimensions N_comps x N_pix_to_use[j]
+        optimal_response_preserved_comp = np.ones(int(self.N_pix_to_use[j]))  #preserved component, want response=1
+        optimal_response_deproj_comp = np.zeros((N_comps-1, int(self.N_pix_to_use[j]))) #deprojected components, want response=0
+        del(covmat_temp_transpose)
+        if not (np.absolute(response[0]-optimal_response_preserved_comp) < resp_tol).all():
+            print(f'preserved component response failed at wavelet scale {j}')
+            quit()
+        if not (np.absolute(response[1:]-optimal_response_deproj_comp) < resp_tol).all():
+            print(f'deprojected component response failed at wavelet scale {j}')
+            quit()
+        return weights
+
+    def compute_weights_at_scale_j_from_covmat(self,j,info,resp_tol,map_images = False):
+            # Computes the ILC weights at scale j  without ever computing the invcovmat (using np.linalg.solv instead of np.linalg.inv)
+            if type(info.N_deproj) is int:
+                N_deproj = info.N_deproj
+                if N_deproj>0:
+                    ILC_deproj_comps = info.ILC_deproj_comps
+            else:
+                N_deproj = info.N_deproj[j]
+                if N_deproj>0:
+                    ILC_deproj_comps = info.ILC_deproj_comps[j]
+
+            A_mix = self.mixing_matrix_at_scale_j(j,info)
+
+            ##############################
+            ##############################
+            # for each filter scale, compute maps of the smoothed real-space frequency-frequency covariance matrix using the Gaussians determined above
+            cov_maps_temp = []
+            flag=True
+            for a in range(info.N_freqs):
+                    start_at = a
+                    if info.cross_ILC:
+                        start_at = 0
+                    for b in range(start_at, info.N_freqs):
+                        if (self.freqs_to_use[j][a] == True) and (self.freqs_to_use[j][b] == True and flag==True):
+                            cov_filename = _cov_filename(info,a,b,j)
+                            exists = os.path.isfile(cov_filename)
+                            if exists:
+                                if not info.inv_covmat_exists:
+                                    print('needlet coefficient covariance map already exists:', cov_filename)
+                                    cov_maps_temp.append( hp.read_map(cov_filename, dtype=np.float64) )
+                                else:
+                                    cov_maps_temp.append(0)
+
+                            else:
+                                print('needlet coefficient covariance map not previously computed; computing all covariance maps at scale '+str(j)+' now...')
+                                flag=False
+                                break
+            if flag == False:
+                    cov_maps_temp = self.compute_covariance_at_scale(info,j,self.FWHM_pix)
+            
+            # compute the weights
+            weights = self.weights_from_covmat_at_scale_j(info,j,cov_maps_temp,A_mix,resp_tol)
+
+            del cov_maps_temp #free up memory
+            print('done computing all ILC weights at scale '+str(j))
+            ##########################
+            # only save these maps of the ILC weights if requested
+            if (info.save_weights == 'yes' or info.save_weights == 'Yes' or info.save_weights == 'YES'):
+                count=0
+                for a in range(info.N_freqs):
+                    if (self.freqs_to_use[j][a] == True):
+                        weight_filename = _weights_filename(info,a,j)
+                        hp.write_map(weight_filename, weights[:,count], nest=False, dtype=np.float64, overwrite=False)
+                        if map_images == True: #save images if requested
+                            plt.clf()
+                            hp.mollview(weights[:,count], unit="1/K", title="Needlet ILC Weight Map, Frequency "+str(a)+" Scale "+str(j))
+                            if N_deproj == 0:
+                                plt.savefig(info.output_dir+info.output_prefix+'_needletILCweightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+info.output_suffix+'.pdf')
+                            else:
+                                plt.savefig(info.output_dir+info.output_prefix+'_needletILCweightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(ILC_deproj_comps)+'_crossILC'*info.cross_ILC+info.output_suffix+'.pdf')
+
+                        count+=1
+            return weights
+
+
+    def compute_weights_at_scale_j_from_invcovmat(self,j,info,resp_tol,map_images = False):
             # Computes the ILC weights at scale j 
-            freqs_to_use = self.freqs_to_use
-            N_freqs_to_use = self.N_freqs_to_use
-            FWHM_pix = self.FWHM_pix
-            N_side_to_use = self.N_side_to_use
-            N_pix_to_use = self.N_pix_to_use
 
             if type(info.N_deproj) is int:
                 N_deproj = info.N_deproj
@@ -398,7 +504,7 @@ class scale_info(object):
                     if info.cross_ILC:
                         start_at = 0
                     for b in range(start_at, info.N_freqs):
-                        if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True and flag==True):
+                        if (self.freqs_to_use[j][a] == True) and (self.freqs_to_use[j][b] == True and flag==True):
                             cov_filename = _cov_filename(info,a,b,j)
                             exists = os.path.isfile(cov_filename)
                             if exists:
@@ -413,23 +519,23 @@ class scale_info(object):
                                 flag=False
                                 break
             if flag == False:
-                    cov_maps_temp = self.compute_covariance_at_scale(info,j,FWHM_pix)
+                    cov_maps_temp = self.compute_covariance_at_scale(info,j,self.FWHM_pix)
             ##########################
             ##########################
             # invert the cov matrix in each pixel for each filter scale
-            inv_cov_maps_temp = np.zeros((len(cov_maps_temp), int((N_pix_to_use[j]))))
+            inv_cov_maps_temp = np.zeros((len(cov_maps_temp), int((self.N_pix_to_use[j]))))
             # determine lowest-resolution frequency used in the analysis for this scale -- N.B. freq maps are assumed to be in order from lowest to highest resolution (as elsewhere in the code)
             for a in range(info.N_freqs):
-                if (freqs_to_use[j][a] == True):
+                if (self.freqs_to_use[j][a] == True):
                     a_min = a
                     break
             ### for each filter scale, perform cov matrix inversion and compute maps of the ILC weights using the inverted cov matrix maps
-            weights = np.zeros((int(N_pix_to_use[j]),int(N_freqs_to_use[j])))
+            weights = np.zeros((int(self.N_pix_to_use[j]),int(self.N_freqs_to_use[j])))
             flag=True #flag for whether inverse covariance maps already exist
             count=0
             for a in range(info.N_freqs):
                 for b in range(a, info.N_freqs):
-                    if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True and flag==True):
+                    if (self.freqs_to_use[j][a] == True) and (self.freqs_to_use[j][b] == True and flag==True):
                         inv_cov_filename = _inv_cov_filename(info,j,a,b)
                         exists = os.path.isfile(inv_cov_filename)
                         if exists:
@@ -443,28 +549,29 @@ class scale_info(object):
 
             if (flag==True):
                 ### construct the matrix Q_{alpha beta} defined in Eq. 30 of McCarthy & Hill 2023 for each pixel at this wavelet scale and evaluate Eq. 29 to get weights ###
-                inv_covmat_temp = np.zeros((int(N_freqs_to_use[j]),int(N_freqs_to_use[j]), int(N_pix_to_use[j])))
+                inv_covmat_temp = np.zeros((int(self.N_freqs_to_use[j]),int(self.N_freqs_to_use[j]), int(self.N_pix_to_use[j])))
                 count=0
                 for a in range(info.N_freqs):
                     for b in range(a, info.N_freqs):
-                        if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True):
+                        if (self.freqs_to_use[j][a] == True) and (self.freqs_to_use[j][b] == True):
                             # inv_cov_maps_temp is in order 00, 01, 02, ..., 0(N_freqs_to_use[j]-1), 11, 12, ..., 1(N_freqs_to_use[j]-1), 22, 23, ...
                             inv_covmat_temp[a-a_min][b-a_min] = inv_cov_maps_temp[count] #by construction we're going through inv_cov_maps_temp in the same order as it was populated when computed (see below)
                             if (a-a_min) != (b-a_min):
                                 inv_covmat_temp[b-a_min][a-a_min] = inv_covmat_temp[a-a_min][b-a_min] #symmetrize
                             count+=1
                 weights = self.weights_from_invcovmat_at_scale_j(info,j,inv_cov_maps_temp,A_mix,resp_tol)
+
             ##########
             ### if inverse covariance maps don't already exist ###
             if (flag == False):
-                covmat = np.zeros((int(N_freqs_to_use[j]),int(N_freqs_to_use[j]), int(N_pix_to_use[j])))
+                covmat = np.zeros((int(self.N_freqs_to_use[j]),int(self.N_freqs_to_use[j]), int(self.N_pix_to_use[j])))
                 count=0
                 for a in range(info.N_freqs):
                     start_at = a
                     if info.cross_ILC:
                         start_at = 0
                     for b in range(start_at, info.N_freqs):
-                        if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True):
+                        if (self.freqs_to_use[j][a] == True) and (self.freqs_to_use[j][b] == True):
                             # cov_maps_temp is in order 00, 01, 02, ..., 0(N_freqs_to_use[j]-1), 11, 12, ..., 1(N_freqs_to_use[j]-1), 22, 23, ...
                             covmat[a-a_min][b-a_min] = cov_maps_temp[count] #by construction we're going through cov_maps_temp in the same order as it was populated above
                             # TODO: maybe symmetrize it before saving so that we don't have to save twice as many covmats?
@@ -477,11 +584,11 @@ class scale_info(object):
                 inv_covmat = np.linalg.inv(np.transpose(covmat,(2,0,1)))
                 inv_covmat = np.transpose(inv_covmat, axes=[1,2,0]) #new dim freq, freq, pix
 
-                assert np.allclose(np.einsum('ijp,jkp->pik', inv_covmat, covmat), np.transpose(np.repeat(np.eye(N_freqs_to_use[j])[:,:,None],N_pix_to_use[j],axis=2),(2,0,1)), rtol=1.e-1, atol=1.e-1), "covmat inversion failed for scale "+str(j) #, covmat, inv_covmat, np.dot(inv_covmat, covmat)-np.eye(int(N_freqs_to_use[j]))
+                assert np.allclose(np.einsum('ijp,jkp->pik', inv_covmat, covmat), np.transpose(np.repeat(np.eye(self.N_freqs_to_use[j])[:,:,None],self.N_pix_to_use[j],axis=2),(2,0,1)), rtol=1.e-1, atol=1.e-1), "covmat inversion failed for scale "+str(j) #, covmat, inv_covmat, np.dot(inv_covmat, covmat)-np.eye(int(N_freqs_to_use[j]))
                 count=0
                 for a in range(info.N_freqs):
                     for b in range(a, info.N_freqs):
-                        if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True):
+                        if (self.freqs_to_use[j][a] == True) and (self.freqs_to_use[j][b] == True):
                             # inv_cov_maps_temp is in order 00, 01, 02, ..., 0(N_freqs_to_use[j]-1), 11, 12, ..., 1(N_freqs_to_use[j]-1), 22, 23, ...
                             inv_cov_maps_temp[count] = inv_covmat[a-a_min][b-a_min] #by construction we're going through cov_maps_temp in the same order as it was populated above
                             count+=1
@@ -490,7 +597,7 @@ class scale_info(object):
                 count=0
                 for a in range(info.N_freqs):
                     for b in range(a, info.N_freqs):
-                        if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True):
+                        if (self.freqs_to_use[j][a] == True) and (self.freqs_to_use[j][b] == True):
                             inv_cov_filename = _inv_cov_filename(info,j,a,b)
                             hp.write_map(inv_cov_filename, inv_cov_maps_temp[count], nest=False, dtype=np.float64, overwrite=False)
                             count+=1
@@ -503,7 +610,7 @@ class scale_info(object):
             if (info.save_weights == 'yes' or info.save_weights == 'Yes' or info.save_weights == 'YES'):
                 count=0
                 for a in range(info.N_freqs):
-                    if (freqs_to_use[j][a] == True):
+                    if (self.freqs_to_use[j][a] == True):
                         weight_filename = _weights_filename(info,a,j)
                         hp.write_map(weight_filename, weights[:,count], nest=False, dtype=np.float64, overwrite=False)
                         if map_images == True: #save images if requested
@@ -530,11 +637,6 @@ class scale_info(object):
 
     def ILC_at_scale_j(self,j,info,resp_tol,map_images=False):
         ## Performs the full ILC at scale j
-        freqs_to_use = self.freqs_to_use
-        N_freqs_to_use = self.N_freqs_to_use
-        FWHM_pix = self.FWHM_pix
-        N_side_to_use = self.N_side_to_use
-        N_pix_to_use = self.N_pix_to_use
 
         if type(info.N_deproj) is int:
             N_deproj = info.N_deproj
@@ -549,7 +651,7 @@ class scale_info(object):
         weights_exist = True
         count=0
         for a in range(info.N_freqs):
-            if (freqs_to_use[j][a] == True):
+            if (self.freqs_to_use[j][a] == True):
                 weight_filename = _weights_filename(info,a,j)
                 exists = os.path.isfile(weight_filename)
                 if exists:
@@ -560,19 +662,20 @@ class scale_info(object):
                     break
 
         if (weights_exist == False):
-
-            weights = self.compute_weights_at_scale_j(j,info,resp_tol,map_images = map_images)
-
+            if info.weights_from_invcovmat:
+                weights = self.compute_weights_at_scale_j_from_invcovmat(j,info,resp_tol,map_images = map_images)
+            elif info.weights_from_covmat:
+                weights = self.compute_weights_at_scale_j_from_covmat(j,info,resp_tol,map_images = map_images)
         else:
 
             weights = self.load_weights_at_scale_j(j,info)
 
         ##########################
         # apply these ILC weights to the needlet coefficient maps to get the per-needlet-scale ILC maps
-        ILC_map_temp = np.zeros(int(N_pix_to_use[j]))
+        ILC_map_temp = np.zeros(int(self.N_pix_to_use[j]))
         count=0
         for a in range(info.N_freqs):
-            if (freqs_to_use[j][a] == True):
+            if (self.freqs_to_use[j][a] == True):
                 filename_wavelet_coeff_map = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(a)+'_scale'+str(j)+'.fits'
                 if not info.apply_weights_to_other_maps:
                     wavelet_coeff_map = hp.read_map(filename_wavelet_coeff_map, dtype=np.float64)

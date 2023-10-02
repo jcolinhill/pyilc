@@ -247,6 +247,16 @@ class ILCInfo(object):
             self.freq_map_files_s2 = p['freq_map_files_s2']
             assert len(self.freq_map_files_s2) == self.N_freqs, "freq_map_files_s2"
 
+        # Do we want to compute the weights from the covmat (with np.linalg.solve) or from the invcovmat (with np.linalg.inv)?
+        # Default is from invcovmat but this is both more numerically unstable, more computationally intensive, and more
+        # memory intensive (as both covmats and invcovmats are saved). Possibly change this default to covmat?
+        self.weights_from_invcovmat = True
+        self.weights_from_covmat = False
+        if 'weights_from_covmat' in p.keys():
+            if p['weights_from_covmat'].lower() in ['true','yes','y']:
+               self.weights_from_covmat =  True
+               self.weights_from_invcovmat = False
+
         # Flag to apply weights to other maps than those used in the ILC weight calculation
         if 'maps_to_apply_weights' in p.keys():
             self.freq_map_files_for_weights = p['maps_to_apply_weights']

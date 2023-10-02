@@ -70,6 +70,10 @@ resp_tol: 0.001
 # If this is one of ['true','yes','y'] (captalized or uncapitalized), a cross_ILC will be performed.
 cross_ILC: 'false'
 
+# Do we want to compute the weights from the inv covmat (with np.linalg.inv) or from the covmat (with np.linalg.solve)? Defaults to 
+# invcovmat unless weights_from_covmat is switched to 'True' or 'yes'.
+weights_from_covmat: 'False'
+
 #--------------------------------------------#
 # Info about the input single-frequency maps #
 #--------------------------------------------#
