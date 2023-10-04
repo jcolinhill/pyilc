@@ -684,7 +684,7 @@ class scale_info(object):
                 weights = self.compute_weights_at_scale_j_from_covmat(j,info,resp_tol,map_images = map_images)
         else:
 
-            weights = self.load_weights_at_scale_j(j,info)
+            weights = self.load_weights_at_scale_j(info,j)
 
         ##########################
         # apply these ILC weights to the needlet coefficient maps to get the per-needlet-scale ILC maps
