@@ -257,6 +257,7 @@ class ILCInfo(object):
                self.weights_from_covmat =  True
                self.weights_from_invcovmat = False
 
+
         # Flag to apply weights to other maps than those used in the ILC weight calculation
         if 'maps_to_apply_weights' in p.keys():
             self.freq_map_files_for_weights = p['maps_to_apply_weights']
@@ -295,6 +296,18 @@ class ILCInfo(object):
         assert hp.pixelfunc.isnsideok(self.N_side, nest=True), "invalid N_side"
         self.N_pix = 12*self.N_side**2
 
+        # Do we only want to perform NILC on part of the sky? if so, include the mask
+        self.mask_before_covariance_computation = None
+        if 'mask_before_covariance_computation' in p.keys():
+            self.mask_before_covariance_computation = hp.fitsfunc.read_map(p['mask_before_covariance_computation'][0],field=p['mask_before_covariance_computation'][1])
+            assert hp.get_nside(self.mask_before_covariance_computation) >= self.N_side
+            if hp.get_nside(self.mask_before_covariance_computation) >self.N_side:
+                print("fsky before is",np.sum(self.mask_before_covariance_computation)/self.mask_before_covariance_computation.shape[0],flush=True)
+                self.mask_before_covariance_computation = hp.ud_grade(self.mask_before_covariance_computation,self.N_side)
+                self.mask_before_covariance_computation[self.mask_before_covariance_computation<1]=0
+                print("fsky after is",np.sum(self.mask_before_covariance_computation)/self.mask_before_covariance_computation.shape[0],flush=True)
+
+
         # ILC: component to preserve
         self.ILC_preserved_comp = p['ILC_preserved_comp']
         assert self.ILC_preserved_comp in COMP_TYPES, "unsupported component type in ILC_preserved_comp"
@@ -304,6 +317,7 @@ class ILCInfo(object):
         if 'ILC_bias_tol' in p.keys():
             self.ILC_bias_tol = p['ILC_bias_tol']
         assert self.ILC_bias_tol > 0. and self.ILC_bias_tol < 1., "invalid ILC bias tolerance"
+
 
         # ILC: component(s) to deproject (if any)
         self.N_deproj = p['N_deproj']

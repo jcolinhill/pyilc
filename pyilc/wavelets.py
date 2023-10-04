@@ -280,6 +280,17 @@ class scale_info(object):
     def compute_covariance_at_scale(self,info,scale,FWHM_pix):
         j = scale
         cov_maps_temp=[]
+        #Fiona add option to include a mask at the level of covariance computation:
+        if info.mask_before_covariance_computation is not None:
+            print("fsky of whole mask is "+str(np.sum(info.mask_before_covariance_computation)/info.mask_before_covariance_computation.shape[0]),flush=True)
+            dgraded_mask = hp.ud_grade(info.mask_before_covariance_computation,self.N_side_to_use[j])
+            dgraded_mask[dgraded_mask!=1]=0
+            print("fsky at scale "+str(j)+" is "+str(np.sum(dgraded_mask)/dgraded_mask.shape[0]),flush=True)
+            smoothed_mask = hp.sphtfunc.smoothing(dgraded_mask,FWHM_pix[j])
+            fsky = 1/smoothed_mask
+        else:
+            fsky = 1
+            dgraded_mask = 1
         for a in range(info.N_freqs):
                     start_at = a
                     if info.cross_ILC:
@@ -294,8 +305,8 @@ class scale_info(object):
                             else:
                                 filename_A = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(a)+'_scale'+str(j)+'_S1.fits'
                                 filename_B = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(b)+'_scale'+str(j)+'_S2.fits'
-                            wavelet_map_A = hp.read_map(filename_A, dtype=np.float64, verbose=False)
-                            wavelet_map_B = hp.read_map(filename_B, dtype=np.float64, verbose=False)
+                            wavelet_map_A = dgraded_mask * hp.read_map(filename_A, dtype=np.float64, verbose=False) #QUESTION: should we multiply by msk here or before waveletizing?
+                            wavelet_map_B = dgraded_mask * hp.read_map(filename_B, dtype=np.float64, verbose=False)
                             assert len(wavelet_map_A) == len(wavelet_map_B), "cov mat map calculation: wavelet coefficient maps have different N_side"
                             # first perform smoothing operation to get the "mean" maps
                             wavelet_map_A_smoothed = hp.sphtfunc.smoothing(wavelet_map_A, FWHM_pix[j])
@@ -303,7 +314,13 @@ class scale_info(object):
                             # then construct the smoothed real-space freq-freq cov matrix element for this pair of frequency maps
                             # note that the overall normalization of this cov matrix is irrelevant for the ILC weight calculation (it always cancels out)
                             cov_map_temp = hp.sphtfunc.smoothing( (wavelet_map_A - wavelet_map_A_smoothed)*(wavelet_map_B - wavelet_map_B_smoothed) , FWHM_pix[j])
-                            cov_maps_temp.append( cov_map_temp )
+                            if info.mask_before_covariance_computation is not None:
+                                fskyinv = np.zeros(fsky.shape)
+                                fskyinv[fsky!=0] = 1/fsky[fsky!=0]
+                                fskyinv[fskyinv==0] = 1e100
+                            else:
+                                fskyinv = 1
+                            cov_maps_temp.append( cov_map_temp  * fskyinv)
                             hp.write_map(cov_filename, cov_map_temp, nest=False, dtype=np.float64, overwrite=False)
         print('done computing all covariance maps at scale'+str(j),flush=True)
         return cov_maps_temp
@@ -813,7 +830,7 @@ def waveletize_input_maps(info,scale_info_wvs,wv,map_images = False):
 
         for i in range(info.N_freqs):
             # N.B. maps are assumed to be in strictly decreasing order of FWHM! i.e. info.beams[-1] is highest-resolution beam
-            print("waveletizing frequency ", i, "...")
+            print("waveletizing frequency ", i, "...",flush=True)
             wv_maps_temp = []
             flag=True
             for j in range(wv.N_scales):
@@ -821,10 +838,10 @@ def waveletize_input_maps(info,scale_info_wvs,wv,map_images = False):
                     filename = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(i)+'_scale'+str(j)+'.fits'
                     exists = os.path.isfile(filename)
                     if exists:
-                        print('needlet coefficient map already exists:', filename)
+                        print('needlet coefficient map already exists:', filename,flush=True)
                         wv_maps_temp.append( hp.read_map(filename, dtype=np.float64) )
                     else:
-                        print('needlet coefficient map not previously computed; computing all maps for frequency '+str(i)+' now...')
+                        print('needlet coefficient map not previously computed; computing all maps for frequency '+str(i)+' now...',flush=True)
                         flag=False
                         break
             if flag == False:
@@ -839,7 +856,7 @@ def waveletize_input_maps(info,scale_info_wvs,wv,map_images = False):
                         plt.clf()
                         hp.mollview(wv_maps_temp[j], unit="K", title="Needlet Coefficient Map, Frequency "+str(i)+" Scale "+str(j), min=np.mean(wv_maps_temp[j])-2*np.std(wv_maps_temp[j]), max=np.mean(wv_maps_temp[j])+2*np.std(wv_maps_temp[j]))
                         plt.savefig(info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(i)+'_scale'+str(j)+'.pdf')
-            print("done waveletizing frequency ", i, "...")
+            print("done waveletizing frequency ", i, "...",flush=True)
             if info.cross_ILC:
                 for season in [1,2]:
                     flag = True

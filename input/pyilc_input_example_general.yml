@@ -74,6 +74,14 @@ cross_ILC: 'false'
 # invcovmat unless weights_from_covmat is switched to 'True' or 'yes'.
 weights_from_covmat: 'False'
 
+# Do we want to apply a mask to some region of the sky before computing the covariances? If so, 
+# put it in here, in a list of len (2), where the first entry is a string pointing to the .fits file
+# (which should be a binary mask as it will have to be downgraded to smaller N_side on large scales)
+# and the second entry indicates which field of the fits file to read.
+# if this is not specified, the default is no mask.
+mask_before_covariance_computation: None
+#mask_before_covariance_computation: ['mask_file',0]
+
 #--------------------------------------------#
 # Info about the input single-frequency maps #
 #--------------------------------------------#
