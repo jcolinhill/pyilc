@@ -287,10 +287,15 @@ class scale_info(object):
             dgraded_mask[dgraded_mask!=1]=0
             print("fsky at scale "+str(j)+" is "+str(np.sum(dgraded_mask)/dgraded_mask.shape[0]),flush=True)
             smoothed_mask = hp.sphtfunc.smoothing(dgraded_mask,FWHM_pix[j])
-            fsky = 1/smoothed_mask
+            fskyinv = np.zeros(smoothed_mask.shape)
+            fskyinv[smoothed_mask!=0] = 1/smoothed_mask[smoothed_mask!=0]
+            fskyinv[smoothed_mask==0] = 1e100
+
         else:
-            fsky = 1
+            fskyinv = 1
             dgraded_mask = 1
+
+
         for a in range(info.N_freqs):
                     start_at = a
                     if info.cross_ILC:
@@ -314,12 +319,6 @@ class scale_info(object):
                             # then construct the smoothed real-space freq-freq cov matrix element for this pair of frequency maps
                             # note that the overall normalization of this cov matrix is irrelevant for the ILC weight calculation (it always cancels out)
                             cov_map_temp = hp.sphtfunc.smoothing( (wavelet_map_A - wavelet_map_A_smoothed)*(wavelet_map_B - wavelet_map_B_smoothed) , FWHM_pix[j])
-                            if info.mask_before_covariance_computation is not None:
-                                fskyinv = np.zeros(fsky.shape)
-                                fskyinv[fsky!=0] = 1/fsky[fsky!=0]
-                                fskyinv[fskyinv==0] = 1e100
-                            else:
-                                fskyinv = 1
                             cov_maps_temp.append( cov_map_temp  * fskyinv)
                             hp.write_map(cov_filename, cov_map_temp, nest=False, dtype=np.float64, overwrite=False)
         print('done computing all covariance maps at scale'+str(j),flush=True)
