@@ -645,7 +645,7 @@ class scale_info(object):
             weights = np.zeros((int(self.N_pix_to_use[j]),int(self.N_freqs_to_use[j])))
             count=0
             for a in range(info.N_freqs):
-                if (info.freqs_to_use[j][a] == True):
+                if (self.freqs_to_use[j][a] == True):
                     weight_filename = _weights_filename(info,a,j)
                     weights[:,count] = hp.read_map(weight_filename, dtype=np.float64, )
                     count+=1
