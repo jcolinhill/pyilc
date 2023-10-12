@@ -124,7 +124,7 @@ class Wavelets(object):
         # check consistency with N_scales
         assert self.N_scales == len(ellboundaries)-1
 
-        assert ellpeaks[-1] == self.ELLMAX+1
+        assert ellboundaries[-1] == self.ELLMAX+1
 
         self.filters= np.zeros((self.N_scales,self.ELLMAX+1))
         ells=np.arange(self.ELLMAX+1)
