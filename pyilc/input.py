@@ -145,7 +145,7 @@ class ILCInfo(object):
             self.ellboundaries = np.asarray(p['ellboundaries'])
             assert len(self.ellpeaks) == self.N_scales + 1, "ellpeaks"
             assert all(ellpeak> 0. for ellpeak in self.ellpeaks[1:]), "ellpeaks"
-            assert self.ellpeaks[0]=0
+            assert self.ellpeaks[0]==0
             assert 'GN_FWHM_arcmin' not in p.keys()
             assert 'ellpeaks' not in p.keys()
         elif self.wavelet_type == 'TopHatHarmonic':
