@@ -9,7 +9,7 @@ module to read in relevant input specified by user
 ##########################
 # wavelet types implemented thus far
 # WV_TYPES = ['GaussianNeedlets','TopHatHarmonic']
-WV_TYPES = ['GaussianNeedlets','TopHatHarmonic','CosineNeedlets'] # Fiona added CosineNeedlets
+WV_TYPES = ['GaussianNeedlets','TopHatHarmonic','CosineNeedlets','ScaleDiscretizedWavelets'] # Fiona added CosineNeedlets
 ##########################
 
 ##########################
@@ -86,6 +86,12 @@ class ILCInfo(object):
         self.save_weights = p['save_weights']
         assert type(self.save_weights) is str, "TypeError: save_weights"
 
+        #flag whether to save the ILC map at each scale - if not in input file will default to False
+        self.save_scale_ILC_maps = False
+        if 'save_scale_ILC_maps' in p.keys():
+            if p['save_scale_ILC_maps'].lower() in ['yes','true']:
+                self.save_scale_ILC_maps = True
+
         # maximum multipole for this analysis
         self.ELLMAX = p['ELLMAX']
         assert type(self.ELLMAX) is int and self.ELLMAX > 0, "ELLMAX"
@@ -124,6 +130,8 @@ class ILCInfo(object):
             self.GN_FWHM_arcmin = np.asarray(p['GN_FWHM_arcmin'])
             assert len(self.GN_FWHM_arcmin) == self.N_scales - 1, "GN_FWHM_arcmin"
             assert all(FWHM_val > 0. for FWHM_val in self.GN_FWHM_arcmin), "GN_FWHM_arcmin"
+            assert 'ellboundaries' not in p.keys()
+            assert 'ellpeaks' not in p.keys()
         elif self.wavelet_type == 'CosineNeedlets':  #Fiona added CosineNeedlets
             # ellpeak values defining the cosine needlets
             self.ellpeaks = np.asarray(p['ellpeaks'])
@@ -132,6 +140,14 @@ class ILCInfo(object):
             assert all(ellpeak> 0. for ellpeak in self.ellpeaks), "ellpeaks"
             assert self.ellmin>=0, 'ellmin'
             assert 'GN_FWHM_arcmin' not in p.keys()
+            assert 'ellboundaries' not in p.keys()
+        elif self.wavelet_type == 'ScaleDiscretizedWavelets':
+            self.ellboundaries = np.asarray(p['ellboundaries'])
+            assert len(self.ellpeaks) == self.N_scales + 1, "ellpeaks"
+            assert all(ellpeak> 0. for ellpeak in self.ellpeaks[1:]), "ellpeaks"
+            assert self.ellpeaks[0]=0
+            assert 'GN_FWHM_arcmin' not in p.keys()
+            assert 'ellpeaks' not in p.keys()
         elif self.wavelet_type == 'TopHatHarmonic':
             # TODO: add functionality for the user to specity arbitrary ell-bins directly
             # the bin sizes for a linearly-ell-binnedHILC
@@ -317,6 +333,10 @@ class ILCInfo(object):
         if 'ILC_bias_tol' in p.keys():
             self.ILC_bias_tol = p['ILC_bias_tol']
         assert self.ILC_bias_tol > 0. and self.ILC_bias_tol < 1., "invalid ILC bias tolerance"
+        self.override_ILCbiastol = False
+        if 'override_ILCbiastol_threshold' in p.keys():
+            if p['override_ILCbiastol_threshold'].lower() in ['true','yes']:
+                self.override_ILCbiastol = True
 
 
         # ILC: component(s) to deproject (if any)

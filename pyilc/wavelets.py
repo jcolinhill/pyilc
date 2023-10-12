@@ -114,10 +114,32 @@ class Wavelets(object):
         return self.ell, self.filters
 
     # scale-discretized wavelets
-    #def ScaleDiscretizedWavelets(self, TODO):
-    #    TODO: (not yet implemented here)
-    #    # simple check to ensure that sum of squared transmission is unity as needed for NILC algorithm
-    #    assert (np.absolute( np.sum( self.filters**2., axis=0 ) - np.ones(self.ELLMAX+1,dtype=float)) < self.tol).all(), "wavelet filter transmission check failed"
+    def ScaleDiscretizedWavelets(self,ellboundaries =None):
+
+        # ellboundaries need to be in strictly increasing order, otherwise you'll get nonsense
+        assert ellboundaries[0]==0
+        if ( any( i >= j for i, j in zip(ellboundaries, ellboundaries[1:]))):
+            raise AssertionError
+
+        # check consistency with N_scales
+        assert self.N_scales == len(ellboundaries)-1
+
+        assert ellpeaks[-1] == self.ELLMAX+1
+
+        self.filters= np.zeros((self.N_scales,self.ELLMAX+1))
+        ells=np.arange(self.ELLMAX+1)
+
+        for i in range(0,self.N_scales):
+            filt = np.logical_and(ells < ellpeaks[i+1], ells >= ellpeaks[i]
+            self.filters[i,filt] = 1
+
+        filt[i,-1] = 1
+
+        # simple check to ensure that sum of squared transmission is unity as needed for NILC algorithm 
+        assert (np.absolute( np.sum( self.filters**2., axis=0 ) - np.ones(self.ELLMAX+1,dtype=float)) < self.tol).all(), "wavelet filter transmission check failed"
+        self.ell = ells
+        return self.ell, self.filters
+
     def TopHatHarmonic(self, ellbins):
 
         self.filters = np.zeros((len(ellbins)-1,self.ELLMAX+1),dtype=float)
@@ -230,7 +252,12 @@ class scale_info(object):
                 sigma_pix_temp = np.sqrt( np.absolute( 2.*(float( (info.N_deproj + 1) - self.N_freqs_to_use[i] )) / (N_modes[i] * info.ILC_bias_tol) ) ) #result is in radians
             else:
                 sigma_pix_temp = np.sqrt( np.absolute( 2.*(float( (info.N_deproj[i] + 1) - self.N_freqs_to_use[i] )) / (N_modes[i] * info.ILC_bias_tol) ) ) #result is in radians
-            assert sigma_pix_temp < np.pi, "not enough modes to satisfy ILC_bias_tol at scale " +str(i) #don't want real-space gaussian to be the full sky or close to it
+            if info.override_ILCbiastol:
+                if sigma_pix_temp > np.pi:
+                    print ("not enough modes to satisfy ILC_bias_tol at scale " +str(i) )
+                    sigma_pix_temp = np.pi
+            else:
+                 assert sigma_pix_temp < np.pi, "not enough modes to satisfy ILC_bias_tol at scale " +str(i) #don't want real-space gaussian to be the full sky or close to it
             # note that sigma_pix_temp can come out zero if N_deproj+1 = N_freqs_to_use (formally bias vanishes in this case because the problem is fully constrained)
             # for now, just set equal to case where N_freqs_to_use = N_deproj
             if sigma_pix_temp == 0.:
@@ -295,6 +322,26 @@ class scale_info(object):
             fskyinv = 1
             dgraded_mask = 1
 
+        smoothed_maps_A = {}
+        unsmoothed_maps_A = {}
+        if info.cross_ILC:
+            smoothed_maps_B = {}
+            unsmoothed_maps_B = {}
+        for a in range(info.N_freqs):
+            if (self.freqs_to_use[j][a] == True) :
+                if not info.cross_ILC:
+                    filename_A = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(a)+'_scale'+str(j)+'.fits'
+                else:
+                    filename_A = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(a)+'_scale'+str(j)+'_S1.fits'
+                    filename_B = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(a)+'_scale'+str(j)+'_S2.fits'
+                wavelet_map_A = dgraded_mask * hp.read_map(filename_A, dtype=np.float64, verbose=False) #QUESTION: should we multiply by msk here or before waveletizing?
+                smoothed_maps_A[a] = hp.sphtfunc.smoothing(wavelet_map_A, FWHM_pix[j])
+                unsmoothed_maps_A[a] = wavelet_map_A
+                if info.cross_ILC:
+                    wavelet_map_B = dgraded_mask * hp.read_map(filename_B, dtype=np.float64, verbose=False) #QUESTION: should we multiply by msk here or before waveletizing?
+                    smoothed_maps_B[a] = hp.sphtfunc.smoothing(wavelet_map_B, FWHM_pix[j])
+                    unsmoothed_maps_B[a] = wavelet_map_B
+            
 
         for a in range(info.N_freqs):
                     start_at = a
@@ -304,6 +351,7 @@ class scale_info(object):
                         if (self.freqs_to_use[j][a] == True) and (self.freqs_to_use[j][b] == True):
                             cov_filename = _cov_filename(info,a,b,j)
                             # read in wavelet coefficient maps constructed in previous step above
+                            '''
                             if not info.cross_ILC:
                                 filename_A = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(a)+'_scale'+str(j)+'.fits'
                                 filename_B = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(b)+'_scale'+str(j)+'.fits'
@@ -312,12 +360,25 @@ class scale_info(object):
                                 filename_B = info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(b)+'_scale'+str(j)+'_S2.fits'
                             wavelet_map_A = dgraded_mask * hp.read_map(filename_A, dtype=np.float64, verbose=False) #QUESTION: should we multiply by msk here or before waveletizing?
                             wavelet_map_B = dgraded_mask * hp.read_map(filename_B, dtype=np.float64, verbose=False)
+                            '''
+                            wavelet_map_A = unsmoothed_maps_A[a]
+                            wavelet_map_A_smoothed = smoothed_maps_A[a]
+                            if info.cross_ILC: 
+                                wavelet_map_B = unsmoothed_maps_B[b]
+                                wavelet_map_B_smoothed = smoothed_maps_B[b]
+                            else:
+                                wavelet_map_B = unsmoothed_maps_A[b]
+                                wavelet_map_B_smoothed = smoothed_maps_A[b]
+
                             assert len(wavelet_map_A) == len(wavelet_map_B), "cov mat map calculation: wavelet coefficient maps have different N_side"
+                            '''
                             # first perform smoothing operation to get the "mean" maps
                             wavelet_map_A_smoothed = hp.sphtfunc.smoothing(wavelet_map_A, FWHM_pix[j])
                             wavelet_map_B_smoothed = hp.sphtfunc.smoothing(wavelet_map_B, FWHM_pix[j])
                             # then construct the smoothed real-space freq-freq cov matrix element for this pair of frequency maps
                             # note that the overall normalization of this cov matrix is irrelevant for the ILC weight calculation (it always cancels out)
+                            '''
+
                             cov_map_temp = hp.sphtfunc.smoothing( (wavelet_map_A - wavelet_map_A_smoothed)*(wavelet_map_B - wavelet_map_B_smoothed) , FWHM_pix[j])
                             cov_maps_temp.append( cov_map_temp  * fskyinv)
                             hp.write_map(cov_filename, cov_map_temp, nest=False, dtype=np.float64, overwrite=False)
@@ -389,6 +450,14 @@ class scale_info(object):
             if (self.freqs_to_use[j][a] == True):
                 a_min = a
                 break
+        # get the mask that we don't care about computing outside of:
+        if info.mask_before_covariance_computation is not None:
+
+            dgraded_mask = hp.ud_grade(info.mask_before_covariance_computation,self.N_side_to_use[j])
+            dgraded_mask[dgraded_mask!=1]=0
+        else:
+            dgraded_mask = np.ones(self.N_pix_to_use[j])
+
         ### for each filter scale, perform cov matrix inversion and compute maps of the ILC weights using the inverted cov matrix maps
         weights = np.zeros((int(self.N_pix_to_use[j]),int(self.N_freqs_to_use[j])))
 
@@ -404,7 +473,11 @@ class scale_info(object):
                         covmat_temp[b-a_min][a-a_min] = covmat_temp[a-a_min][b-a_min] #symmetrize
                     count+=1
         covmat_temp_transpose=np.transpose(covmat_temp,(2,1,0))
-        tmp1 = np.transpose(np.linalg.solve(covmat_temp_transpose,np.transpose(A_mix)))
+
+        tmp1 = np.zeros((self.N_freqs_to_use[j],self.N_pix_to_use[j]))
+
+        tmp1[:,dgraded_mask!=0] = np.transpose(np.linalg.solve(covmat_temp_transpose[dgraded_mask!=0],np.transpose(A_mix)))
+
         Qab_pix = np.einsum('ajp,bj->abp', tmp1[None,:,:], np.transpose(A_mix))
         # compute weights
         tempvec = np.zeros((N_comps, int(self.N_pix_to_use[j])))
@@ -416,19 +489,25 @@ class scale_info(object):
                 QSa_temp = np.delete(np.delete(Qab_pix, a, 0), 0, 1) #remove the a^th row and zero^th column
                 tempvec[a] = (-1.0)**float(a) * np.linalg.det(np.transpose(QSa_temp,(2,0,1)))
         tmp2 = np.einsum('ia,ap->ip', A_mix, tempvec)
-        tmp3 =  np.transpose(np.linalg.solve(covmat_temp_transpose,np.transpose(tmp2)))
-        weights = 1.0/np.linalg.det(np.transpose(Qab_pix,(2,0,1)))[:,None]*np.transpose(tmp3) #N.B. 'weights' here only includes channels that passed beam_thresh criterion,
+
+        tmp3 = np.zeros((self.N_freqs_to_use[j],self.N_pix_to_use[j]))
+        tmp3[:,dgraded_mask!=0] =  np.transpose(np.linalg.solve(covmat_temp_transpose[dgraded_mask!=0],np.transpose(tmp2[:,dgraded_mask!=0])))
+
+        weights[dgraded_mask!=0] = 1.0/np.linalg.det(np.transpose(Qab_pix[:,:,dgraded_mask!=0],(2,0,1)))[:,None]*np.transpose(tmp3[:,dgraded_mask!=0]) #N.B. 'weights' here only includes channels that passed beam_thresh criterion,
+
+
         # response verification
         response = np.einsum('pi,ia->ap', weights, A_mix) #dimensions N_comps x N_pix_to_use[j]
         optimal_response_preserved_comp = np.ones(int(self.N_pix_to_use[j]))  #preserved component, want response=1
         optimal_response_deproj_comp = np.zeros((N_comps-1, int(self.N_pix_to_use[j]))) #deprojected components, want response=0
         del(covmat_temp_transpose)
-        if not (np.absolute(response[0]-optimal_response_preserved_comp) < resp_tol).all():
+        if not (np.absolute(response[0,dgraded_mask!=0]-optimal_response_preserved_comp[dgraded_mask!=0]) < resp_tol).all():
             print(f'preserved component response failed at wavelet scale {j}')
             quit()
-        if not (np.absolute(response[1:]-optimal_response_deproj_comp) < resp_tol).all():
-            print(f'deprojected component response failed at wavelet scale {j}')
-            quit()
+        if response.shape[0]>1:
+            if not (np.absolute(response[1:,dgraded_mask!=0]-optimal_response_deproj_comp[dgraded_mask!=0]) < resp_tol).all():
+                print(f'deprojected component response failed at wavelet scale {j}')
+                quit()
         return weights
 
     def compute_weights_at_scale_j_from_covmat(self,j,info,resp_tol,map_images = False):
@@ -921,6 +1000,8 @@ def _inv_cov_filename(info,scale,freq1,freq2):
                     inv_cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_invcovmap_freq'+str(a)+'_freq'+str(b)+'_scale'+str(j)+'_crossILC'*info.cross_ILC+'_Ndeproj'+str(N_deproj)+'.fits'
     return inv_cov_filename
 
+def _ILC_scale_filename(info,j):
+    return info.output_dir+info.output_prefix+'scale_ILC_component_scale'+str(j)+'.fits'
 
 def _weights_filename(info,freq,scale):
                 a = freq
@@ -1009,7 +1090,9 @@ def wavelet_ILC(wv=None, info=None,  resp_tol=1.e-3, map_images=False,return_ILC
         ILC_map_temp = scale_info_wvs.ILC_at_scale_j(j,info,resp_tol,map_images = map_images)
     
         ILC_maps_per_scale.append(ILC_map_temp)
-
+        if info.save_scale_ILC_maps:
+            ILCscalefilename = _ILC_scale_filename(info,j)
+            hp.fitsfunc.write_map(ILCscalefilename,ILC_map_temp)
         del(ILC_map_temp)
 
     ##########################

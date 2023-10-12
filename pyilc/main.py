@@ -38,6 +38,8 @@ if info.wavelet_type == 'GaussianNeedlets':
     ell, filts = wv.GaussianNeedlets(FWHM_arcmin=info.GN_FWHM_arcmin)
 elif info.wavelet_type == 'CosineNeedlets': # Fiona added CosineNeedlets
     ell,filts = wv.CosineNeedlets(ellmin = info.ellmin,ellpeaks = info.ellpeaks)
+elif info.wavelet_type == 'ScaleDiscretizedWavelets':
+    ell,filts = wv.ScaleDiscretizedWavelets(ellboundaries = info.ellboundaries)
 elif info.wavelet_type == 'TopHatHarmonic':
     ell,filts = wv.TopHatHarmonic(info.ellbins)
 else:
