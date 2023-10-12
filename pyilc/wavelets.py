@@ -133,7 +133,6 @@ class Wavelets(object):
             filt = np.logical_and(ells < ellboundaries[i+1], ells >= ellboundaries[i])
             self.filters[i,filt] = 1
 
-        filt[i,-1] = 1
 
         # simple check to ensure that sum of squared transmission is unity as needed for NILC algorithm 
         assert (np.absolute( np.sum( self.filters**2., axis=0 ) - np.ones(self.ELLMAX+1,dtype=float)) < self.tol).all(), "wavelet filter transmission check failed"
