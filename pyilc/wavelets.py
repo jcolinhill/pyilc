@@ -231,8 +231,8 @@ class scale_info(object):
             ell, filts = wv.TopHatHarmonic(info.ellbins)
         elif info.wavelet_type == 'CosineNeedlets':
             ell, filts = wv.CosineNeedlets(ellmin = info.ellmin,ellpeaks = info.ellpeaks)
-        # TODO: implement these
-        #elif info.wavelet_type == 'ScaleDiscretizedWavelets':
+        elif info.wavelet_type == 'ScaleDiscretizedWavelets':
+            ell, filts = wv.ScaleDiscretizedWavelets(ellboundaries = info.ellboundaries)
         else:
             raise NotImplementedError
         # compute effective number of modes associated with each filter (on the full sky)
