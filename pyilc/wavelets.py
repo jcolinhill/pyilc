@@ -130,7 +130,7 @@ class Wavelets(object):
         ells=np.arange(self.ELLMAX+1)
 
         for i in range(0,self.N_scales):
-            filt = np.logical_and(ells < ellpeaks[i+1], ells >= ellpeaks[i])
+            filt = np.logical_and(ells < ellboundaries[i+1], ells >= ellboundaries[i])
             self.filters[i,filt] = 1
 
         filt[i,-1] = 1
