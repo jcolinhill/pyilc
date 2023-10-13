@@ -222,6 +222,9 @@ class ILCInfo(object):
             # delta function bandpasses: frequency values in GHz
             self.freqs_delta_ghz = p['freqs_delta_ghz']
             assert len(self.freqs_delta_ghz) == self.N_freqs, "freqs_delta_ghz"
+            for xind, x in enumerate(self.freqs_delta_ghz):
+                if x in ["none","None"]:
+                    self.freqs_delta_ghz[xind] = None
         elif self.bandpass_type == 'ActualBandpasses':
             # actual bandpasses: list of bandpass file names, each containing two columns: [freq [GHz]] [transmission [arbitrary norm.]]
             self.freq_bp_files = p['freq_bp_files']
