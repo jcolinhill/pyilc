@@ -246,7 +246,6 @@ def waveletize(inp_map=None, wv=None, rebeam=False, inp_beam=None, new_beam=None
     assert wv is not None, "wavelets not defined"
     assert type(wv) is Wavelets, "Wavelets TypeError"
     assert wv.ELLMAX < 3*N_side_inp-1, "ELLMAX too high"
-    assert wv.ELLMAX > 200, "ELLMAX too low"
     if (N_side_to_use is None):
         N_side_to_use = np.ones(wv.N_scales, dtype=int)*N_side_inp
     if(rebeam):
