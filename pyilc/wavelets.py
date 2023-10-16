@@ -487,9 +487,9 @@ class scale_info(object):
 
         tmp1 = np.zeros((self.N_freqs_to_use[j],self.N_pix_to_use[j]))
 
-        tmp1[:,dgraded_mask!=0] = np.transpose(np.linalg.solve(covmat_temp_transpose[dgraded_mask!=0],np.transpose(A_mix)))
+        tmp1[:,dgraded_mask!=0] = np.transpose(np.linalg.solve(covmat_temp_transpose[dgraded_mask!=0],np.transpose(A_mix[None,:,:])))
 
-        Qab_pix = np.einsum('ajp,bj->abp', tmp1[None,:,:], np.transpose(A_mix))
+        Qab_pix = np.einsum('ajp,bj->abp', tmp1, np.transpose(A_mix))
         # compute weights
         tempvec = np.zeros((N_comps, int(self.N_pix_to_use[j])))
         # treat the no-deprojection case separately, since QSa_temp is empty in this case
@@ -516,7 +516,7 @@ class scale_info(object):
             print(f'preserved component response failed at wavelet scale {j}')
             quit()
         if response.shape[0]>1:
-            if not (np.absolute(response[1:,dgraded_mask!=0]-optimal_response_deproj_comp[dgraded_mask!=0]) < resp_tol).all():
+            if not (np.absolute(response[1:,dgraded_mask!=0]-optimal_response_deproj_comp[:,dgraded_mask!=0]) < resp_tol).all():
                 print(f'deprojected component response failed at wavelet scale {j}')
                 quit()
         return weights
