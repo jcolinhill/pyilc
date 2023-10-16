@@ -312,6 +312,13 @@ class scale_info(object):
             dgraded_mask = hp.ud_grade(info.mask_before_covariance_computation,self.N_side_to_use[j])
             dgraded_mask[dgraded_mask!=1]=0
             print("fsky at scale "+str(j)+" is "+str(np.sum(dgraded_mask)/dgraded_mask.shape[0]),flush=True)
+            if np.sum(dgraded_mask)== 0:
+                assert self.N_side_to_use[j] < 256
+                mask1 = hp.ud_grade(info.mask_before_covariance_computation,256)
+                dgraded_mask = hp.ud_grade(mask1, self.N_side_to_use[j])
+                print("fsky at scale "+str(j)+" is "+str(np.sum(dgraded_mask)/dgraded_mask.shape[0]),flush=True)
+                assert np.sum(dgraded_mask)>0
+
             smoothed_mask = hp.sphtfunc.smoothing(dgraded_mask,FWHM_pix[j])
             fskyinv = np.zeros(smoothed_mask.shape)
             fskyinv[smoothed_mask!=0] = 1/smoothed_mask[smoothed_mask!=0]
@@ -454,6 +461,11 @@ class scale_info(object):
 
             dgraded_mask = hp.ud_grade(info.mask_before_covariance_computation,self.N_side_to_use[j])
             dgraded_mask[dgraded_mask!=1]=0
+            if np.sum(dgraded_mask)== 0:
+                assert self.N_side_to_use[j] < 256
+                mask1 = hp.ud_grade(info.mask_before_covariance_computation,256)
+                dgraded_mask = hp.ud_grade(mask1, self.N_side_to_use[j])
+                assert np.sum(dgraded_mask)>0
         else:
             dgraded_mask = np.ones(self.N_pix_to_use[j])
 
@@ -536,11 +548,8 @@ class scale_info(object):
                             cov_filename = _cov_filename(info,a,b,j)
                             exists = os.path.isfile(cov_filename)
                             if exists:
-                                if not info.inv_covmat_exists:
-                                    print('needlet coefficient covariance map already exists:', cov_filename)
-                                    cov_maps_temp.append( hp.read_map(cov_filename, dtype=np.float64) )
-                                else:
-                                    cov_maps_temp.append(0)
+                                print('needlet coefficient covariance map already exists:', cov_filename)
+                                cov_maps_temp.append( hp.read_map(cov_filename, dtype=np.float64) )
 
                             else:
                                 print('needlet coefficient covariance map not previously computed; computing all covariance maps at scale '+str(j)+' now...')
