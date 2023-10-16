@@ -487,7 +487,7 @@ class scale_info(object):
 
         tmp1 = np.zeros((self.N_freqs_to_use[j],self.N_pix_to_use[j]))
 
-        tmp1[:,dgraded_mask!=0] = np.transpose(np.linalg.solve(covmat_temp_transpose[dgraded_mask!=0],np.transpose(A_mix[None,:,:])))
+        tmp1[:,:,dgraded_mask!=0] = np.transpose(np.linalg.solve(covmat_temp_transpose[dgraded_mask!=0],np.transpose(A_mix[None,:,:])))
 
         Qab_pix = np.einsum('ajp,bj->abp', tmp1, np.transpose(A_mix))
         # compute weights
