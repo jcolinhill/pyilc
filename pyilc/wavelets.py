@@ -310,12 +310,13 @@ class scale_info(object):
         if info.mask_before_covariance_computation is not None:
             print("fsky of whole mask is "+str(np.sum(info.mask_before_covariance_computation)/info.mask_before_covariance_computation.shape[0]),flush=True)
             dgraded_mask = hp.ud_grade(info.mask_before_covariance_computation,self.N_side_to_use[j])
-            dgraded_mask[dgraded_mask!=1]=0
+            dgraded_mask[dgraded_mask!=0]=1
             print("fsky at scale "+str(j)+" is "+str(np.sum(dgraded_mask)/dgraded_mask.shape[0]),flush=True)
             if np.sum(dgraded_mask)== 0:
                 assert self.N_side_to_use[j] < 256
                 mask1 = hp.ud_grade(info.mask_before_covariance_computation,256)
                 dgraded_mask = hp.ud_grade(mask1, self.N_side_to_use[j])
+                dgraded_mask[dgraded_mask!=0]=1
                 print("fsky at scale "+str(j)+" is "+str(np.sum(dgraded_mask)/dgraded_mask.shape[0]),flush=True)
                 assert np.sum(dgraded_mask)>0
 
@@ -444,7 +445,7 @@ class scale_info(object):
         return weights
 
     def weights_from_covmat_at_scale_j(self,info,scale,cov_maps_temp,A_mix,resp_tol):
-        print("getting weights from covmat")
+        print("getting weights from covmat",flush=True)
         j = scale
         if type(info.N_deproj) is int:
             N_deproj = info.N_deproj
@@ -460,11 +461,12 @@ class scale_info(object):
         if info.mask_before_covariance_computation is not None:
 
             dgraded_mask = hp.ud_grade(info.mask_before_covariance_computation,self.N_side_to_use[j])
-            dgraded_mask[dgraded_mask!=1]=0
+            dgraded_mask[dgraded_mask!=0]=1
             if np.sum(dgraded_mask)== 0:
                 assert self.N_side_to_use[j] < 256
                 mask1 = hp.ud_grade(info.mask_before_covariance_computation,256)
                 dgraded_mask = hp.ud_grade(mask1, self.N_side_to_use[j])
+                dgraded_mask[dgraded_mask!=0]=1
                 assert np.sum(dgraded_mask)>0
         else:
             dgraded_mask = np.ones(self.N_pix_to_use[j])
@@ -913,7 +915,7 @@ def waveletize_input_maps(info,scale_info_wvs,wv,map_images = False):
         FWHM_pix = scale_info_wvs.FWHM_pix
         N_side_to_use = scale_info_wvs.N_side_to_use
         N_pix_to_use = scale_info_wvs.N_pix_to_use
-
+        
         for i in range(info.N_freqs):
             # N.B. maps are assumed to be in strictly decreasing order of FWHM! i.e. info.beams[-1] is highest-resolution beam
             print("waveletizing frequency ", i, "...",flush=True)
@@ -1065,7 +1067,7 @@ def wavelet_ILC(wv=None, info=None,  resp_tol=1.e-3, map_images=False,return_ILC
     N_side_to_use = scale_info_wvs.N_side_to_use
     N_pix_to_use = scale_info_wvs.N_pix_to_use
 
-
+    print("nside to use is",N_side_to_use)
     if info.perform_ILC_at_beam is not None:
         newbeam = info.common_beam
     else:
