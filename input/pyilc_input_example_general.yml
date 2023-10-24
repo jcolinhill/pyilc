@@ -111,6 +111,15 @@ freq_map_files_s1: []
 # A list of files where you have saved the second split of the frequency maps for the same order as freqs_delta_ghz (only for a cross-ILC)
 freq_map_files_s2: []
 
+# The filename of a map you want to subtract from all of the input maps (eg kinematic dipole):
+# defaults to None if not input
+# map_to_subtract: 'kinematic_dipole.fits'
+
+# A list of filenames you want to subtract from the different input maps (eg ikinematic dipole for some of them)
+# this list needs to be of length N_freq. For maps that you don't want to subtract anything from, put in the string 'None'
+# this defaults to None if not input
+# maps_to_subtract: []
+
 # If you have already run the code, it will have saved the needlet coefficients of all the maps. We can skip the check that they already exist by 
 # optionally telling the code they already exist
 # wavelet_maps_exist: 'true'
@@ -154,3 +163,6 @@ maps_xcorr_files: ['/moto/hill/users/kms2320/websky_maps/cmb_lensed_nside1024_K.
 # A list of masks to apply before cross-correlating. If this is unspecified, no mask will be applied; 
 # otherwise it should be the same length as maps_xcorr_files and for the same order
 masks_xcorr_files:
+
+
+

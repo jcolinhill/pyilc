@@ -254,7 +254,23 @@ class ILCInfo(object):
         # frequency map file names
         self.freq_map_files = p['freq_map_files']
         assert len(self.freq_map_files) == self.N_freqs, "freq_map_files"
-         
+
+        # some preprocessing maps: Is there one map you want to subtract from all the inputs (eg the kinematic dipole)?
+        # put the filename in a a string here
+        self.map_to_subtract = None
+        if 'map_to_subtract' in p.keys():
+            self.map_to_subtract = p['map_to_subtract']
+        # Is there a different map you want to subtract from all of the inputs? If so, put them in as a list here
+        self.maps_to_subtract = None
+        if 'maps_to_subtract'  in p.keys():
+            self.maps_to_subtract = p['maps_to_subtract']
+            assert len(self.maps_to_subtract) == self.N_freqs
+            for xind,x in enumerate(self.maps_to_subtract):
+                assert type(x) is str
+                if x.lower() == 'none':
+                    self.maps_to_subtract[xind] = None
+
+
         self.freq_map_field = 0
         if 'freq_map_field' in p.keys():
             self.freq_map_field = p['freq_map_field']
@@ -463,6 +479,27 @@ class ILCInfo(object):
                     self.maps_s2[i] = np.copy( hp.pixelfunc.ud_grade(temp_map_s2, nside_out=self.N_side, order_out='RING', dtype=np.float64) )
             del(temp_map_s1)
             del(temp_map_s2)
+        # if you want to subtract something from the maps, do it here 
+        if self.map_to_subtract is not None:
+            map_to_subtract = hp.fitsfunc.read_map(self.map_to_subtract)
+            assert hp.get_nside(map_to_subtract) >= self.N_side
+            if hp.get_nside(map_to_subtract) > self.N_side:
+                map_to_subtract = hp.ud_grade(map_to_subtract,self.N_side)
+            self.maps = self.maps - map_to_subtract[None,:]
+            if self.cross_ILC:
+                self.maps_s1 = self.maps_s1 -  map_to_subtract[None,:]
+                self.maps_s2 = self.maps_s2 -  map_to_subtract[None,:]
+        if self.maps_to_subtract is not None:
+            for freqind in range(self.N_freqs):
+                if self.maps_to_subtract[freqind] is not None:
+                    map_to_subtract = hp.fitsfunc.read_map(self.maps_to_subtract[freqind])
+                    assert hp.get_nside(map_to_subtract) >= self.N_side
+                    if hp.get_nside(map_to_subtract) > self.N_side:
+                        map_to_subtract = hp.ud_grade(map_to_subtract,self.N_side)
+                    self.maps[freqind] = self.maps[freqind] - map_to_subtract
+                    if self.cross_ILC:
+                        self.maps_s1[freqind] = self.maps_s1[freqind] - map_to_subtract
+                        self.maps_s2[freqind] = self.maps_s2[freqind] - map_to_subtract
 
         # if we need to apply weights to alternative maps, read them in
         if self.apply_weights_to_other_maps:
