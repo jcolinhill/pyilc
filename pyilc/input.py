@@ -9,7 +9,7 @@ module to read in relevant input specified by user
 ##########################
 # wavelet types implemented thus far
 # WV_TYPES = ['GaussianNeedlets','TopHatHarmonic']
-WV_TYPES = ['GaussianNeedlets','TopHatHarmonic','CosineNeedlets','ScaleDiscretizedWavelets'] # Fiona added CosineNeedlets
+WV_TYPES = ['GaussianNeedlets','TopHatHarmonic','CosineNeedlets'] # Fiona added CosineNeedlets
 ##########################
 
 ##########################
