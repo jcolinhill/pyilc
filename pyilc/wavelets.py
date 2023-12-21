@@ -710,12 +710,14 @@ class scale_info(object):
             else:
                 print('needlet coefficient covariance map already exists at scale',j,":", cov_filename,flush=True)
 
-            print("got covmats in",time.time()-t1,flush=True)    
+            if info.print_timing:
+                print("got covmats in",time.time()-t1,flush=True)    
 
             # compute the weights
             t1=time.time()
             weights = self.weights_from_covmat_at_scale_j(info,j,cov_maps_temp,A_mix,resp_tol)
-            print("calcweights in",time.time()-t1,flush=True)
+            if info.print_timing:
+                print("calcweights in",time.time()-t1,flush=True)
 
             del cov_maps_temp #free up memory
             print('done computing all ILC weights at scale '+str(j),flush=True)
@@ -1084,7 +1086,8 @@ class scale_info(object):
                     wavelet_coeff_map =maps_for_weights_needlets[a][j]
                 ILC_map_temp += weights[:,count] * wavelet_coeff_map
                 count+=1
-        print("finished summing at scale",j,time.time()-t1,flush=True)
+        if info.print_timing:
+            print("finished summing at scale",j,time.time()-t1,flush=True)
         return ILC_map_temp
 
 
