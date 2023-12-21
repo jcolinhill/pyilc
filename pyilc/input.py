@@ -367,17 +367,25 @@ class ILCInfo(object):
         self.ILC_preserved_comp = p['ILC_preserved_comp']
         assert self.ILC_preserved_comp in COMP_TYPES, "unsupported component type in ILC_preserved_comp"
 
+        # real-space filters: 
+        assert ('ILC_bias_tol' in p.keys() or 'FWHM_pix' in p.keys())
+
         # ILC: bias tolerance
-        self.ILC_bias_tol = 0.01
         if 'ILC_bias_tol' in p.keys():
+            assert 'FWHM_pix' not in p.keys()
             self.ILC_bias_tol = p['ILC_bias_tol']
         assert self.ILC_bias_tol > 0. and self.ILC_bias_tol < 1., "invalid ILC bias tolerance"
+
+        #if you want to allow ILC biases that are too large for the number of modes available:
         self.override_ILCbiastol = False
         if 'override_ILCbiastol_threshold' in p.keys():
+            assert type(p['override_ILCbiastol_threshold']) is str
             if p['override_ILCbiastol_threshold'].lower() in ['true','yes']:
                 self.override_ILCbiastol = True
+
         #manually set realspace areas (in radians)
         if 'FWHM_pix' in p.keys():
+            assert 'ILC_bias_tol' not in p.keys()
             self.FWHM_pix = p['FWHM_pix']
             assert type(self.FWHM_pix) is list
             assert len(self.FWHM_pix) == self.N_scales
@@ -424,7 +432,6 @@ class ILCInfo(object):
             for component in p['deproject_from_channels'].keys():
                 self.deproject_from_channels[component] = p['deproject_from_channels'][component]
 
-
         self.print_timing = False
         if 'print_timing' in p.keys():
             assert type(p['print_timing']) is str
@@ -437,30 +444,28 @@ class ILCInfo(object):
             if p['use_numba'].lower() in ['false','no','f','n']:
                 self.use_numba = False
 
-        if 'save_as' in p.keys():
-            if p['save_as'] == 'fits':
-                 self.save_as_fits = True
-                 self.save_as_hdf5 = False
-            elif p['save_as'] == 'hdf5':
-                self.save_as_hdf5 = True
-                self.save_as_fits = False
-                self.covmaps_hdf5_filename = self.output_dir + self.output_prefix + '_covmaps'+'_crossILC'*self.cross_ILC+'.hdf5'
-                self.invcovmaps_hdf5_filename = self.output_dir + self.output_prefix + '_invcovmaps'+'_crossILC'*self.cross_ILC+'.hdf5'
-                self.wavelet_coeff_hdf5_filename = self.output_dir + self.output_prefix + '_waveletmaps.hdf5'
+        if 'save_as' not in p.keys():
 
-                self.weight_filename_hdf5 =  self.output_dir + self.output_prefix + '_weightmaps_component_'+self.ILC_preserved_comp+'_crossILC'*self.cross_ILC+self.output_suffix_weights+'.fits'
-                if type(self.N_deproj )is int:
-                    if self.N_deproj>0:
-                        self.weight_filename_hdf5 =  self.output_dir+self.output_prefix+'_weightmaps_component_'+self.ILC_preserved_comp+'_deproject_'+'_'.join(self.ILC_deproj_comps)+'_crossILC'*self.cross_ILC+self.output_suffix_weights+'.fits'
-                else:
-                    if self.N_deproj[0]>0:
-                        self.weight_filename_hdf5 =  self.output_dir+self.output_prefix+'_weightmaps_component_'+self.ILC_preserved_comp+'_deproject_'+'_'.join(self.ILC_deproj_comps[0])+'_crossILC'*self.cross_ILC+self.output_suffix_weights+'.fits' 
+            print("You need to specify whether to save as fits files or hdf5 files. hdf5 files are recommended, but fits files is available for back-compatibility.")
 
-        else:
+        assert p['save_as'] in ['fits','hdf5']
+        if p['save_as'] == 'fits':
             self.save_as_fits = True
             self.save_as_hdf5 = False
-        assert not (self.save_as_fits and self.save_as_hdf5)
+        elif p['save_as'] == 'hdf5':
+            self.save_as_hdf5 = True
+            self.save_as_fits = False
+            self.covmaps_hdf5_filename = self.output_dir + self.output_prefix + '_covmaps'+'_crossILC'*self.cross_ILC+'.hdf5'
+            self.invcovmaps_hdf5_filename = self.output_dir + self.output_prefix + '_invcovmaps'+'_crossILC'*self.cross_ILC+'.hdf5'
+            self.wavelet_coeff_hdf5_filename = self.output_dir + self.output_prefix + '_waveletmaps.hdf5'
 
+            self.weight_filename_hdf5 =  self.output_dir + self.output_prefix + '_weightmaps_component_'+self.ILC_preserved_comp+'_crossILC'*self.cross_ILC+self.output_suffix_weights+'.fits'
+            if type(self.N_deproj )is int:
+                if self.N_deproj>0:
+                    self.weight_filename_hdf5 =  self.output_dir+self.output_prefix+'_weightmaps_component_'+self.ILC_preserved_comp+'_deproject_'+'_'.join(self.ILC_deproj_comps)+'_crossILC'*self.cross_ILC+self.output_suffix_weights+'.fits'
+            else:
+                if self.N_deproj[0]>0:
+                    self.weight_filename_hdf5 =  self.output_dir+self.output_prefix+'_weightmaps_component_'+self.ILC_preserved_comp+'_deproject_'+'_'.join(self.ILC_deproj_comps[0])+'_crossILC'*self.cross_ILC+self.output_suffix_weights+'.fits' 
 
         # Do we want to calculate the weights from the covmat with np.linalg.solve()
         # or the invcovmat with np.linalg.inv() and np.matmul()?

@@ -16,6 +16,10 @@ output_suffix: ''
 #save the ILC weights 'yes' for yes, 'no' for no
 save_weights: 'yes'
 
+# do you want to save as fits files or hdf5 files? (hdf5 files recommended, the fits option is mainly for backward-compatibility)
+save_as: 'hdf5'
+
+
 #---------------------------------------------#
 # Info about the resolution of the output map #
 #---------------------------------------------#
@@ -34,18 +38,32 @@ perform_ILC_at_beam: 10
 # Info about the type of ILC to perform #
 #---------------------------------------#
 
-# the type of wavelets. 'GaussianNeedlets' for NILC with Gaussian needlets; 'TopHatHarmonic' for HILC
+# the type of wavelets. 'GaussianNeedlets' for NILC with Gaussian needlets; 'TopHatHarmonic' for HILC; 'CosineNeedlets for cosine needlets'
 wavelet_type: 'GaussianNeedlets'
 
 # the number of wavelet scales (only for NILC)
 N_scales: 7
 
-#The FWHM of the Gaussian needlet scales (only for NILC)
+#The FWHM of the Gaussian needlet scales (only for NILC with Gaussian needlets)
 GN_FWHM_arcmin: [600., 300., 120., 60., 30., 15.]
+
+# the peaks of the Cosine needlets (only for NILC with cosine needlets)
+ellpeaks: [100, 200, 300, 400, 600, 800]
+
+# realspacefilter size: either use ILC_bias_tol or FWHM_pix
 
 # The allowed tolerance for ILC bias. This will be used to set the size of the real-space 
 # Gaussian filters in the NILC
 ILC_bias_tol: 0.01
+
+# a small ILC_bias_tol leads to very large real-space filters which may be larger than the sphere
+# in this case there are simply not enough modes to meet the ILC_bias_tol and the code stops
+# you can override this by setting override_ILCbiastol_threshold: 'True' (not recommended).
+# by default this is false if not specified otherwise
+override_ILCbiastol_threshold: 'False'
+
+# the size of the real-space filters in arcminutes. This is instead of ILC_bias_tol
+FWHM_pix: [1,1,1,1,1,1,1]
 
 #The Delta_ell (binsize) for linear bins for the HILC
 BinSize: 20
@@ -148,7 +166,13 @@ wavelet_beam_criterion: 0.001
 # (recall the input frequency maps must be inputed in order of increasing resolution so this is equivalent to the N last maps in the list)
 # override_N_freqs_to_use: [2,2,2,2,2,2,2]
 
+#---------------------------#
+# Information about display #
+#---------------------------#
 
+# if you want to print information about the timing of each computation
+# set this to true. Default is false
+print_timing: 'false'
 
 #----------------------------------------------------#
 # Info about maps to cross-correlate the output with #
