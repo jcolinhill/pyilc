@@ -4,6 +4,7 @@ import numpy as np
 import os
 import healpy as hp
 from input import ILCInfo
+import time
 from wavelets import Wavelets, wavelet_ILC, harmonic_ILC
 """
 main script for doing needlet or harmonic (multiply constrained) ILC analysis
@@ -11,6 +12,7 @@ main script for doing needlet or harmonic (multiply constrained) ILC analysis
 ##########################
 # main input file
 ### input file containing most specifications ###
+tstart = time.time()
 try:
     input_file = (sys.argv)[1]
 except IndexError:
@@ -21,10 +23,10 @@ except IndexError:
 # read in the input file and set up relevant info object
 info = ILCInfo(input_file)
 ##########################
-
+t2=time.time()
 ##########################
 # read in frequency maps
-info.read_maps()
+#info.read_maps() # fiona: we only need to do this if we are computing wavelet coeffs, if they haven't already been computed and saved
 # read in bandpasses
 info.read_bandpasses()
 # read in beams
@@ -57,7 +59,8 @@ if info.wavelet_type == 'TopHatHarmonic':
 else:
     wavelet_ILC(wv, info, resp_tol=info.resp_tol, map_images=False)
 ##########################
-
+tend = time.time()-tstart
+print("tend is",tend)
 
 ##########################
 # TODO

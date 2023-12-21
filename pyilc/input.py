@@ -9,7 +9,7 @@ module to read in relevant input specified by user
 ##########################
 # wavelet types implemented thus far
 # WV_TYPES = ['GaussianNeedlets','TopHatHarmonic']
-WV_TYPES = ['GaussianNeedlets','TopHatHarmonic','CosineNeedlets'] # Fiona added CosineNeedlets
+WV_TYPES = ['GaussianNeedlets','TopHatHarmonic','CosineNeedlets','ScaleDiscretizedWavelets'] # Fiona added CosineNeedlets
 ##########################
 
 ##########################
@@ -24,7 +24,7 @@ BEAM_TYPES = ['Gaussians','1DBeams']
 
 ##########################
 # component types implemented thus far
-COMP_TYPES = ['CMB','kSZ','tSZ','rSZ','mu','CIB', 'CIB_dbeta','CIB_dT','radio','radio_dbeta']
+COMP_TYPES = ['CMB','kSZ','tSZ','rSZ','mu','CIB', 'CIB_dbeta','CIB_dT','radio','radio_dbeta','radio2']
 ##########################
 
 ##########################
@@ -271,13 +271,6 @@ class ILCInfo(object):
             if p['wavelet_maps_exist'].lower() in ['true','yes','y']:
                 self.wavelet_maps_exist = True
 
-        # do the covariance maps already exist as saved files? we can tell the code to skip the check for this, if 
-        # we know this alredy. Deafults to False
-        self.inv_covmat_exists= False
-        if 'inv_covmat_exists' in p.keys():
-            if p['inv_covmat_exists'].lower() in ['true','yes','y']:
-                self.inv_covmat_exists= True
- 
         # frequency map file names
         self.freq_map_files = p['freq_map_files']
         assert len(self.freq_map_files) == self.N_freqs, "freq_map_files"
@@ -439,6 +432,7 @@ class ILCInfo(object):
                 self.save_as_hdf5 = True
                 self.save_as_fits = False
                 self.covmaps_hdf5_filename = self.output_dir + self.output_prefix + '_covmaps'+'_crossILC'*self.cross_ILC+'.hdf5'
+                self.invcovmaps_hdf5_filename = self.output_dir + self.output_prefix + '_invcovmaps'+'_crossILC'*self.cross_ILC+'.hdf5'
                 self.wavelet_coeff_hdf5_filename = self.output_dir + self.output_prefix + '_waveletmaps.hdf5'
 
                 self.weight_filename_hdf5 =  self.output_dir + self.output_prefix + '_weightmaps_component_'+self.ILC_preserved_comp+'_crossILC'*self.cross_ILC+self.output_suffix_weights+'.fits'
@@ -453,6 +447,17 @@ class ILCInfo(object):
             self.save_as_fits = True
             self.save_as_hdf5 = False
         assert not (self.save_as_fits and self.save_as_hdf5)
+
+
+        # Do we want to calculate the weights from the covmat with np.linalg.solve()
+        # or the invcovmat with np.linalg.inv() and np.matmul()?
+        self.weights_from_covmat = True
+        self.weights_from_invcovmat = False
+        if 'weights_from_invcovmat' in p.keys():
+            assert type(p['weights_from_invcovmat']) is str
+            if p['weights_from_invcovmat'].lower() in ['true','yes']:
+                self.weights_from_covmat = False
+                self.weights_from_invcovmat = True
 
 
         # recompute_covmat_for_ndeproj is a flagthat, when it is on, includes the number of deprojected components

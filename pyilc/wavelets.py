@@ -6,8 +6,63 @@ from astropy.io import fits
 import os
 import matplotlib
 
-
 import h5py #Fiona - we could make this optional if we don't want to include other dependencies
+
+
+from numba import njit,prange
+
+@njit(parallel=True)
+def jit_linsolve(A, b):
+    m = A.shape[0]
+    n=A.shape[-1]
+    k=b.shape[-1]
+    ret = np.empty((m, n,k))
+    for i in prange(m):
+        ret[i, :] = np.linalg.solve(A[i], b)
+    return ret
+
+def my_numba_solver(a,b):
+    return jit_linsolve(a,b)
+
+@njit(parallel=True)
+def jit_linsolve_parallelb(A, b):
+    m = A.shape[0]
+    n=A.shape[-1]
+    k=b.shape[-1]
+    ret = np.empty((m, k))
+    for i in prange(m):
+        ret[i, :] = np.linalg.solve(A[i], b[i])
+    return ret
+
+def my_numba_solver_parallelb(a,b):
+    return jit_linsolve_parallelb(a,b)
+
+@njit(parallel=True)
+def jit_det(A,):
+    m = A.shape[0]
+    n=A.shape[0]
+    ret = np.empty((m))
+    for i in prange(m):
+        ret[i] = np.linalg.det( A[i])
+    #ret = np.einsum('ajp,bj->abp', a, b)
+    return ret
+
+def numba_det(a,):
+    return jit_det(a,)
+
+@njit(parallel=True)
+def jit_matmul(A,b):
+    m = A.shape[0]
+    n=A.shape[1]
+    ret = np.empty((m,n,n))
+    for i in prange(m):
+        ret[i] = np.dot(A[i],b)
+    #ret = np.einsum('ajp,bj->abp', a, b)
+    return ret
+
+def numba_matmul(a,b):
+    return jit_matmul(a,b)
+
 
 matplotlib.use('pdf')
 matplotlib.rc('font', family='serif', serif='cm10')
@@ -25,7 +80,8 @@ explicitly constructed:
 - Gaussian needlets:
   - Planck 2015 NILC y-map needlets
   - Planck 2016 GNILC dust map needlets
-- cosine needlets [TODO]
+- cosine needlets 
+- Top-hat needlets
 - scale-discretized wavelets [TODO]
 
 relevant parameters:
@@ -118,8 +174,8 @@ class Wavelets(object):
         self.ell = ells
         return self.ell, self.filters
 
-    # scale-discretized wavelets
-    def ScaleDiscretizedWavelets(self,ellboundaries =None):
+    # tophat wavelets
+    def TopHats(self,ellboundaries =None):
 
         # ellboundaries need to be in strictly increasing order, otherwise you'll get nonsense
         assert ellboundaries[0]==0
@@ -239,8 +295,8 @@ class scale_info(object):
             ell, filts = wv.TopHatHarmonic(info.ellbins)
         elif info.wavelet_type == 'CosineNeedlets':
             ell, filts = wv.CosineNeedlets(ellmin = info.ellmin,ellpeaks = info.ellpeaks)
-        elif info.wavelet_type == 'ScaleDiscretizedWavelets':
-            ell, filts = wv.ScaleDiscretizedWavelets(ellboundaries = info.ellboundaries)
+        elif info.wavelet_type == 'TopHats':
+            ell, filts = wv.TopHats(ellboundaries = info.ellboundaries)
         else:
             raise NotImplementedError
         # compute effective number of modes associated with each filter (on the full sky)
@@ -431,6 +487,205 @@ class scale_info(object):
         print('done computing all covariance maps at scale'+str(j),flush=True)
         return cov_maps_temp
 
+    def compute_inv_covariance_at_scale_j(self,info,j,FWHM_pix):
+
+            t1=time.time()
+            if info.mask_before_covariance_computation is not None:
+
+                dgraded_mask = hp.ud_grade(info.mask_before_covariance_computation,self.N_side_to_use[j])
+                dgraded_mask[dgraded_mask!=0]=1
+                if np.sum(dgraded_mask)== 0:
+                    assert self.N_side_to_use[j] < 256
+                    mask1 = hp.ud_grade(info.mask_before_covariance_computation,256)
+                    dgraded_mask = hp.ud_grade(mask1, self.N_side_to_use[j])
+                    dgraded_mask[dgraded_mask!=0]=1
+                    assert np.sum(dgraded_mask)>0
+                dgraded_mask = dgraded_mask.astype(bool)
+            else:
+                dgraded_mask = np.ones(self.N_pix_to_use[j],dtype='bool')
+
+            # for each filter scale, compute (or load) maps of the smoothed real-space frequency-frequency covariance matrix using the Gaussian FWHMs
+            cov_maps_temp = []
+            flag=True
+            t1=time.time()
+            # First we try to load the covmats
+            for a in range(info.N_freqs):
+                    start_at = a
+                    #if info.cross_ILC:
+                     #   start_at = 0
+                    for b in range(start_at, info.N_freqs):
+                        if (self.freqs_to_use[j][a] == True) and (self.freqs_to_use[j][b] == True and flag==True):
+                            exists,cov_filename = self.load_covmap(a,b,j,info,query_exists = True)
+                            if exists:
+                                cov_maps_temp.append(  self.load_covmap(a,b,j,info))
+                            else:
+                                print('needlet coefficient covariance map not previously computed; computing all covariance maps at scale '+str(j)+' now...',flush=True)
+                                flag=False
+                                break
+            # If they didn't exist, we calculate them:
+            if flag == False:
+                    # Calculate the covmats
+                    cov_maps_temp = self.compute_covariance_at_scale_j(info,j,FWHM_pix)
+            else:
+                print('needlet coefficient covariance map already exists at scale',j,":", cov_filename,flush=True)
+
+            print("got covmats in",time.time()-t1,flush=True)
+
+            covmat_temp = np.zeros((int(self.N_freqs_to_use[j]),int(self.N_freqs_to_use[j]), int(self.N_pix_to_use[j])))
+            count=0
+            for a in range(np.sum(self.freqs_to_use[j])):
+                for b in range(a, np.sum(self.freqs_to_use[j])):
+                    covmat_temp[a,b] = cov_maps_temp[count] #by construction we're going through inv_cov_maps_temp in the same order as it was populated when computed (see below)
+                    if a != b:
+                        covmat_temp[b,a] = covmat_temp[a,b] #symmetrize
+                    count+=1
+            covmat_temp_sliced = covmat_temp[:,:,dgraded_mask]
+            len_unmasked_pix = covmat_temp_sliced.shape[-1]
+            t1=time.time()
+            print('inverting covmat',flush=True)
+            inv_covmat_sliced = np.linalg.inv(np.transpose(covmat_temp_sliced,(2,0,1)))
+            print("inverted covmat in",time.time()-t1,flush=True)
+            inv_covmat2_sliced = np.transpose(inv_covmat_sliced, axes=[1,2,0]) #new dim freq, freq, pix
+            inv_covmat_sliced = inv_covmat2_sliced
+            print("checking inversion",flush=True)
+            t1=time.time()
+            assert np.allclose(np.einsum('ijp,jkp->pik', inv_covmat_sliced, covmat_temp_sliced),np.transpose(np.repeat(np.eye(self.N_freqs_to_use[j])[:,:,None],len_unmasked_pix,axis=2),(2,0,1)), rtol=1.e-2, atol=1.e-2), "covmat inversion failed for scale "+str(j) 
+            print("inversion checked in",time.time()-t1,flush=True)
+            count=0
+            print("invcovmatshape is",inv_covmat_sliced.shape,flush=True)
+            for a in range(info.N_freqs):
+                if (self.freqs_to_use[j][a] == True):
+                    a_min = a
+                    break
+            inv_covmat = np.zeros((int(self.N_freqs_to_use[j]),int(self.N_freqs_to_use[j]), int(self.N_pix_to_use[j])))
+            inv_covmat[:,:,dgraded_mask] = inv_covmat_sliced
+            inv_cov_maps_temp = []
+            for a in range(info.N_freqs):
+                for b in range(a, info.N_freqs):
+                        if (self.freqs_to_use[j][a] == True) and (self.freqs_to_use[j][b] == True):
+                            # inv_cov_maps_temp is in order 00, 01, 02, ..., 0(N_freqs_to_use[j]-1), 11, 12, ..., 1(N_freqs_to_use[j]-1), 22, 23, ...
+                            inv_cov_maps_temp.append( inv_covmat[a-a_min][b-a_min]) #by construction we're going through cov_maps_temp in the same order as it was populated above
+
+                            self.save_invcovmap(a,b,j,info,inv_cov_maps_temp[count])
+                            print("saving invcov",a,b,flush=True)
+                            count+=1
+            return inv_cov_maps_temp 
+
+    def weights_from_invcovmat_at_scale_j(self,info,j,inv_cov_maps_temp,A_mix,resp_tol):
+        print("getting weights from invcovmat",flush=True)
+
+
+        subtract_comp = 0
+        subtract_columns = []
+        for ncomp in range(A_mix.shape[1]):
+            if np.all(A_mix[:,ncomp]==0):
+                assert not ncomp == 0
+                subtract_columns += [ncomp]
+                subtract_comp += 1
+        A_mix = np.delete(A_mix,tuple(subtract_columns),axis=1)
+
+
+        if type(info.N_deproj) is int:
+            N_deproj = info.N_deproj
+        else:
+            N_deproj = info.N_deproj[j]
+        N_deproj = N_deproj - subtract_comp
+
+        N_comps = (N_deproj + 1)
+        for a in range(info.N_freqs):
+            if (self.freqs_to_use[j][a] == True):
+                a_min = a
+                break
+        # get the mask that we don't care about computing outside of:
+        t1=time.time()
+        if info.mask_before_covariance_computation is not None:
+
+            dgraded_mask = hp.ud_grade(info.mask_before_covariance_computation,self.N_side_to_use[j])
+            dgraded_mask[dgraded_mask!=0]=1
+            if np.sum(dgraded_mask)== 0:
+                assert self.N_side_to_use[j] < 256
+                mask1 = hp.ud_grade(info.mask_before_covariance_computation,256)
+                dgraded_mask = hp.ud_grade(mask1, self.N_side_to_use[j])
+                dgraded_mask[dgraded_mask!=0]=1
+                assert np.sum(dgraded_mask)>0
+            dgraded_mask = dgraded_mask.astype(bool)
+        else:
+            dgraded_mask = np.ones(self.N_pix_to_use[j],dtype='bool')
+
+        ### for each filter scale, perform cov matrix inversion and compute maps of the ILC weights using the inverted cov matrix maps
+
+        ### construct the matrix Q_{alpha beta} defined in Eq. 30 of McCarthy & Hill 2023 for each pixel at this wavelet scale and evaluate Eq. 29 to get weights ###
+
+        t1=time.time()
+        inv_covmat_temp = np.zeros((int(self.N_freqs_to_use[j]),int(self.N_freqs_to_use[j]), int(self.N_pix_to_use[j])))
+        count=0
+
+        for a in range(np.sum(self.freqs_to_use[j])):
+            for b in range(a, np.sum(self.freqs_to_use[j])):
+              #  if (self.freqs_to_use[j][a] == True) and (self.freqs_to_use[j][b] == True):
+                    # inv_cov_maps_temp is in order 00, 01, 02, ..., 0(N_freqs_to_use[j]-1), 11, 12, ..., 1(N_freqs_to_use[j]-1), 22, 23, ...
+                    inv_covmat_temp[a,b] = inv_cov_maps_temp[count] #by construction we're going through inv_cov_maps_temp in the same order as it was populated when computed (see below)
+                    if a != b:
+                        inv_covmat_temp[b,a] = inv_covmat_temp[a,b] #symmetrize
+                    count+=1
+
+        print("defined invcovmat temp in",time.time()-t1,flush=True)
+        print("A_MIX is",A_mix,flush=True)
+
+        inv_covmat_temp_sliced =  inv_covmat_temp[:,:,dgraded_mask!=0]
+        len_unmasked_pix = inv_covmat_temp_sliced.shape[-1]
+        t1=time.time()
+        tmp1 = np.zeros((N_comps,self.N_freqs_to_use[j],len_unmasked_pix))
+        t1=time.time()
+        tmp1 = np.einsum('ai,jip->ajp', np.transpose(A_mix), inv_covmat_temp_sliced)
+        print("got tmp1 in ",time.time()-t1,"shape is",tmp1.shape,flush=True)
+        t1=time.time()
+        Qab_pix = np.einsum('ajp,bj->abp', tmp1, np.transpose(A_mix))
+        print("got Qab in",time.time()-t1,"shape is",Qab_pix.shape,flush=True)
+        # compute weights
+        t1=time.time()
+        tempvec = np.zeros((N_comps, len_unmasked_pix))
+        if (N_comps == 1):
+            tempvec = np.ones((0,len_unmasked_pix))
+        else:
+            for a in range(N_comps):
+                QSa_temp = np.delete(np.delete(Qab_pix, a, 0), 0, 1) #remove the a^th row and zero^th column
+                print(QSa_temp.shape,Qab_pix.shape,flush=True)
+                tempvec[a] = (-1.0)**float(a) * numba_det(np.transpose(QSa_temp,(2,0,1)))
+        print("got tempvec in",time.time()-t1,flush=True)
+        t1=time.time()
+        tmp2 = np.einsum('ia,ap->ip', A_mix, tempvec)
+        print("got tmp2 in",time.time()-t1,flush=True)
+        t1=time.time()
+        tmp3 = np.zeros((self.N_freqs_to_use[j],len_unmasked_pix))
+        tmp3 =  np.einsum('jip,ip->jp', inv_covmat_temp_sliced,tmp2)
+        print("got tmp3 in",time.time()-t1,flush=True)
+        t1=time.time()
+
+        weights_sliced = 1.0/numba_det(np.transpose(Qab_pix,(2,0,1)))[:,None]*np.transpose(tmp3) #N.B. 'weights' here only includes channels that passed beam_thresh criterion,
+
+        print("got weights in",time.time()-t1,flush=True)
+        t1=time.time()
+        # response verification
+        response = np.einsum('pi,ia->ap', weights_sliced, A_mix) #dimensions N_comps x N_pix_to_use[j]
+        optimal_response_preserved_comp = np.ones(len_unmasked_pix)  #preserved component, want response=1
+        optimal_response_deproj_comp = np.zeros((N_comps-1, len_unmasked_pix))#deprojected components, want response=0
+        #del(covmat_temp_transpose)
+        if not (np.absolute(response[0]-optimal_response_preserved_comp) < resp_tol).all():
+            print(f'preserved component response failed at wavelet scale {j}',flush=True)
+            #quit()
+        if response.shape[0]>1:
+            if not (np.absolute(response[1:]-optimal_response_deproj_comp) < resp_tol).all():
+                print(f'deprojected component response failed at wavelet scale {j}',np.max(np.absolute(response[1:]-optimal_response_deproj_comp) ),flush=True)
+             #   quit()
+        print("done response verification in",time.time()-t1,flush=True)
+        t1=time.time()
+        weights = np.zeros((int(self.N_pix_to_use[j]),int(self.N_freqs_to_use[j])))
+        weights[dgraded_mask] = weights_sliced
+        print("distributed weights in",time.time()-t1,flush=True)
+        return weights
+
+
     def weights_from_covmat_at_scale_j(self,info,j,cov_maps_temp,A_mix,resp_tol):
         print("getting weights from covmat",flush=True)
 
@@ -468,88 +723,93 @@ class scale_info(object):
                 dgraded_mask = hp.ud_grade(mask1, self.N_side_to_use[j])
                 dgraded_mask[dgraded_mask!=0]=1
                 assert np.sum(dgraded_mask)>0
+            dgraded_mask = dgraded_mask.astype(bool)
+            len_unmasked_pix = np.sum(dgraded_mask)
+            apply_mask = True
+            print("did all the mask stuff in",time.time()-t1,flush=True)
         else:
-            dgraded_mask = np.ones(self.N_pix_to_use[j])
-        print("defined mask in",time.time()-t1,flush=True)
-
+            len_unmasked_pix = self.N_pix_to_use[j]
+            apply_mask = False
         ### for each filter scale, perform cov matrix inversion and compute maps of the ILC weights using the inverted cov matrix maps
-        weights = np.zeros((int(self.N_pix_to_use[j]),int(self.N_freqs_to_use[j])))
 
         ### construct the matrix Q_{alpha beta} defined in Eq. 30 of McCarthy & Hill 2023 for each pixel at this wavelet scale and evaluate Eq. 29 to get weights ###
 
         t1=time.time()
-        covmat_temp = np.zeros((int(self.N_freqs_to_use[j]),int(self.N_freqs_to_use[j]), int(self.N_pix_to_use[j])))
+        covmat_temp_sliced = np.zeros((int(self.N_freqs_to_use[j]),int(self.N_freqs_to_use[j]), len_unmasked_pix))
         count=0
-        '''
-        for a in range(info.N_freqs):
-            for b in range(a, info.N_freqs):
-                if (self.freqs_to_use[j][a] == True) and (self.freqs_to_use[j][b] == True):
-                    # inv_cov_maps_temp is in order 00, 01, 02, ..., 0(N_freqs_to_use[j]-1), 11, 12, ..., 1(N_freqs_to_use[j]-1), 22, 23, ...
-                    covmat_temp[a-a_min][b-a_min] = cov_maps_temp[count] #by construction we're going through inv_cov_maps_temp in the same order as it was populated when computed (see below)
-                    if (a-a_min) != (b-a_min):
-                        covmat_temp[b-a_min][a-a_min] = covmat_temp[a-a_min][b-a_min] #symmetrize
-                    count+=1
-        '''
-
         for a in range(np.sum(self.freqs_to_use[j])):
             for b in range(a, np.sum(self.freqs_to_use[j])):
               #  if (self.freqs_to_use[j][a] == True) and (self.freqs_to_use[j][b] == True):
-                    # inv_cov_maps_temp is in order 00, 01, 02, ..., 0(N_freqs_to_use[j]-1), 11, 12, ..., 1(N_freqs_to_use[j]-1), 22, 23, ...
-                    covmat_temp[a,b] = cov_maps_temp[count] #by construction we're going through inv_cov_maps_temp in the same order as it was populated when computed (see below)
+                    # cov_maps_temp is in order 00, 01, 02, ..., 0(N_freqs_to_use[j]-1), 11, 12, ..., 1(N_freqs_to_use[j]-1), 22, 23, ...
+                    if apply_mask:
+                        covmat_temp_sliced[a,b] = cov_maps_temp[count][dgraded_mask] #by construction we're going through inv_cov_maps_temp in the same order as it was populated when computed (see below)
+                    else:
+                        covmat_temp_sliced[a,b] = cov_maps_temp[count]
                     if a != b:
-                        covmat_temp[b,a] = covmat_temp[a,b] #symmetrize
+                        covmat_temp_sliced[b,a] = covmat_temp_sliced[a,b] #symmetrize
                     count+=1
+        print("defined covmattemp matrix in",time.time()-t1,flush=True)
 
-        covmat_temp_transpose=np.transpose(covmat_temp,(2,1,0))
-        print("defined covmat temp in",time.time()-t1,flush=True)
-        print("A_MIX is",A_mix,flush=True)
+        covmat_temp_transpose = np.transpose(covmat_temp_sliced,(2,1,0))
+        del(covmat_temp_sliced)
 
-
-        tmp1 = np.zeros((N_comps,self.N_freqs_to_use[j],self.N_pix_to_use[j]))
+        tmp1 = np.zeros((N_comps,self.N_freqs_to_use[j],len_unmasked_pix))
         t1=time.time()
-        tmp1[:,:,dgraded_mask!=0] = np.transpose(np.linalg.solve(covmat_temp_transpose[dgraded_mask!=0],A_mix[None,:,:])) # this is the longest calculation
-        print("got tmp1 in ",time.time()-t1,flush=True)
+        #tmp1 = np.linalg.solve(covmat_temp_transpose,A_mix[None,:,:]) # this is the longest calculation
         t1=time.time()
-        Qab_pix = np.einsum('ajp,bj->abp', tmp1, np.transpose(A_mix))
+        tmp1 = my_numba_solver(covmat_temp_transpose,A_mix[:,:]) # this is the longest calculation
+        print("got tmp1 numba in ",time.time()-t1,flush=True)
+        tmp1 = np.transpose(tmp1)
+        t1=time.time()
+        #Qab_pix = np.einsum('ajp,bj->abp', tmp1, np.transpose(A_mix))
+        Qab_pix = np.transpose(numba_matmul(np.transpose(tmp1,(2,0,1)),A_mix),(1,2,0))
         print("got Qab in",time.time()-t1,flush=True)
         # compute weights
         t1=time.time()
-        tempvec = np.zeros((N_comps, int(self.N_pix_to_use[j])))
+        tempvec = np.zeros((N_comps,len_unmasked_pix))
         # treat the no-deprojection case separately, since QSa_temp is empty in this case
         if (N_comps == 1):
-            tempvec[0] = [1.0]*int(self.N_pix_to_use[j])
+            tempvec[0] = np.ones(len_unmasked_pix)
         else:
             for a in range(N_comps):
                 QSa_temp = np.delete(np.delete(Qab_pix, a, 0), 0, 1) #remove the a^th row and zero^th column
-                tempvec[a] = (-1.0)**float(a) * np.linalg.det(np.transpose(QSa_temp,(2,0,1)))
+                tempvec[a] = (-1.0)**float(a) * numba_det(np.transpose(QSa_temp,(2,0,1)))
         print("got tempvec in",time.time()-t1,flush=True)
         t1=time.time()
         tmp2 = np.einsum('ia,ap->ip', A_mix, tempvec)
         print("got tmp2 in",time.time()-t1,flush=True)
         t1=time.time()
-        tmp3 = np.zeros((self.N_freqs_to_use[j],self.N_pix_to_use[j]))
-        tmp3[:,dgraded_mask!=0] =  np.transpose(np.linalg.solve(covmat_temp_transpose[dgraded_mask!=0],np.transpose(tmp2[:,dgraded_mask!=0])))
+        #tmp3 =  np.transpose(np.linalg.solve(covmat_temp_transpose,np.transpose(tmp2)))
+        tmp3 =  np.transpose(my_numba_solver_parallelb(covmat_temp_transpose,np.transpose(tmp2)))
+        
         print("got tmp3 in",time.time()-t1,flush=True)
         t1=time.time()
 
-        weights[dgraded_mask!=0] = 1.0/np.linalg.det(np.transpose(Qab_pix[:,:,dgraded_mask!=0],(2,0,1)))[:,None]*np.transpose(tmp3[:,dgraded_mask!=0]) #N.B. 'weights' here only includes channels that passed beam_thresh criterion,
+        weights_sliced = 1.0/numba_det(np.transpose(Qab_pix,(2,0,1)))[:,None]*np.transpose(tmp3) #N.B. 'weights' here only includes channels that passed beam_thresh criterion,
 
         print("got weights in",time.time()-t1,flush=True)
         t1=time.time()
         # response verification
-        response = np.einsum('pi,ia->ap', weights, A_mix) #dimensions N_comps x N_pix_to_use[j]
-        optimal_response_preserved_comp = np.ones(int(self.N_pix_to_use[j]))  #preserved component, want response=1
-        optimal_response_deproj_comp = np.zeros((N_comps-1, int(self.N_pix_to_use[j]))) #deprojected components, want response=0
+        response = np.einsum('pi,ia->ap', weights_sliced, A_mix) #dimensions N_comps x N_pix_to_use[j]
+        optimal_response_preserved_comp = np.ones(len_unmasked_pix)#preserved component, want response=1
+        optimal_response_deproj_comp = np.zeros((N_comps-1, len_unmasked_pix)) #deprojected components, want response=0
         del(covmat_temp_transpose)
-        if not (np.absolute(response[0,dgraded_mask!=0]-optimal_response_preserved_comp[dgraded_mask!=0]) < resp_tol).all():
+        if not (np.absolute(response[0,]-optimal_response_preserved_comp) < resp_tol).all():
             print(f'preserved component response failed at wavelet scale {j}',flush=True)
             #quit()
         if response.shape[0]>1:
-            if not (np.absolute(response[1:,dgraded_mask!=0]-optimal_response_deproj_comp[:,dgraded_mask!=0]) < resp_tol).all():
-                print(f'deprojected component response failed at wavelet scale {j}',np.max(np.absolute(response[1:,dgraded_mask!=0]-optimal_response_deproj_comp[:,dgraded_mask!=0]) ),flush=True)
+            if not (np.absolute(response[1:,]-optimal_response_deproj_comp) < resp_tol).all():
+                print(f'deprojected component response failed at wavelet scale {j}',np.max(np.absolute(response[1:,]-optimal_response_deproj_comp) ),flush=True)
              #   quit()
         print("done response verification in",time.time()-t1,flush=True)
-        return weights
+        t1=time.time()
+        if apply_mask:
+            weights = np.zeros((int(self.N_pix_to_use[j]),int(self.N_freqs_to_use[j])))
+            weights[dgraded_mask] = weights_sliced
+            print("broadcast weights in",time.time()-t1,flush=True)
+            return weights
+        else:
+            return weights_sliced
 
     def save_weights_fits(self,weights,j,info):
             count=0
@@ -588,6 +848,7 @@ class scale_info(object):
 
 
     def compute_weights_at_scale_j_from_covmat(self,j,info,resp_tol,map_images = False):
+
             # Computes the ILC weights at scale j  without ever computing the invcovmat (using np.linalg.solv instead of np.linalg.inv)
 
             t1=time.time()
@@ -646,6 +907,68 @@ class scale_info(object):
                 self.save_weights_at_scale_j(weights,j,info)
             return weights
 
+    def compute_weights_at_scale_j_from_invcovmat(self,j,info,resp_tol,map_images = False):
+            print("computin gfrom invcov",flush=True)
+            # Computes the ILC weights at scale j  by computing the invcovmat (using np.linalg.inv and np.matmul instead of np.linalg.solve)
+
+            t1=time.time()
+
+            if type(info.N_deproj) is int:
+                N_deproj = info.N_deproj
+                if N_deproj>0:
+                    ILC_deproj_comps = info.ILC_deproj_comps
+            else:
+                N_deproj = info.N_deproj[j]
+                if N_deproj>0:
+                    ILC_deproj_comps = info.ILC_deproj_comps[j]
+
+            # Get the mixing matrix (the matrix of SEDs)
+            A_mix = self.mixing_matrix_at_scale_j(j,info)
+
+            ##############################
+            ##############################
+            # for each filter scale, compute (or load) maps of the smoothed real-space frequency-frequency inverse covariance matrix using the Gaussian FWHMs
+            cov_maps_temp = []
+            flag=True
+            # First we try to load the covmats
+            t1=time.time()
+            inv_cov_maps_temp = []
+            for a in range(info.N_freqs):
+                    start_at = a
+                    #if info.cross_ILC:
+                     #   start_at = 0
+                    for b in range(start_at, info.N_freqs):
+                        if (self.freqs_to_use[j][a] == True) and (self.freqs_to_use[j][b] == True and flag==True):
+                            exists,inv_cov_filename = self.load_invcovmap(a,b,j,info,query_exists = True)
+                            if exists:
+                                inv_cov_maps_temp.append(  self.load_invcovmap(a,b,j,info))
+                            else:
+                                print(inv_cov_filename,'does not exist',flush=True)
+                                print('needlet coefficient inverse covariance map not previously computed; computing all inverse covariance maps at scale '+str(j)+' now...',flush=True)
+                                flag=False
+                                break
+            # If they didn't exist, we calculate them:
+            if flag == False:
+                    # Calculate the covmats
+                    inv_cov_maps_temp = self.compute_inv_covariance_at_scale_j(info,j,self.FWHM_pix)
+            else:
+                print('needlet coefficient inverse covariance map already exists at scale',j,":", inv_cov_filename,flush=True)
+
+            print("got inv covmats in",time.time()-t1,flush=True)
+
+            # compute the weights
+            t1=time.time()
+            weights = self.weights_from_invcovmat_at_scale_j(info,j,inv_cov_maps_temp,A_mix,resp_tol)
+            print("calcweights in",time.time()-t1,flush=True)
+
+            del inv_cov_maps_temp #free up memory
+            print('done computing all ILC weights at scale '+str(j),flush=True)
+
+            ##########################
+            # only save these maps of the ILC weights if requested
+            if (info.save_weights == 'yes' or info.save_weights == 'Yes' or info.save_weights == 'YES'):
+                self.save_weights_at_scale_j(weights,j,info)
+            return weights
 
 
     def load_weights_at_scale_j_fits(self,info,j,query_exists=False):
@@ -840,6 +1163,67 @@ class scale_info(object):
 
             f.close()
 
+    def fits_load_invcovmap(self,frequency1,frequency2,scale,info,query_exists = False):
+        filename = _inv_cov_filename(info,frequency1,frequency2,scale)
+        exists = os.path.isfile(filename)
+        if query_exists:
+            return exists,filename
+        elif exists:
+            return hp.read_map(filename, dtype=np.float64)
+
+    def hdf5_load_invcovmap(self,frequency1,frequency2,scale,info,query_exists = False):
+
+        filename_invcovmaps_dataset = info.invcovmaps_hdf5_filename
+
+        if query_exists:
+
+            if not os.path.isfile(filename_invcovmaps_dataset):
+                exists = False
+            else:
+                f = h5py.File(filename_invcovmaps_dataset,'r')
+                if "freq"+str(frequency1)+'_'+str(frequency2)+'_scale'+str(scale) not in f.keys():
+                    exists = False
+                else:
+                    exists = True
+                f.close()
+            return exists,filename_invcovmaps_dataset
+
+        else:
+            f = h5py.File(filename_invcovmaps_dataset,'r')
+            invcovmap = f["freq"+str(frequency1)+'_'+str(frequency2)+'_scale'+str(scale)][()]
+
+            f.close()
+            return invcovmap
+
+
+    def load_invcovmap(self,frequency1,frequency2,scale,info,query_exists = False):
+
+        if info.save_as_fits:
+
+            return self.fits_load_invcovmap(frequency1,frequency2,scale,info,query_exists = query_exists)
+
+        elif info.save_as_hdf5:
+
+            return self.hdf5_load_invcovmap(frequency1,frequency2,scale,info,query_exists = query_exists)
+
+    def save_invcovmap(self,frequency1,frequency2,scale,info,invcovmap,query_exists = False):
+
+        if info.save_as_fits:
+
+            filename = _inv_cov_filename(info,frequency1,frequency2,scale)
+
+            hp.write_map(filename, invcovmap,nest=False, dtype=np.float64, overwrite=False)
+
+        elif info.save_as_hdf5:
+
+            filename_invcovmaps_dataset = info.invcovmaps_hdf5_filename
+
+            f = h5py.File(filename_invcovmaps_dataset,'a')
+
+            f.create_dataset("freq"+str(frequency1)+'_'+str(frequency2)+'_scale'+str(scale),invcovmap.shape,data=invcovmap)
+
+            f.close()
+
     def ILC_at_scale_j(self,j,info,resp_tol,map_images=False,maps_for_weights_needlets=None):
         ## Performs the full ILC at scale j
 
@@ -859,7 +1243,10 @@ class scale_info(object):
         weights_exist = self.load_weights_at_scale_j(info,j,query_exists = True)
         if (weights_exist == False):
             print("weights do not exist; recalculating weights at scale",j)
-            weights = self.compute_weights_at_scale_j_from_covmat(j,info,resp_tol,map_images = map_images)
+            if info.weights_from_covmat: 
+                weights = self.compute_weights_at_scale_j_from_covmat(j,info,resp_tol,map_images = map_images)
+            else:
+                weights = self.compute_weights_at_scale_j_from_invcovmat(j,info,resp_tol,map_images = map_images)
         else:
             print("weights exist; loading weights at scale",j)
             weights = self.load_weights_at_scale_j(info,j)
@@ -867,6 +1254,7 @@ class scale_info(object):
 
         ##########################
         # apply these ILC weights to the needlet coefficient maps to get the per-needlet-scale ILC maps
+        t1=time.time()
         ILC_map_temp = np.zeros(int(self.N_pix_to_use[j]))
         count=0
         for a in range(info.N_freqs):
@@ -877,7 +1265,7 @@ class scale_info(object):
                     wavelet_coeff_map =maps_for_weights_needlets[a][j]
                 ILC_map_temp += weights[:,count] * wavelet_coeff_map
                 count+=1
-        print("finished summing at scale",j,flush=True)
+        print("finished summing at scale",j,time.time()-t1,flush=True)
         return ILC_map_temp
 
 
@@ -1008,33 +1396,41 @@ def waveletize_input_maps(info,scale_info_wvs,wv,map_images = False):
         N_side_to_use = scale_info_wvs.N_side_to_use
         N_pix_to_use = scale_info_wvs.N_pix_to_use
 
+        have_read_input_maps = False
+
         for i in range(info.N_freqs):
             # N.B. maps are assumed to be in strictly decreasing order of FWHM! i.e. info.beams[-1] is highest-resolution beam
-            print("waveletizing frequency ", i, "...",flush=True)
             wv_maps_temp = []
             flag=True
             for j in range(wv.N_scales):
                 if freqs_to_use[j][i] == True:
                     exists,filename = scale_info_wvs.load_wavelet_coeff_map(i,j,info,query_exists = True)
                     if exists:
-                        print('needlet coefficient map already exists at scale'+str(j)+' :', filename,flush=True)
+                        #print('needlet coefficient map already exists at scale'+str(j)+' :', filename,flush=True)
                         wv_maps_temp.append( scale_info_wvs.load_wavelet_coeff_map(i,j,info))
                     else:
                         print('needlet coefficient map not previously computed; computing all maps for frequency '+str(i)+' now...',flush=True)
                         flag=False
                         break
             if flag == False:
+                if not have_read_input_maps:
+                    t1=time.time()
+                    info.read_maps()
+                    print("read in maps in",time.time()-t1)
+                    have_read_input_maps = True
+                print("waveletizing frequency ", i, "...",flush=True)
+
                 wv_maps_temp = waveletize(inp_map=(info.maps)[i], wv=wv, rebeam=True, inp_beam=(info.beams)[i], new_beam=info.common_beam, wv_filts_to_use=freqs_to_use[:,i], N_side_to_use=N_side_to_use)
                 for j in range(wv.N_scales):
                     if freqs_to_use[j][i] == True:
                         scale_info_wvs.save_wavelet_coeff_map(i,j,info,wv_maps_temp[j],season=None)
+                print("done waveletizing frequency ", i, "...",flush=True)
             if map_images == True:
                 for j in range(wv.N_scales):
                     if freqs_to_use[j][i] == True:
                         plt.clf()
                         hp.mollview(wv_maps_temp[j], unit="K", title="Needlet Coefficient Map, Frequency "+str(i)+" Scale "+str(j), min=np.mean(wv_maps_temp[j])-2*np.std(wv_maps_temp[j]), max=np.mean(wv_maps_temp[j])+2*np.std(wv_maps_temp[j]))
                         plt.savefig(info.output_dir+info.output_prefix+'_needletcoeffmap_freq'+str(i)+'_scale'+str(j)+'.pdf')
-            print("done waveletizing frequency ", i, "...",flush=True)
             if info.cross_ILC:
                 print("doing crossILC waveletizing now")
 
@@ -1094,6 +1490,22 @@ def _cov_filename(info,freq1,freq2,scale):
         cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_covmap_freq'+str(a)+'_freq'+str(b)+'_scale'+str(j)+'_crossILC'*info.cross_ILC+'_Ndeproj'+str(N_deproj)+'.fits'
 
     return cov_filename
+
+def _inv_cov_filename(info,freq1,freq2,scale):
+
+    a = freq1
+    b = freq2
+    j = scale
+
+    inv_cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_invcovmap_freq'+str(a)+'_freq'+str(b)+'_scale'+str(j)+'_crossILC'*info.cross_ILC+'.fits'
+    if info.recompute_covmat_for_ndeproj:
+        if type(info.N_deproj) is int:
+            N_deproj = info.N_deproj
+        else:
+            N_deproj = info.N_deproj[j]
+        inv_cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_invcovmap_freq'+str(a)+'_freq'+str(b)+'_scale'+str(j)+'_crossILC'*info.cross_ILC+'_Ndeproj'+str(N_deproj)+'.fits'
+
+    return inv_cov_filename
 
 def _ILC_scale_filename(info,j,scale_info_wvs):
 
@@ -1217,7 +1629,8 @@ def wavelet_ILC(wv=None, info=None,  resp_tol=1.e-3, map_images=False,return_ILC
 
         ILCscalefilename = _ILC_scale_filename(info,j,scale_info_wvs)
         # save the ILC at this scale for future use
-        hp.fitsfunc.write_map(ILCscalefilename,ILC_map_temp)
+        if not exists:
+            hp.fitsfunc.write_map(ILCscalefilename,ILC_map_temp)
         del(ILC_map_temp)
 
     # synthesize the per-needlet-scale ILC maps into the final combined ILC map (apply each needlet filter again and add them all together -- have to upgrade to all match the same Nside -- done in synthesize)
@@ -1464,10 +1877,10 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
             else:
                 for a in range(N_comps):
                     QSa_temp = np.delete(np.delete(Qab_pix, a, 0), 0, 1) #remove the a^th row and zero^th column
-                    tempvec[a] = (-1.0)**float(a) * np.linalg.det(np.transpose(QSa_temp,(2,0,1)))
+                    tempvec[a] = (-1.0)**float(a) * numba_det(np.transpose(QSa_temp,(2,0,1)))
             tmp2 = np.einsum('ia,ap->ip', A_mix, tempvec)
             tmp3 = np.einsum('jip,ip->jp', inv_covmat_temp, tmp2)
-            weights = 1.0/np.linalg.det(np.transpose(Qab_pix,(2,0,1)))[:,None] * np.transpose(tmp3) #N.B. 'weights' here only includes channels that passed beam_thresh criterion
+            weights = 1.0/numba_det(np.transpose(Qab_pix,(2,0,1)))[:,None] * np.transpose(tmp3) #N.B. 'weights' here only includes channels that passed beam_thresh criterion
             # response verification
             response = np.einsum('pi,ia->ap', weights, A_mix) #dimensions N_comps x N_pix_to_use[j]
             optimal_response_preserved_comp = np.ones(1)
