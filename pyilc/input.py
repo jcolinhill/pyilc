@@ -424,6 +424,19 @@ class ILCInfo(object):
             for component in p['deproject_from_channels'].keys():
                 self.deproject_from_channels[component] = p['deproject_from_channels'][component]
 
+
+        self.print_timing = False
+        if 'print_timing' in p.keys():
+            assert type(p['print_timing']) is str
+            if p['print_timing'].lower() in ['true','yes','t','y']:
+                self.print_timing = True
+
+        self.use_numba = True
+        if 'use_numba' in p.keys():
+            assert type (p['use_numba']) is str
+            if p['use_numba'].lower() in ['false','no','f','n']:
+                self.use_numba = False
+
         if 'save_as' in p.keys():
             if p['save_as'] == 'fits':
                  self.save_as_fits = True
