@@ -692,8 +692,6 @@ class scale_info(object):
             # First we try to load the covmats
             for a in range(info.N_freqs):
                     start_at = a
-                    #if info.cross_ILC:
-                     #   start_at = 0
                     for b in range(start_at, info.N_freqs):
                         if (self.freqs_to_use[j][a] == True) and (self.freqs_to_use[j][b] == True and flag==True):
                             exists,cov_filename = self.load_covmap(a,b,j,info,query_exists = True)
@@ -703,6 +701,7 @@ class scale_info(object):
                                 print('needlet coefficient covariance map not previously computed; computing all covariance maps at scale '+str(j)+' now...',flush=True)
                                 flag=False
                                 break
+
             # If they didn't exist, we calculate them:
             if flag == False:
                     # Calculate the covmats
@@ -933,7 +932,6 @@ class scale_info(object):
             return hp.read_map(filename, dtype=np.float64)
 
     def hdf5_load_covmap(self,frequency1,frequency2,scale,info,query_exists = False):
-
         filename_covmaps_dataset = info.covmaps_hdf5_filename
 
         if query_exists:
@@ -1426,6 +1424,7 @@ def wavelet_ILC(wv=None, info=None,  resp_tol=1.e-3, map_images=False,return_ILC
     # If you want to apply the weights to OTHER maps, calculate their wavelet coefficients here
     if info.apply_weights_to_other_maps:
          maps_for_weights_needlets=[]
+         info.read_maps()
          for i in range(info.N_freqs):
              print("waveletizing maps to apply weights", i,flush=True)
              maps_for_weights_needlets.append(waveletize(inp_map=(info.maps_for_weights)[i], wv=wv, rebeam=True, inp_beam=(info.beams)[i], new_beam=newbeam, wv_filts_to_use=scale_info_wvs.freqs_to_use[:,i], N_side_to_use=scale_info_wvs.N_side_to_use))
