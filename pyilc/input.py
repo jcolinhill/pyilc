@@ -9,7 +9,7 @@ module to read in relevant input specified by user
 ##########################
 # wavelet types implemented thus far
 # WV_TYPES = ['GaussianNeedlets','TopHatHarmonic']
-WV_TYPES = ['GaussianNeedlets','TopHatHarmonic','CosineNeedlets','ScaleDiscretizedWavelets'] # Fiona added CosineNeedlets
+WV_TYPES = ['GaussianNeedlets','TopHatHarmonic','CosineNeedlets','ScaleDiscretizedWavelets','TaperedTopHats'] # Fiona added CosineNeedlets
 ##########################
 
 ##########################
@@ -141,10 +141,18 @@ class ILCInfo(object):
             assert self.ellmin>=0, 'ellmin'
             assert 'GN_FWHM_arcmin' not in p.keys()
             assert 'ellboundaries' not in p.keys()
+        elif self.wavelet_type == 'TaperedTopHats':
+            self.ellboundaries = np.asarray(p['ellboundaries'])
+            self.taperwidths= np.asarray(p['taperwidths'])
+            assert len(self.ellboundaries)==len(self.taperwidths),"Ellboundaries!= taperwidths"
+            assert len(self.ellboundaries) == self.N_scales - 1, "ellboundaries"
+            assert all(ellpeak> 0. for ellpeak in self.ellboundaries), "ellboundaries"
+            assert 'GN_FWHM_arcmin' not in p.keys()
+            assert 'ellpeaks' not in p.keys()
         elif self.wavelet_type == 'ScaleDiscretizedWavelets':
             self.ellboundaries = np.asarray(p['ellboundaries'])
-            assert len(self.ellboundaries) == self.N_scales + 1, "ellpeaks"
-            assert all(ellpeak> 0. for ellpeak in self.ellboundaries[1:]), "ellpeaks"
+            assert len(self.ellboundaries) == self.N_scales + 1, "ellboundaries"
+            assert all(ellpeak> 0. for ellpeak in self.ellboundaries[1:]), "ellboundaries"
             assert self.ellboundaries[0]==0
             assert 'GN_FWHM_arcmin' not in p.keys()
             assert 'ellpeaks' not in p.keys()
@@ -269,11 +277,29 @@ class ILCInfo(object):
                 assert type(x) is str
                 if x.lower() == 'none':
                     self.maps_to_subtract[xind] = None
-
+        self.subtract_means_before_sums = False
+        if 'subtract_means_before_sums' in p.keys():
+            self.subtract_means_before_sums = p['subtract_means_before_sums']
+        self.subtract_mean = False
+        self.subtract_monopole = [False] * self.N_freqs
+        self.subtract_nside = [False] * self.N_freqs
+        if 'subtract_mean' in p.keys():
+            if type(p['subtract_mean'] ) is str:
+                sub_mean = self.N_freqs*[p['subtract_mean']]
+                print("made submean",sub_mean)
+            else:
+                sub_mean = p['subtract_mean']
+                print("made sub_mean",sub_mean)
+            assert len(sub_mean)== self.N_freqs
+            for x in range(self.N_freqs):
+                if 'monpoole' in sub_mean[x].lower():
+                    self.subtract_monopole[x] = True
+                
 
         self.freq_map_field = 0
         if 'freq_map_field' in p.keys():
-            self.freq_map_field = p['freq_map_field']
+            if p['freq_map_field'].lower() in ['true','yes'] :
+                self.freq_map_field = True
 
         # S1 and S2 maps for the cross-ILC
         if self.cross_ILC:
@@ -331,6 +357,33 @@ class ILCInfo(object):
         assert hp.pixelfunc.isnsideok(self.N_side, nest=True), "invalid N_side"
         self.N_pix = 12*self.N_side**2
 
+
+        if 'mean_by_dgrading' in p.keys():
+            if p['mean_by_dgrading'].lower() in ['true','yes']:
+                self.mean_by_upgrading = True
+                self.mean_by_smoothing = False
+            else:
+                self.mean_by_upgrading = False
+                self.mean_by_smoothing = True
+        else:
+            self.mean_by_smoothing = True
+            self.mean_by_upgrading = False
+        if self.mean_by_upgrading:
+            self.mean_nside = p['mean_nside']
+
+        self.ignore_offdiagonal = False
+        if 'ignore_offdiagonal' in p.keys():
+            if p['ignore_offdiagonal'].lower() in ['true','yes']:
+                self.ignore_offdiagonal = True
+                print("will be ignoring offdiagonal")
+
+        # do you want to be allowed to pass in higher N_side maps than you are working at? If so, 
+        # set allow_dgrading = 'true' in the input file. Default is false
+        self.allow_dgrading = False
+        if 'allow_dgrading' in p.keys():
+            if p['allow_dgrading'].lower() in ['true','yes']:
+                self.allow_dgrading = True
+
         # Do we only want to perform NILC on part of the sky? if so, include the mask
         self.mask_before_covariance_computation = None
         if 'mask_before_covariance_computation' in p.keys():
@@ -341,7 +394,19 @@ class ILCInfo(object):
                 self.mask_before_covariance_computation = hp.ud_grade(self.mask_before_covariance_computation,self.N_side)
                 self.mask_before_covariance_computation[self.mask_before_covariance_computation<1]=0
                 print("fsky after is",np.sum(self.mask_before_covariance_computation)/self.mask_before_covariance_computation.shape[0],flush=True)
-
+        # Do we only want to perform the waveletizing on part of the sky? If so , include this mask
+        self.mask_before_wavelet_computation = None
+        if 'mask_before_wavelet_computation' in p.keys():
+            self.mask_before_wavelet_computation= hp.fitsfunc.read_map(p['mask_before_wavelet_computation'][0],field=p['mask_before_wavelet_computation'][1])
+            assert hp.get_nside(self.mask_before_wavelet_computation) >= self.N_side
+            if hp.get_nside(self.mask_before_wavelet_computation) >self.N_side:
+                print("fsky before is",np.sum(self.mask_before_wavelet_computation)/self.mask_before_wavelet_computation.shape[0],flush=True)
+                self.mask_before_wavelet_computation= hp.ud_grade(self.mask_before_wavelet_computation,self.N_side)
+                self.mask_before_wavelet_computation[self.mask_before_wavelet_computation<1]=0
+                print("fsky after is",np.sum(self.mask_before_wavelet_computation)/self.mask_before_wavelet_computation.shape[0],flush=True)
+        
+            if len(self.mask_before_wavelet_computation[self.mask_before_wavelet_computation==0]>0):
+                assert self.mask_before_covariance_computation[self.mask_before_wavelet_computation==0].all()==0
 
         # ILC: component to preserve
         self.ILC_preserved_comp = p['ILC_preserved_comp']
@@ -356,7 +421,12 @@ class ILCInfo(object):
         if 'override_ILCbiastol_threshold' in p.keys():
             if p['override_ILCbiastol_threshold'].lower() in ['true','yes']:
                 self.override_ILCbiastol = True
-
+        self.realspace_kernels = None
+        if 'realspace_kernels' in p.keys():
+           self.realspace_kernels=p['realspace_kernels']
+           assert len(self.realspace_kernels)==self.N_scales
+           for x in self.realspace_kernels:
+               assert type(x) is float
 
         # ILC: component(s) to deproject (if any)
         self.N_deproj = p['N_deproj']
@@ -451,10 +521,14 @@ class ILCInfo(object):
         for i in range(self.N_freqs):
             # TODO: allow specification of nested or ring ordering (although will already work here if fits keyword ORDERING is present)
             temp_map = hp.fitsfunc.read_map(self.freq_map_files[i], field=self.freq_map_field)
-            assert len(temp_map) <= self.N_pix, "input map at higher resolution than specified N_side"
+            if not self.allow_dgrading:
+                 assert len(temp_map) <= self.N_pix, "input map at higher resolution than specified N_side"
             if (len(temp_map) == self.N_pix):
                 self.maps[i] = np.copy(temp_map)
             elif (len(temp_map) < self.N_pix):
+                # TODO: should probably upgrade in harmonic space to get pixel window correct
+                self.maps[i] = np.copy( hp.pixelfunc.ud_grade(temp_map, nside_out=self.N_side, order_out='RING', dtype=np.float64) )
+            elif (len(temp_map) > self.N_pix) and self.allow_dgrading:
                 # TODO: should probably upgrade in harmonic space to get pixel window correct
                 self.maps[i] = np.copy( hp.pixelfunc.ud_grade(temp_map, nside_out=self.N_side, order_out='RING', dtype=np.float64) )
         # if cross-ILC read in the S1 and S2 maps
@@ -464,9 +538,11 @@ class ILCInfo(object):
             for i in range(self.N_freqs):
                 # TODO: allow specification of nested or ring ordering (although will already work here if fits keyword ORDERING is present)
                 temp_map_s1 = hp.fitsfunc.read_map(self.freq_map_files_s1[i], field=self.freq_map_field)
-                assert len(temp_map_s1) <= self.N_pix, "input map at higher resolution than specified N_side"
+                if not self.allow_dgrading:
+                    assert len(temp_map_s1) <= self.N_pix, "input map at higher resolution than specified N_side"
                 temp_map_s2 = hp.fitsfunc.read_map(self.freq_map_files_s2[i], field=self.freq_map_field)
-                assert len(temp_map_s2) <= self.N_pix, "input map at higher resolution than specified N_side"
+                if not self.allow_dgrading:
+                    assert len(temp_map_s2) <= self.N_pix, "input map at higher resolution than specified N_side"
                 if (len(temp_map_s1) == self.N_pix):
                     self.maps_s1[i] = np.copy(temp_map_s1)
                 elif (len(temp_map_s1) < self.N_pix):
@@ -481,6 +557,7 @@ class ILCInfo(object):
             del(temp_map_s2)
         # if you want to subtract something from the maps, do it here 
         if self.map_to_subtract is not None:
+            print("subtracting from all")
             map_to_subtract = hp.fitsfunc.read_map(self.map_to_subtract)
             assert hp.get_nside(map_to_subtract) >= self.N_side
             if hp.get_nside(map_to_subtract) > self.N_side:
@@ -493,10 +570,19 @@ class ILCInfo(object):
             for freqind in range(self.N_freqs):
                 if self.maps_to_subtract[freqind] is not None:
                     map_to_subtract = hp.fitsfunc.read_map(self.maps_to_subtract[freqind])
+                else:
+                    map_to_subtract = 0*self.maps[freqind]
+                if 1==1:
+
                     assert hp.get_nside(map_to_subtract) >= self.N_side
                     if hp.get_nside(map_to_subtract) > self.N_side:
                         map_to_subtract = hp.ud_grade(map_to_subtract,self.N_side)
                     self.maps[freqind] = self.maps[freqind] - map_to_subtract
+                    if self.subtract_monopole[freqind]:
+                        print("subtracting monopole",freqind,flush=True)
+                        self.maps[freqind] -= np.mean(self.maps[freqind])
+                    if self.subtract_nside[freqind]:
+                        self.maps[freqind] -= hp.ud_grade(hp.ud_grade(self.maps[freqind],self.subtract_nside),self.N_side)
                     if self.cross_ILC:
                         self.maps_s1[freqind] = self.maps_s1[freqind] - map_to_subtract
                         self.maps_s2[freqind] = self.maps_s2[freqind] - map_to_subtract
@@ -521,7 +607,8 @@ class ILCInfo(object):
             self.maps_xcorr = np.zeros((self.N_maps_xcorr,self.N_pix), dtype=np.float64)
             for i in range(self.N_maps_xcorr):
                 temp_map = hp.fitsfunc.read_map(self.maps_xcorr_files[i], field=0)
-                assert len(temp_map) <= self.N_pix, "input map for cross-correlation at higher resolution than specified N_side"
+                if not self.allow_dgrading:
+                    assert len(temp_map) <= self.N_pix, "input map for cross-correlation at higher resolution than specified N_side"
                 if (len(temp_map) == self.N_pix):
                     self.maps_xcorr[i] = np.copy(temp_map)
                 elif (len(temp_map) < self.N_pix):
@@ -532,7 +619,8 @@ class ILCInfo(object):
                 self.masks_xcorr = np.zeros((self.N_maps_xcorr,self.N_pix), dtype=np.float64)
                 for i in range(self.N_maps_xcorr):
                     temp_map = hp.fitsfunc.read_map(self.masks_xcorr_files[i], field=0)
-                    assert len(temp_map) <= self.N_pix, "input mask for cross-correlation at higher resolution than specified N_side"
+                    if not self.allow_dgrading:
+                        assert len(temp_map) <= self.N_pix, "input mask for cross-correlation at higher resolution than specified N_side"
                     if (len(temp_map) == self.N_pix):
                         self.masks_xcorr[i] = np.copy(temp_map)
                     elif (len(temp_map) < self.N_pix):
