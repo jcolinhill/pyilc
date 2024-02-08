@@ -40,6 +40,8 @@ elif info.wavelet_type == 'ScaleDiscretizedWavelets':
     ell,filts = wv.ScaleDiscretizedWavelets(ellboundaries = info.ellboundaries)
 elif info.wavelet_type == 'TopHatHarmonic':
     ell,filts = wv.TopHatHarmonic(info.ellbins)
+elif info.wavelet_type == 'TaperedTopHats':
+    ell,filts = wv.TaperedTopHats(ellboundaries = info.ellboundaries,taperwidths=info.taperwidths)
 else:
     raise TypeError('unsupported wavelet type')
 # example plot -- output in example_wavelet_plot

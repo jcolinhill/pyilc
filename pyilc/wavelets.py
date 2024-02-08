@@ -72,6 +72,7 @@ fontProperties = {'family':'sans-serif',
 import matplotlib.pyplot as plt
 from input import ILCInfo
 from fg import get_mix, get_mix_bandpassed
+import time
 """
 this module constructs the Wavelets class, which contains the
 harmonic-space filters defining a set of wavelets, as well as
@@ -174,6 +175,29 @@ class Wavelets(object):
         self.ell = ells
         return self.ell, self.filters
 
+    # tapered top hat wavelets
+    def TaperedTopHats(self,ellboundaries = None,taperwidths = None):
+        if ( any( i >= j for i, j in zip(ellboundaries, ellboundaries[1:]))):
+            raise AssertionError
+        assert self.N_scales ==  len(ellboundaries)+1
+
+        all_ell_boundaries = np.array([0]+list(ellboundaries)+[self.ELLMAX+1])
+        self.filters= np.zeros((self.N_scales,self.ELLMAX+1))
+
+        ells = np.arange(self.ELLMAX+1)
+
+        for i in range(0,self.N_scales-1):
+            filt = np.ones(self.ELLMAX+1)
+            taper =  (1.0 - 0.5*(np.tanh(2/taperwidths[i]*(ells- (ellboundaries[i]))) + 1.0))
+
+            self.filters[i] = np.sqrt(np.ones(self.ELLMAX+1) * taper - np.sum(self.filters[:i]**2,axis=0))
+            self.filters[i][np.isnan(self.filters[i])]=0
+        self.filters[-1] = np.sqrt(np.ones(self.ELLMAX+1)  - np.sum(self.filters[:-1]**2,axis=0))
+        self.filters[-1][np.isnan(self.filters[-1])]=0
+        assert (np.absolute( np.sum( self.filters**2., axis=0 ) - np.ones(self.ELLMAX+1,dtype=float)) < self.tol).all(), "wavelet filter transmission check failed"
+        self.ell = ells
+        return self.ell, self.filters
+    # scale-discretized wavelets
     # tophat wavelets
     def TopHats(self,ellboundaries =None):
 
@@ -243,12 +267,20 @@ class scale_info(object):
         self.N_side_to_use = np.ones(wv.N_scales,dtype=int)*info.N_side #initialize all of the internal, per-scale N_side values to the output N_side
         ell_F = np.zeros(wv.N_scales)
         ell_B = np.zeros(info.N_freqs)
-        for i in range(wv.N_scales-1):
-            ell_peak = np.argmax(wv.filters[i]) #we'll use this to ensure we're on the decreasing side of the filter
-            ell_F[i] = ell_peak + (np.abs( wv.filters[i][ell_peak:] - info.wavelet_beam_criterion )).argmin()
-            if ell_F[i] > wv.ELLMAX:
-                ell_F[i] = wv.ELLMAX
-        ell_F[-1] = ell_F[-2] #just use the second-to-last criterion for the last one #TODO: improve this
+        if len(ell_F)>1:
+            for i in range(wv.N_scales-1):
+                ell_peak = np.argmax(wv.filters[i]) #we'll use this to ensure we're on the decreasing side of the filter
+                ell_F[i] = ell_peak + (np.abs( wv.filters[i][ell_peak:] - info.wavelet_beam_criterion )).argmin()
+                if ell_F[i] > wv.ELLMAX:
+                    ell_F[i] = wv.ELLMAX
+            ell_F[-1] = ell_F[-2] #just use the second-to-last criterion for the last one #TODO: improve this
+        else:
+             for i in range(wv.N_scales):
+                ell_peak = np.argmax(wv.filters[i]) #we'll use this to ensure we're on the decreasing side of the filter
+                ell_F[i] = ell_peak + (np.abs( wv.filters[i][ell_peak:] - info.wavelet_beam_criterion )).argmin()
+                if ell_F[i] > wv.ELLMAX:
+                    ell_F[i] = wv.ELLMAX
+
         for j in range(info.N_freqs):
             ell_B[j] = (np.abs( (info.beams[j])[:,1] - info.wavelet_beam_criterion )).argmin()
         for i in range(wv.N_scales):
@@ -295,6 +327,8 @@ class scale_info(object):
             ell, filts = wv.TopHatHarmonic(info.ellbins)
         elif info.wavelet_type == 'CosineNeedlets':
             ell, filts = wv.CosineNeedlets(ellmin = info.ellmin,ellpeaks = info.ellpeaks)
+        elif info.wavelet_type =='TaperedTopHats':
+            ell,filts = wv.TaperedTopHats(ellboundaries = info.ellboundaries,taperwidths= info.taperwidths)
         elif info.wavelet_type == 'TopHats':
             ell, filts = wv.TopHats(ellboundaries = info.ellboundaries)
         else:
@@ -457,11 +491,18 @@ class scale_info(object):
                     season_A = 1
                     season_B = 2
                 wavelet_map_A = dgraded_mask * self.load_wavelet_coeff_map(a,j,info,season=season_A) 
-                smoothed_maps_A[a] = hp.sphtfunc.smoothing(wavelet_map_A, FWHM_pix[j])
+                if info.mean_by_smoothing:
+                    smoothed_maps_A[a] = dgraded_mask*hp.sphtfunc.smoothing(wavelet_map_A, FWHM_pix[j])*fskyinv
+                elif info.mean_by_upgrading:
+                    smoothed_maps_A[a] = hp.ud_grade(hp.ud_grade(wavelet_map_A,info.mean_nside),hp.get_nside(wavelet_map_A))
                 unsmoothed_maps_A[a] = wavelet_map_A
                 if info.cross_ILC:
                     wavelet_map_B = dgraded_mask * self.load_wavelet_coeff_map(a,j,info,season=season_B) 
-                    smoothed_maps_B[a] = hp.sphtfunc.smoothing(wavelet_map_B, FWHM_pix[j])
+                    if info.mean_by_smoothing:
+                        smoothed_maps_B[a] = hp.sphtfunc.smoothing(wavelet_map_B, FWHM_pix[j])
+                    elif info.mean_by_upgrading:
+                        smoothed_maps_B[a] = hp.ud_grade(hp.ud_grade(wavelet_map_B,info.mean_nside),hp.get_nside(wavelet_map_A))
+
                     unsmoothed_maps_B[a] = wavelet_map_B
 
         for a in range(info.N_freqs):
@@ -482,10 +523,19 @@ class scale_info(object):
 
                                 assert len(wavelet_map_A) == len(wavelet_map_B), "cov mat map calculation: wavelet coefficient maps have different N_side"
                                 if not info.cross_ILC:
-                                    cov_map_temp = (hp.sphtfunc.smoothing( (wavelet_map_A - wavelet_map_A_smoothed)*(wavelet_map_B - wavelet_map_B_smoothed) , FWHM_pix[j]))
+                                    if info.mean_by_smoothing:
+                                        cov_map_temp = hp.sphtfunc.smoothing( (wavelet_map_A - wavelet_map_A_smoothed)*(wavelet_map_B - wavelet_map_B_smoothed) , FWHM_pix[j])
+                                    elif info.mean_by_upgrading:
+                                        cov_map_temp = hp.ud_grade(hp.ud_grade( (wavelet_map_A - wavelet_map_A_smoothed)*(wavelet_map_B - wavelet_map_B_smoothed) , info.mean_nside),hp.get_nside(wavelet_map_A))
+
                                 else:
-                                     cov_map_temp_AB = (hp.sphtfunc.smoothing( (wavelet_map_A - wavelet_map_A_smoothed)*(wavelet_map_B - wavelet_map_B_smoothed) , FWHM_pix[j]))
-                                     cov_map_temp_BA = (hp.sphtfunc.smoothing( (wavelet_map_B - wavelet_map_B_smoothed)*(wavelet_map_A - wavelet_map_A_smoothed) , FWHM_pix[j]))
+                                     if info.mean_by_smoothing:
+                                         cov_map_temp_AB = (hp.sphtfunc.smoothing( (wavelet_map_A - wavelet_map_A_smoothed)*(wavelet_map_B - wavelet_map_B_smoothed) , FWHM_pix[j]))
+                                         cov_map_temp_BA = (hp.sphtfunc.smoothing( (wavelet_map_B - wavelet_map_B_smoothed)*(wavelet_map_A - wavelet_map_A_smoothed) , FWHM_pix[j]))
+                                     elif info.mean_by_upgrading: 
+                                         cov_map_temp_AB = hp.ud_grade(hp.ud_grade((wavelet_map_A - wavelet_map_A_smoothed)*(wavelet_map_B - wavelet_map_B_smoothed) , info.mean_nside),hp.get_nside(wavelet_map_A))
+                                         cov_map_temp_AB = hp.ud_grade(hp.ud_grade((wavelet_map_B - wavelet_map_B_smoothed)*(wavelet_map_A - wavelet_map_A_smoothed) , info.mean_nside),hp.get_nside(wavelet_map_B))
+
                                      cov_map_temp = 1/2*(cov_map_temp_AB+ cov_map_temp_BA)
 
 
@@ -582,7 +632,6 @@ class scale_info(object):
         if info.print_timing:
             print("got Qab in",time.time()-t1,flush=True)
 
-
         t1=time.time()
         tempvec = np.zeros((N_comps,len_unmasked_pix))
         # treat the no-deprojection case separately, since QSa_temp is empty in this case
@@ -620,13 +669,12 @@ class scale_info(object):
         if info.print_timing:
              print("got weights in",time.time()-t1,flush=True)
 
-
-
         t1=time.time()
         # response verification
         response = np.einsum('pi,ia->ap', weights_sliced, A_mix) #dimensions N_comps x N_pix_to_use[j]
         optimal_response_preserved_comp = np.ones(len_unmasked_pix)#preserved component, want response=1
         optimal_response_deproj_comp = np.zeros((N_comps-1, len_unmasked_pix)) #deprojected components, want response=0
+
         if not (np.absolute(response[0,]-optimal_response_preserved_comp) < resp_tol).all():
             print(f'preserved component response failed at wavelet scale {j}',flush=True)
             quit()
@@ -1097,7 +1145,24 @@ class scale_info(object):
                     wavelet_coeff_map = self.load_wavelet_coeff_map(a,j,info)
                 else:
                     wavelet_coeff_map =maps_for_weights_needlets[a][j]
-                ILC_map_temp += weights[:,count] * wavelet_coeff_map
+                #wavelet_coeff_map = hp.read_map(filename_wavelet_coeff_map, dtype=np.float64)
+                if info.subtract_means_before_sums[j]:
+                    dgraded_mask = hp.ud_grade(info.mask_before_covariance_computation,self.N_side_to_use[j])
+                    dgraded_mask[dgraded_mask!=0]=1
+                    print("fsky at scale "+str(j)+" is "+str(np.sum(dgraded_mask)/dgraded_mask.shape[0]),flush=True)
+                    if np.sum(dgraded_mask)== 0:
+                         assert self.N_side_to_use[j] < 256
+                         mask1 = hp.ud_grade(info.mask_before_covariance_computation,256)
+                         dgraded_mask = hp.ud_grade(mask1, self.N_side_to_use[j])
+                         dgraded_mask[dgraded_mask!=0]=1
+                         print("fsky at scale "+str(j)+" is "+str(np.sum(dgraded_mask)/dgraded_mask.shape[0]),flush=True)
+                    assert np.sum(dgraded_mask)>0
+                    fsky = hp.smoothing(dgraded_mask,self.FWHM_pix[j])
+                    fsky[fsky==0] = 1e-100
+                    wavelet_coeff_map_minus_smoothed = wavelet_coeff_map - hp.smoothing(dgraded_mask * wavelet_coeff_map,self.FWHM_pix[j])/fsky
+                    ILC_map_temp += weights[:,count] * (wavelet_coeff_map_minus_smoothed)
+                else:
+                    ILC_map_temp += weights[:,count] * wavelet_coeff_map
                 count+=1
         if info.print_timing:
             print("finished summing at scale",j,time.time()-t1,flush=True)
@@ -1253,8 +1318,12 @@ def waveletize_input_maps(info,scale_info_wvs,wv,map_images = False):
                     info.read_maps()
                     have_read_input_maps = True
                 print("waveletizing frequency ", i, "...",flush=True)
+                if info.mask_before_wavelet_computation is not None:
+                    mask = info.mask_before_wavelet_computation
+                else:
+                    mask = 1
 
-                wv_maps_temp = waveletize(inp_map=(info.maps)[i], wv=wv, rebeam=True, inp_beam=(info.beams)[i], new_beam=info.common_beam, wv_filts_to_use=freqs_to_use[:,i], N_side_to_use=N_side_to_use)
+                wv_maps_temp = waveletize(inp_map=mask*(info.maps)[i], wv=wv, rebeam=True, inp_beam=(info.beams)[i], new_beam=info.common_beam, wv_filts_to_use=freqs_to_use[:,i], N_side_to_use=N_side_to_use)
                 for j in range(wv.N_scales):
                     if freqs_to_use[j][i] == True:
                         scale_info_wvs.save_wavelet_coeff_map(i,j,info,wv_maps_temp[j],season=None)
