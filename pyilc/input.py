@@ -368,13 +368,14 @@ class ILCInfo(object):
         assert self.ILC_preserved_comp in COMP_TYPES, "unsupported component type in ILC_preserved_comp"
 
         # real-space filters: 
+        print(p.keys())
         assert ('ILC_bias_tol' in p.keys() or 'FWHM_pix' in p.keys())
 
         # ILC: bias tolerance
         if 'ILC_bias_tol' in p.keys():
             assert 'FWHM_pix' not in p.keys()
             self.ILC_bias_tol = p['ILC_bias_tol']
-        assert self.ILC_bias_tol > 0. and self.ILC_bias_tol < 1., "invalid ILC bias tolerance"
+            assert self.ILC_bias_tol > 0. and self.ILC_bias_tol < 1., "invalid ILC bias tolerance"
 
         #if you want to allow ILC biases that are too large for the number of modes available:
         self.override_ILCbiastol = False

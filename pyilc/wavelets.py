@@ -360,12 +360,20 @@ class scale_info(object):
                                     radio_beta1_param_name='beta1_radio',
                                     radio_beta2_param_name='beta2_radio'))[0] #convert to K from uK
                             elif (info.bandpass_type == 'ActualBandpasses'):
-                                if info.freq_bp_files[a].lower() == 'delta':
+                                get_delta_bandpass = False
+                                if info.freq_bp_files[a] is None:
+                                    get_delta_bandpass = False
+                                elif info.freq_bp_files[a].lower() == 'delta':
+                                    get_delta_bandpass = True
+                                else:
+                                    get_delta_bandpass = False
+                                if get_delta_bandpass:
 
                                     A_mix[countt][b] = 1.e-6 * (get_mix([info.freqs_delta_ghz[a]], info.ILC_preserved_comp, param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio',
                                     radio_beta1_param_name='beta1_radio',
                                     radio_beta2_param_name='beta2_radio'))[0] #convert to K from uK
                                 else:
+
                                     A_mix[countt][b] = 1.e-6 * (get_mix_bandpassed([info.freq_bp_files[a]], info.ILC_preserved_comp, param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio',
                                     radio_beta1_param_name='beta1_radio',
                                     radio_beta2_param_name='beta2_radio'))[0] #convert to K from uK
@@ -375,7 +383,14 @@ class scale_info(object):
                                     radio_beta1_param_name='beta1_radio',
                                     radio_beta2_param_name='beta2_radio'))[0] #convert to K from uK
                             elif (info.bandpass_type == 'ActualBandpasses'):
-                                if info.freq_bp_files[a].lower() == 'delta':
+                                get_delta_bandpass = False
+                                if info.freq_bp_files[a] is None:
+                                    get_delta_bandpass = False
+                                elif info.freq_bp_files[a].lower() == 'delta':
+                                    get_delta_bandpass = True
+                                else:
+                                    get_delta_bandpass = False
+                                if get_delta_bandpass:
                                     A_mix[countt][b] = 1.e-6 * (get_mix([info.freqs_delta_ghz[a]], ILC_deproj_comps[b-1], param_dict_file=info.param_dict_file, param_dict_override=None, dust_beta_param_name='beta_CIB', radio_beta_param_name='beta_radio',
                                     radio_beta1_param_name='beta1_radio',
                                     radio_beta2_param_name='beta2_radio'))[0] #convert to K from uK
@@ -630,7 +645,7 @@ class scale_info(object):
             return weights_sliced #N.B. 'weights' here only includes channels that passed beam_thresh criterion,
 
 
-    def save_weights_fits(self,weights,j,info):
+    def save_weights_fits(self,weights,j,info,map_images = False):
             count=0
             for a in range(info.N_freqs):
                 if (self.freqs_to_use[j][a] == True):
@@ -659,9 +674,9 @@ class scale_info(object):
         f.close()
 
 
-    def save_weights_at_scale_j(self,weights,j,info):
+    def save_weights_at_scale_j(self,weights,j,info,map_images=False):
         if info.save_as_fits:
-            self.save_weights_fits(weights,j,info)
+            self.save_weights_fits(weights,j,info,map_images=map_images)
         elif info.save_as_hdf5:
             self.save_weights_hdf5(weights,j,info)
 
@@ -724,7 +739,7 @@ class scale_info(object):
             ##########################
             # only save these maps of the ILC weights if requested
             if (info.save_weights == 'yes' or info.save_weights == 'Yes' or info.save_weights == 'YES'):
-                self.save_weights_at_scale_j(weights,j,info)
+                self.save_weights_at_scale_j(weights,j,info,map_images=map_images)
             return weights
 
     def compute_weights_at_scale_j_from_invcovmat(self,j,info,resp_tol,map_images = False):
