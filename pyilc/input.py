@@ -69,8 +69,7 @@ class ILCInfo(object):
             pass
         p = read_dict_from_yaml(self.input_file)
 
-        self.use_numba = False
-        self.print_timing = False
+
 
         # output file directory
         self.output_dir = p['output_dir']
@@ -84,24 +83,30 @@ class ILCInfo(object):
         if 'output_suffix' in p.keys():
             self.output_suffix = p['output_suffix']
             assert type(self.output_suffix) is str, "TypeError: output_suffix"
+        
+        # I have been using this for some stuff but it may be easier to just remove it
         self.output_suffix_intermediate = self.output_suffix
         if 'output_suffix_intermediate' in p.keys():
             self.output_suffix_intermediate = p ['output_suffix_intermediate']
             assert type(self.output_suffix_intermediate) is str, "TypeError: output_suffix_intermediate"
 
+        # if you are applying previously computed and saved weights to a new set of maps,
+        # you need to tell the code what the output suffix was for those weights.
         self.output_suffix_weights = self.output_suffix
         if 'output_suffix_weights' in p.keys():
             self.output_suffix_weights = p['output_suffix_weights']
             assert type(self.output_suffix_weights) is str, "TypeError: output_suffix_weights"
 
         # flag whether to save maps of the ILC weights (if 'yes' then they will be saved; otherwise not)
+        # Fiona suggestion: change this to  a bool which is True if p['save_weights'].lower() is {'yes','y','true','t'}
+        # as for self.save_scale_ILC_maps below
         self.save_weights = p['save_weights']
         assert type(self.save_weights) is str, "TypeError: save_weights"
 
-        #flag whether to save the ILC map at each scale - if not in input file will default to False
+        #flag whether to save the ILC map at each scale - if this is not in input file, will default to False
         self.save_scale_ILC_maps = False
         if 'save_scale_ILC_maps' in p.keys():
-            if p['save_scale_ILC_maps'].lower() in ['yes','true']:
+            if p['save_scale_ILC_maps'].lower() in ['yes','true','y','t']:
                 self.save_scale_ILC_maps = True
 
         # maximum multipole for this analysis
@@ -154,18 +159,12 @@ class ILCInfo(object):
             assert 'GN_FWHM_arcmin' not in p.keys()
             assert 'ellboundaries' not in p.keys()
         elif self.wavelet_type == 'TaperedTopHats':
+            # the ellboundaries between different tophat ell bins and the taperwidths between them
             self.ellboundaries = np.asarray(p['ellboundaries'])
             self.taperwidths= np.asarray(p['taperwidths'])
             assert len(self.ellboundaries)==len(self.taperwidths),"Ellboundaries!= taperwidths"
             assert len(self.ellboundaries) == self.N_scales - 1, "ellboundaries"
             assert all(ellpeak> 0. for ellpeak in self.ellboundaries), "ellboundaries"
-            assert 'GN_FWHM_arcmin' not in p.keys()
-            assert 'ellpeaks' not in p.keys()
-        elif self.wavelet_type == 'ScaleDiscretizedWavelets':
-            self.ellboundaries = np.asarray(p['ellboundaries'])
-            assert len(self.ellboundaries) == self.N_scales + 1, "ellboundaries"
-            assert all(ellpeak> 0. for ellpeak in self.ellboundaries[1:]), "ellboundaries"
-            assert self.ellboundaries[0]==0
             assert 'GN_FWHM_arcmin' not in p.keys()
             assert 'ellpeaks' not in p.keys()
         elif self.wavelet_type == 'TopHatHarmonic':
@@ -191,7 +190,6 @@ class ILCInfo(object):
             # TODO: add relevant assertions
             #self.B_param = p['B_param']
             #self.J_min = p['J_min']
-
         
         # flag to perform cross-ILC 
         self.cross_ILC = False
@@ -204,22 +202,22 @@ class ILCInfo(object):
         assert type(self.N_freqs) is int and self.N_freqs > 0, "N_freqs"
 
         # if you want to use some pre-computed covmat and drop certain frequency channels, put this in here
-        # as a list of the indices of the frequency channels you want to drop
+        # as a list of the indices of the frequency channels you want to drop. Defaults to an empty list.
+        self.drop_channels = []
         if 'drop_channels' in p.keys():
             self.drop_channels  = p['drop_channels']
             assert type(self.drop_channels) is list
             for x in self.drop_channels:
                 assert type(x) is int
                 assert x < self.N_freqs
-        else:
-            self.drop_channels = []
 
         # wavelet_beam_criterion, set to 1e-3 by default. This removes frequencies from the NILC
         # whose beams are a certain fraction smaller than the appropriate needlet filter within the range
         # of ells appropriate for the filter.
         if 'wavelet_beam_criterion' in p.keys():
+            assert 'override_N_freqs_to_use' not in p.keys()
             self.wavelet_beam_criterion = p['wavelet_beam_criterion']
-        else:
+        elif 'override_N_freqs_to_use' not in p.keys():
             self.wavelet_beam_criterion = 1.e-3
 
         # override_N_freqs_to_use OVERRIDES information from wavlet_beam_criterion
@@ -228,8 +226,10 @@ class ILCInfo(object):
         # how many frequency channels one should use at the scale corresponding to that entry. 
         # if the entry is less than N_freqs, the lowest resolution maps will be dropped from the NILC
         # such that there are the appropriate number of frequency channels used in each scale
+        # maybe we should change the name of this flag?
         self.override_N_freqs_to_use = False
         if 'override_N_freqs_to_use' in p.keys():
+            assert 'wavelet_beam_criterion' not in p.keys()
             self.override_N_freqs_to_use = True
             self.N_freqs_to_use = p['override_N_freqs_to_use']
             assert type(self.N_freqs_to_use) is list
@@ -247,6 +247,7 @@ class ILCInfo(object):
             self.param_dict_file = p['param_dict_file']
 
         # delta-function bandpasses/passbands or actual bandpasses/passbands
+        # Fiona - I don't know how to read in the None object in a yml file so i have been reading strings of Nones.. not ideal
         self.bandpass_type = p['bandpass_type']
         assert self.bandpass_type in BP_TYPES, "unsupported bandpass type"
         if self.bandpass_type == 'DeltaBandpasses':
@@ -265,7 +266,6 @@ class ILCInfo(object):
                 if x.lower()=='delta':
                     self.freq_bp_files[xind] = 'delta'
 
-                
             assert len(self.freq_bp_files) == self.N_freqs, "freq_bp_files"
             if 'delta' in self.freq_bp_files:
                 self.freqs_delta_ghz = p['freqs_delta_ghz']
@@ -291,7 +291,10 @@ class ILCInfo(object):
         self.map_to_subtract = None
         if 'map_to_subtract' in p.keys():
             self.map_to_subtract = p['map_to_subtract']
+
         # Is there a different map you want to subtract from all of the inputs? If so, put them in as a list here
+        # this should be a list with N_freq entries. Each entry can either be one map filename or a list of map filenames,
+        # if you want to subtract several maps from a given channel
         self.maps_to_subtract = None
         if 'maps_to_subtract'  in p.keys():
             self.maps_to_subtract = p['maps_to_subtract']
@@ -304,10 +307,19 @@ class ILCInfo(object):
                     for a in x:
                         assert type(a) is str
 
-
+        # Sometimes we may want to remove the means of the domains we are calculating the covmats on
+        # by default we don't do this, but if you want to do this put this here
+        # this should be a list with N_scales entries, eg if you want to subtract the means on the realspace domains
+        # on some scales and not others.
         self.subtract_means_before_sums = False
         if 'subtract_means_before_sums' in p.keys():
             self.subtract_means_before_sums = p['subtract_means_before_sums']
+            assert type(self.subtract_means_before_sums) is list
+            assert len(self.subtract_means_before_sums) == self.N_scales
+
+        #flags to subtract the mean/monopole of each frequency
+        # subtract_mean should be a list of N_freq bools of whether you subtract the mean at each frequency
+        # if you input one bool it will be broadcast to N_Freq bools.
         self.subtract_mean = False
         self.subtract_monopole = [False] * self.N_freqs
         self.subtract_nside = [False] * self.N_freqs
@@ -324,28 +336,12 @@ class ILCInfo(object):
                     self.subtract_monopole[x] = True
                 
 
-        self.freq_map_field = 0
-        if 'freq_map_field' in p.keys():
-            if p['freq_map_field'].lower() in ['true','yes'] :
-                self.freq_map_field = True
-
         # S1 and S2 maps for the cross-ILC
         if self.cross_ILC:
             self.freq_map_files_s1 = p['freq_map_files_s1']
             assert len(self.freq_map_files_s1) == self.N_freqs, "freq_map_files_s1"
             self.freq_map_files_s2 = p['freq_map_files_s2']
             assert len(self.freq_map_files_s2) == self.N_freqs, "freq_map_files_s2"
-
-        # Do we want to compute the weights from the covmat (with np.linalg.solve) or from the invcovmat (with np.linalg.inv)?
-        # Default is from invcovmat but this is both more numerically unstable, more computationally intensive, and more
-        # memory intensive (as both covmats and invcovmats are saved). Possibly change this default to covmat?
-        self.weights_from_invcovmat = True
-        self.weights_from_covmat = False
-        if 'weights_from_covmat' in p.keys():
-            if p['weights_from_covmat'].lower() in ['true','yes','y']:
-               self.weights_from_covmat =  True
-               self.weights_from_invcovmat = False
-
 
         # Flag to apply weights to other maps than those used in the ILC weight calculation
         if 'maps_to_apply_weights' in p.keys():
@@ -385,7 +381,9 @@ class ILCInfo(object):
         assert hp.pixelfunc.isnsideok(self.N_side, nest=True), "invalid N_side"
         self.N_pix = 12*self.N_side**2
 
-
+        # by default, all mean-calculation functions are done with hp.smoothing
+        # but in principle we could do this with hp.ud_grade(hp.ud_grade(map,small N_side),original N_side)
+        # set this to true if you want to do the latter
         if 'mean_by_dgrading' in p.keys():
             if p['mean_by_dgrading'].lower() in ['true','yes']:
                 self.mean_by_upgrading = True
@@ -396,23 +394,12 @@ class ILCInfo(object):
         else:
             self.mean_by_smoothing = True
             self.mean_by_upgrading = False
+        # the N_side you want to dgrade to for these mean calculations
         if self.mean_by_upgrading:
             self.mean_nside = p['mean_nside']
 
-        self.ignore_offdiagonal = False
-        if 'ignore_offdiagonal' in p.keys():
-            if p['ignore_offdiagonal'].lower() in ['true','yes']:
-                self.ignore_offdiagonal = True
-                print("will be ignoring offdiagonal")
-
-        # do you want to be allowed to pass in higher N_side maps than you are working at? If so, 
-        # set allow_dgrading = 'true' in the input file. Default is false
-        self.allow_dgrading = False
-        if 'allow_dgrading' in p.keys():
-            if p['allow_dgrading'].lower() in ['true','yes']:
-                self.allow_dgrading = True
-
         # Do we only want to perform NILC on part of the sky? if so, include the mask
+        # todo: think about apodization etc.......
         self.mask_before_covariance_computation = None
         if 'mask_before_covariance_computation' in p.keys():
             self.mask_before_covariance_computation = hp.fitsfunc.read_map(p['mask_before_covariance_computation'][0],field=p['mask_before_covariance_computation'][1])
@@ -422,6 +409,7 @@ class ILCInfo(object):
                 self.mask_before_covariance_computation = hp.ud_grade(self.mask_before_covariance_computation,self.N_side)
                 self.mask_before_covariance_computation[self.mask_before_covariance_computation<1]=0
                 print("fsky after is",np.sum(self.mask_before_covariance_computation)/self.mask_before_covariance_computation.shape[0],flush=True)
+
         # Do we only want to perform the waveletizing on part of the sky? If so , include this mask
         self.mask_before_wavelet_computation = None
         if 'mask_before_wavelet_computation' in p.keys():
@@ -502,26 +490,33 @@ class ILCInfo(object):
                 else:
                     self.ILC_deproj_comps.append([])
                 ind = ind+1
+        # if you only want to deproject some component in a given range of frequency channels? (we can remove this i think)A
+        #, it's not as useful as i thought it would be
         if 'deproject_from_channels' in p.keys():
             for component in p['deproject_from_channels'].keys():
                 self.deproject_from_channels[component] = p['deproject_from_channels'][component]
 
+        # Flag for printing the time taken for several of the linear algebra
+        # computations for the weights. Default is False, we could even just remove it,
+        # I sometimes just  find it useful to know how much time the code is taking in each
+        # computation.
         self.print_timing = False
         if 'print_timing' in p.keys():
             assert type(p['print_timing']) is str
             if p['print_timing'].lower() in ['true','yes','t','y']:
                 self.print_timing = True
 
+        # Flag for using the numba functions in the linear algebra calculation of the weights,
+        # these parallelize the computation in a pixelwise manner and can provide significant
+        # speed up. Default is True, but it can be set to False in the input file
         self.use_numba = True
         if 'use_numba' in p.keys():
             assert type (p['use_numba']) is str
             if p['use_numba'].lower() in ['false','no','f','n']:
                 self.use_numba = False
 
-        if 'save_as' not in p.keys():
-
-            print("You need to specify whether to save as fits files or hdf5 files. hdf5 files are recommended, but fits files is available for back-compatibility.")
-
+        # I have started saving this as hdf5 files but the old fits format functionality still exists.
+        assert 'save_as' in p.keys(), "You need to specify whether to save as fits files or hdf5 files. hdf5 files are recommended, but fits files is available for back-compatibility."
         assert p['save_as'] in ['fits','hdf5']
         if p['save_as'] == 'fits':
             self.save_as_fits = True
@@ -529,8 +524,10 @@ class ILCInfo(object):
         elif p['save_as'] == 'hdf5':
             self.save_as_hdf5 = True
             self.save_as_fits = False
+            #filenames for the covmaps, invcovmaps, and wavelet coeff and weight files
             self.covmaps_hdf5_filename = self.output_dir + self.output_prefix + '_covmaps'+'_crossILC'*self.cross_ILC+'.hdf5'
             self.invcovmaps_hdf5_filename = self.output_dir + self.output_prefix + '_invcovmaps'+'_crossILC'*self.cross_ILC+'.hdf5'
+            # fiona should i remove the above?
             self.wavelet_coeff_hdf5_filename = self.output_dir + self.output_prefix + '_waveletmaps.hdf5'
 
             self.weight_filename_hdf5 =  self.output_dir + self.output_prefix + '_weightmaps_component_'+self.ILC_preserved_comp+'_crossILC'*self.cross_ILC+self.output_suffix_weights+'.fits'
@@ -541,16 +538,6 @@ class ILCInfo(object):
                 if self.N_deproj[0]>0:
                     self.weight_filename_hdf5 =  self.output_dir+self.output_prefix+'_weightmaps_component_'+self.ILC_preserved_comp+'_deproject_'+'_'.join(self.ILC_deproj_comps[0])+'_crossILC'*self.cross_ILC+self.output_suffix_weights+'.fits' 
 
-        # Do we want to calculate the weights from the covmat with np.linalg.solve()
-        # or the invcovmat with np.linalg.inv() and np.matmul()?
-        self.weights_from_covmat = True
-        self.weights_from_invcovmat = False
-        if 'weights_from_invcovmat' in p.keys():
-            assert type(p['weights_from_invcovmat']) is str
-            if p['weights_from_invcovmat'].lower() in ['true','yes']:
-                self.weights_from_covmat = False
-                self.weights_from_invcovmat = True
-
 
         # recompute_covmat_for_ndeproj is a flagthat, when it is on, includes the number of deprojected components
         # in the filenames for the covmat. If it is off, it does not. This is important because the size of the real
@@ -560,6 +547,7 @@ class ILCInfo(object):
         # covmat and not recompute all the time. So, if you don't want to recompute for different values of N_deproj, 
         # turn this off and it will just use the covmat calculated on the area appropriate for what N_deproj was the
         # first time you ran the code.
+        # fiona maybe this is too cumbersome and hsould be removed, it does not save much
         if 'recompute_covmat_for_ndeproj' in p.keys(): 
             self.recompute_covmat_for_ndeproj = p['recompute_covmat_for_ndeproj']
         else:
@@ -620,7 +608,7 @@ class ILCInfo(object):
             self.maps = np.zeros((self.N_freqs,self.N_pix), dtype=np.float64)
             for i in range(self.N_freqs):
                 # TODO: allow specification of nested or ring ordering (although will already work here if fits keyword ORDERING is present)
-                temp_map = hp.fitsfunc.read_map(self.freq_map_files[i], field=self.freq_map_field)
+                temp_map = hp.fitsfunc.read_map(self.freq_map_files[i], )
                 assert len(temp_map) <= self.N_pix, "input map at higher resolution than specified N_side"
                 if (len(temp_map) == self.N_pix):
                     self.maps[i] = np.copy(temp_map)
@@ -634,9 +622,9 @@ class ILCInfo(object):
                 self.maps_s2 = np.zeros((self.N_freqs,self.N_pix), dtype=np.float64)
                 for i in range(self.N_freqs):
                     # TODO: allow specification of nested or ring ordering (although will already work here if fits keyword ORDERING is present)
-                    temp_map_s1 = hp.fitsfunc.read_map(self.freq_map_files_s1[i], field=self.freq_map_field)
+                    temp_map_s1 = hp.fitsfunc.read_map(self.freq_map_files_s1[i], )
                     assert len(temp_map_s1) <= self.N_pix, "input map at higher resolution than specified N_side"
-                    temp_map_s2 = hp.fitsfunc.read_map(self.freq_map_files_s2[i], field=self.freq_map_field)
+                    temp_map_s2 = hp.fitsfunc.read_map(self.freq_map_files_s2[i], )
                     assert len(temp_map_s2) <= self.N_pix, "input map at higher resolution than specified N_side"
                     if (len(temp_map_s1) == self.N_pix):
                         self.maps_s1[i] = np.copy(temp_map_s1)
