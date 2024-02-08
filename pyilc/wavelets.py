@@ -1125,10 +1125,7 @@ class scale_info(object):
         weights_exist = self.load_weights_at_scale_j(info,j,query_exists = True)
         if (weights_exist == False):
             print("weights do not exist; recalculating weights at scale",j)
-            if info.weights_from_covmat: 
-                weights = self.compute_weights_at_scale_j_from_covmat(j,info,resp_tol,map_images = map_images)
-            else:
-                weights = self.compute_weights_at_scale_j_from_invcovmat(j,info,resp_tol,map_images = map_images)
+            weights = self.compute_weights_at_scale_j_from_covmat(j,info,resp_tol,map_images = map_images)
         else:
             print("weights exist; loading weights at scale",j)
             weights = self.load_weights_at_scale_j(info,j)
