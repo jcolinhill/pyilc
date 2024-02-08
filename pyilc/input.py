@@ -311,7 +311,7 @@ class ILCInfo(object):
         # by default we don't do this, but if you want to do this put this here
         # this should be a list with N_scales entries, eg if you want to subtract the means on the realspace domains
         # on some scales and not others.
-        self.subtract_means_before_sums = False
+        self.subtract_means_before_sums = [False] * self.N_scales
         if 'subtract_means_before_sums' in p.keys():
             self.subtract_means_before_sums = p['subtract_means_before_sums']
             assert type(self.subtract_means_before_sums) is list
