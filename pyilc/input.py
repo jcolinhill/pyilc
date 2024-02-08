@@ -69,6 +69,9 @@ class ILCInfo(object):
             pass
         p = read_dict_from_yaml(self.input_file)
 
+        self.use_numba = False
+        self.print_timing = False
+
         # output file directory
         self.output_dir = p['output_dir']
         assert type(self.output_dir) is str, "TypeError: output_dir"
@@ -274,9 +277,14 @@ class ILCInfo(object):
             self.maps_to_subtract = p['maps_to_subtract']
             assert len(self.maps_to_subtract) == self.N_freqs
             for xind,x in enumerate(self.maps_to_subtract):
-                assert type(x) is str
-                if x.lower() == 'none':
-                    self.maps_to_subtract[xind] = None
+                if type(x) is str:
+                    if x.lower() == 'none':
+                        self.maps_to_subtract[xind] = None
+                elif type(x) is list:
+                    for a in x:
+                        assert type(a) is str
+
+
         self.subtract_means_before_sums = False
         if 'subtract_means_before_sums' in p.keys():
             self.subtract_means_before_sums = p['subtract_means_before_sums']
@@ -569,7 +577,17 @@ class ILCInfo(object):
         if self.maps_to_subtract is not None:
             for freqind in range(self.N_freqs):
                 if self.maps_to_subtract[freqind] is not None:
-                    map_to_subtract = hp.fitsfunc.read_map(self.maps_to_subtract[freqind])
+                    if type(self.maps_to_subtract[freqind]) is str:
+                        map_to_subtract = hp.fitsfunc.read_map(self.maps_to_subtract[freqind])
+                    else:
+                        maps_to_subtract = [hp.fitsfunc.read_map(x) for x in self.maps_to_subtract[freqind]]
+                        for xind,mapp in enumerate(maps_to_subtract):
+                            if hp.get_nside(mapp) > self.N_side:
+                                mapp_dg = hp.ud_grade(mapp,self.N_side)
+                                maps_to_subtract[xind] = mapp_dg
+                        maps_to_subtract = np.array(maps_to_subtract)
+                        map_to_subtract = np.sum(maps_to_subtract,axis=0)
+                        print("shape is",map_to_subtract.shape)
                 else:
                     map_to_subtract = 0*self.maps[freqind]
                 if 1==1:
