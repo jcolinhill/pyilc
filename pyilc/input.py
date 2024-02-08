@@ -24,7 +24,7 @@ BEAM_TYPES = ['Gaussians','1DBeams']
 
 ##########################
 # component types implemented thus far
-COMP_TYPES = ['CMB','kSZ','tSZ','rSZ','mu','CIB', 'CIB_dbeta','CIB_dT']
+COMP_TYPES = ['CMB','kSZ','tSZ','rSZ','mu','CIB', 'CIB_dbeta','CIB_dT','radio','radio_dbeta','radio2']
 ##########################
 
 ##########################
@@ -84,6 +84,15 @@ class ILCInfo(object):
         if 'output_suffix' in p.keys():
             self.output_suffix = p['output_suffix']
             assert type(self.output_suffix) is str, "TypeError: output_suffix"
+        self.output_suffix_intermediate = self.output_suffix
+        if 'output_suffix_intermediate' in p.keys():
+            self.output_suffix_intermediate = p ['output_suffix_intermediate']
+            assert type(self.output_suffix_intermediate) is str, "TypeError: output_suffix_intermediate"
+
+        self.output_suffix_weights = self.output_suffix
+        if 'output_suffix_weights' in p.keys():
+            self.output_suffix_weights = p['output_suffix_weights']
+            assert type(self.output_suffix_weights) is str, "TypeError: output_suffix_weights"
 
         # flag whether to save maps of the ILC weights (if 'yes' then they will be saved; otherwise not)
         self.save_weights = p['save_weights']
@@ -194,6 +203,17 @@ class ILCInfo(object):
         self.N_freqs = p['N_freqs']
         assert type(self.N_freqs) is int and self.N_freqs > 0, "N_freqs"
 
+        # if you want to use some pre-computed covmat and drop certain frequency channels, put this in here
+        # as a list of the indices of the frequency channels you want to drop
+        if 'drop_channels' in p.keys():
+            self.drop_channels  = p['drop_channels']
+            assert type(self.drop_channels) is list
+            for x in self.drop_channels:
+                assert type(x) is int
+                assert x < self.N_freqs
+        else:
+            self.drop_channels = []
+
         # wavelet_beam_criterion, set to 1e-3 by default. This removes frequencies from the NILC
         # whose beams are a certain fraction smaller than the appropriate needlet filter within the range
         # of ells appropriate for the filter.
@@ -242,10 +262,17 @@ class ILCInfo(object):
             for xind,x in enumerate(self.freq_bp_files):
                 if x.lower()=="none":
                     self.freq_bp_files[xind] = None
+                if x.lower()=='delta':
+                    self.freq_bp_files[xind] = 'delta'
 
-                print("freqbpfiles are",self.freq_bp_files)
                 
             assert len(self.freq_bp_files) == self.N_freqs, "freq_bp_files"
+            if 'delta' in self.freq_bp_files:
+                self.freqs_delta_ghz = p['freqs_delta_ghz']
+                assert len(self.freqs_delta_ghz) == self.N_freqs, "freqs_delta_ghz"
+                for xind, x in enumerate(self.freqs_delta_ghz):
+                    if x in ["none","None"]:
+                        self.freqs_delta_ghz[xind] = None
 
 
         # do the wavelet maps already exist as saved files? we can tell the code to skip the check for this, if 
@@ -255,13 +282,6 @@ class ILCInfo(object):
             if p['wavelet_maps_exist'].lower() in ['true','yes','y']:
                 self.wavelet_maps_exist = True
 
-        # do the covariance maps already exist as saved files? we can tell the code to skip the check for this, if 
-        # we know this alredy. Deafults to False
-        self.inv_covmat_exists= False
-        if 'inv_covmat_exists' in p.keys():
-            if p['inv_covmat_exists'].lower() in ['true','yes','y']:
-                self.inv_covmat_exists= True
- 
         # frequency map file names
         self.freq_map_files = p['freq_map_files']
         assert len(self.freq_map_files) == self.N_freqs, "freq_map_files"
@@ -420,21 +440,34 @@ class ILCInfo(object):
         self.ILC_preserved_comp = p['ILC_preserved_comp']
         assert self.ILC_preserved_comp in COMP_TYPES, "unsupported component type in ILC_preserved_comp"
 
+        # real-space filters: 
+        print(p.keys())
+        assert ('ILC_bias_tol' in p.keys() or 'FWHM_pix' in p.keys())
+
         # ILC: bias tolerance
-        self.ILC_bias_tol = 0.01
         if 'ILC_bias_tol' in p.keys():
+            assert 'FWHM_pix' not in p.keys()
             self.ILC_bias_tol = p['ILC_bias_tol']
-        assert self.ILC_bias_tol > 0. and self.ILC_bias_tol < 1., "invalid ILC bias tolerance"
+            assert self.ILC_bias_tol > 0. and self.ILC_bias_tol < 1., "invalid ILC bias tolerance"
+
+        #if you want to allow ILC biases that are too large for the number of modes available:
         self.override_ILCbiastol = False
         if 'override_ILCbiastol_threshold' in p.keys():
+            assert type(p['override_ILCbiastol_threshold']) is str
             if p['override_ILCbiastol_threshold'].lower() in ['true','yes']:
                 self.override_ILCbiastol = True
-        self.realspace_kernels = None
-        if 'realspace_kernels' in p.keys():
-           self.realspace_kernels=p['realspace_kernels']
-           assert len(self.realspace_kernels)==self.N_scales
-           for x in self.realspace_kernels:
-               assert type(x) is float
+
+        #manually set realspace areas (in radians)
+        if 'FWHM_pix' in p.keys():
+            assert 'ILC_bias_tol' not in p.keys()
+            self.FWHM_pix = p['FWHM_pix']
+            assert type(self.FWHM_pix) is list
+            assert len(self.FWHM_pix) == self.N_scales
+            for x in self.FWHM_pix:
+                sigma_pix_temp = x / np.sqrt(8.*np.log(2.))
+                assert sigma_pix_temp < np.pi
+        else:
+            self.FWHM_pix = None
 
         # ILC: component(s) to deproject (if any)
         self.N_deproj = p['N_deproj']
@@ -447,11 +480,16 @@ class ILCInfo(object):
                 assert len(self.ILC_deproj_comps) == self.N_deproj, "ILC_deproj_comps"
                 assert all(comp in COMP_TYPES for comp in self.ILC_deproj_comps), "unsupported component type in ILC_deproj_comps"
                 assert((self.N_deproj + 1) <= self.N_freqs), "not enough frequency channels to deproject this many components"
+                self.deproject_from_channels = {}
+                for component in self.ILC_deproj_comps:
+                    self.deproject_from_channels[component] = 'all'
+
         # If a list is input, assign each element the corresponding scale
         if type(self.N_deproj) is list:
             assert len(self.N_deproj) == self.N_scales
             ind = 0
             self.ILC_deproj_comps=[]
+            self.deproject_from_channels = {}
             for N_deproj in self.N_deproj:
                 assert type(N_deproj) is int and N_deproj >= 0, "N_deproj"
                 if (N_deproj > 0):
@@ -459,9 +497,60 @@ class ILCInfo(object):
                     assert len(self.ILC_deproj_comps[ind]) == N_deproj, "ILC_deproj_comps"
                     assert all(comp in COMP_TYPES for comp in self.ILC_deproj_comps[ind]), "unsupported component type in ILC_deproj_comps"
                     assert((N_deproj + 1) <= self.N_freqs), "not enough frequency channels to deproject this many components"
+                    for component in self.ILC_deproj_comps[ind]:
+                        self.deproject_from_channels[component] = 'all'
                 else:
                     self.ILC_deproj_comps.append([])
                 ind = ind+1
+        if 'deproject_from_channels' in p.keys():
+            for component in p['deproject_from_channels'].keys():
+                self.deproject_from_channels[component] = p['deproject_from_channels'][component]
+
+        self.print_timing = False
+        if 'print_timing' in p.keys():
+            assert type(p['print_timing']) is str
+            if p['print_timing'].lower() in ['true','yes','t','y']:
+                self.print_timing = True
+
+        self.use_numba = True
+        if 'use_numba' in p.keys():
+            assert type (p['use_numba']) is str
+            if p['use_numba'].lower() in ['false','no','f','n']:
+                self.use_numba = False
+
+        if 'save_as' not in p.keys():
+
+            print("You need to specify whether to save as fits files or hdf5 files. hdf5 files are recommended, but fits files is available for back-compatibility.")
+
+        assert p['save_as'] in ['fits','hdf5']
+        if p['save_as'] == 'fits':
+            self.save_as_fits = True
+            self.save_as_hdf5 = False
+        elif p['save_as'] == 'hdf5':
+            self.save_as_hdf5 = True
+            self.save_as_fits = False
+            self.covmaps_hdf5_filename = self.output_dir + self.output_prefix + '_covmaps'+'_crossILC'*self.cross_ILC+'.hdf5'
+            self.invcovmaps_hdf5_filename = self.output_dir + self.output_prefix + '_invcovmaps'+'_crossILC'*self.cross_ILC+'.hdf5'
+            self.wavelet_coeff_hdf5_filename = self.output_dir + self.output_prefix + '_waveletmaps.hdf5'
+
+            self.weight_filename_hdf5 =  self.output_dir + self.output_prefix + '_weightmaps_component_'+self.ILC_preserved_comp+'_crossILC'*self.cross_ILC+self.output_suffix_weights+'.fits'
+            if type(self.N_deproj )is int:
+                if self.N_deproj>0:
+                    self.weight_filename_hdf5 =  self.output_dir+self.output_prefix+'_weightmaps_component_'+self.ILC_preserved_comp+'_deproject_'+'_'.join(self.ILC_deproj_comps)+'_crossILC'*self.cross_ILC+self.output_suffix_weights+'.fits'
+            else:
+                if self.N_deproj[0]>0:
+                    self.weight_filename_hdf5 =  self.output_dir+self.output_prefix+'_weightmaps_component_'+self.ILC_preserved_comp+'_deproject_'+'_'.join(self.ILC_deproj_comps[0])+'_crossILC'*self.cross_ILC+self.output_suffix_weights+'.fits' 
+
+        # Do we want to calculate the weights from the covmat with np.linalg.solve()
+        # or the invcovmat with np.linalg.inv() and np.matmul()?
+        self.weights_from_covmat = True
+        self.weights_from_invcovmat = False
+        if 'weights_from_invcovmat' in p.keys():
+            assert type(p['weights_from_invcovmat']) is str
+            if p['weights_from_invcovmat'].lower() in ['true','yes']:
+                self.weights_from_covmat = False
+                self.weights_from_invcovmat = True
+
 
         # recompute_covmat_for_ndeproj is a flagthat, when it is on, includes the number of deprojected components
         # in the filenames for the covmat. If it is off, it does not. This is important because the size of the real
@@ -525,89 +614,93 @@ class ILCInfo(object):
 
     # method for reading in maps
     def read_maps(self):
-        self.maps = np.zeros((self.N_freqs,self.N_pix), dtype=np.float64)
-        for i in range(self.N_freqs):
-            # TODO: allow specification of nested or ring ordering (although will already work here if fits keyword ORDERING is present)
-            temp_map = hp.fitsfunc.read_map(self.freq_map_files[i], field=self.freq_map_field)
-            if not self.allow_dgrading:
-                 assert len(temp_map) <= self.N_pix, "input map at higher resolution than specified N_side"
-            if (len(temp_map) == self.N_pix):
-                self.maps[i] = np.copy(temp_map)
-            elif (len(temp_map) < self.N_pix):
-                # TODO: should probably upgrade in harmonic space to get pixel window correct
-                self.maps[i] = np.copy( hp.pixelfunc.ud_grade(temp_map, nside_out=self.N_side, order_out='RING', dtype=np.float64) )
-            elif (len(temp_map) > self.N_pix) and self.allow_dgrading:
-                # TODO: should probably upgrade in harmonic space to get pixel window correct
-                self.maps[i] = np.copy( hp.pixelfunc.ud_grade(temp_map, nside_out=self.N_side, order_out='RING', dtype=np.float64) )
-        # if cross-ILC read in the S1 and S2 maps
-        if self.cross_ILC:
-            self.maps_s1 = np.zeros((self.N_freqs,self.N_pix), dtype=np.float64)
-            self.maps_s2 = np.zeros((self.N_freqs,self.N_pix), dtype=np.float64)
+
+        if not self.wavelet_maps_exist:
+
+            self.maps = np.zeros((self.N_freqs,self.N_pix), dtype=np.float64)
             for i in range(self.N_freqs):
                 # TODO: allow specification of nested or ring ordering (although will already work here if fits keyword ORDERING is present)
-                temp_map_s1 = hp.fitsfunc.read_map(self.freq_map_files_s1[i], field=self.freq_map_field)
-                if not self.allow_dgrading:
-                    assert len(temp_map_s1) <= self.N_pix, "input map at higher resolution than specified N_side"
-                temp_map_s2 = hp.fitsfunc.read_map(self.freq_map_files_s2[i], field=self.freq_map_field)
-                if not self.allow_dgrading:
-                    assert len(temp_map_s2) <= self.N_pix, "input map at higher resolution than specified N_side"
-                if (len(temp_map_s1) == self.N_pix):
-                    self.maps_s1[i] = np.copy(temp_map_s1)
-                elif (len(temp_map_s1) < self.N_pix):
+                temp_map = hp.fitsfunc.read_map(self.freq_map_files[i], field=self.freq_map_field)
+                assert len(temp_map) <= self.N_pix, "input map at higher resolution than specified N_side"
+                if (len(temp_map) == self.N_pix):
+                    self.maps[i] = np.copy(temp_map)
+                elif (len(temp_map) < self.N_pix):
                     # TODO: should probably upgrade in harmonic space to get pixel window correct
-                    self.maps_s1[i] = np.copy( hp.pixelfunc.ud_grade(temp_map_s1, nside_out=self.N_side, order_out='RING', dtype=np.float64) )
-                if (len(temp_map_s2) == self.N_pix):
-                    self.maps_s2[i] = np.copy(temp_map_s2)
-                elif (len(temp_map_s2) < self.N_pix):
-                    # TODO: should probably upgrade in harmonic space to get pixel window correct
-                    self.maps_s2[i] = np.copy( hp.pixelfunc.ud_grade(temp_map_s2, nside_out=self.N_side, order_out='RING', dtype=np.float64) )
-            del(temp_map_s1)
-            del(temp_map_s2)
-        # if you want to subtract something from the maps, do it here 
-        if self.map_to_subtract is not None:
-            print("subtracting from all")
-            map_to_subtract = hp.fitsfunc.read_map(self.map_to_subtract)
-            assert hp.get_nside(map_to_subtract) >= self.N_side
-            if hp.get_nside(map_to_subtract) > self.N_side:
-                map_to_subtract = hp.ud_grade(map_to_subtract,self.N_side)
-            self.maps = self.maps - map_to_subtract[None,:]
+                    self.maps[i] = np.copy( hp.pixelfunc.ud_grade(temp_map, nside_out=self.N_side, order_out='RING', dtype=np.float64) )
+            del(temp_map)
+            # if cross-ILC read in the S1 and S2 maps
             if self.cross_ILC:
-                self.maps_s1 = self.maps_s1 -  map_to_subtract[None,:]
-                self.maps_s2 = self.maps_s2 -  map_to_subtract[None,:]
-        if self.maps_to_subtract is not None:
-            for freqind in range(self.N_freqs):
-                if self.maps_to_subtract[freqind] is not None:
-                    if type(self.maps_to_subtract[freqind]) is str:
-                        map_to_subtract = hp.fitsfunc.read_map(self.maps_to_subtract[freqind])
+                self.maps_s1 = np.zeros((self.N_freqs,self.N_pix), dtype=np.float64)
+                self.maps_s2 = np.zeros((self.N_freqs,self.N_pix), dtype=np.float64)
+                for i in range(self.N_freqs):
+                    # TODO: allow specification of nested or ring ordering (although will already work here if fits keyword ORDERING is present)
+                    temp_map_s1 = hp.fitsfunc.read_map(self.freq_map_files_s1[i], field=self.freq_map_field)
+                    assert len(temp_map_s1) <= self.N_pix, "input map at higher resolution than specified N_side"
+                    temp_map_s2 = hp.fitsfunc.read_map(self.freq_map_files_s2[i], field=self.freq_map_field)
+                    assert len(temp_map_s2) <= self.N_pix, "input map at higher resolution than specified N_side"
+                    if (len(temp_map_s1) == self.N_pix):
+                        self.maps_s1[i] = np.copy(temp_map_s1)
+                    elif (len(temp_map_s1) < self.N_pix):
+                        # TODO: should probably upgrade in harmonic space to get pixel window correct
+                        self.maps_s1[i] = np.copy( hp.pixelfunc.ud_grade(temp_map_s1, nside_out=self.N_side, order_out='RING', dtype=np.float64) )
+                    if (len(temp_map_s2) == self.N_pix):
+                        self.maps_s2[i] = np.copy(temp_map_s2)
+                    elif (len(temp_map_s2) < self.N_pix):
+                        # TODO: should probably upgrade in harmonic space to get pixel window correct
+                        self.maps_s2[i] = np.copy( hp.pixelfunc.ud_grade(temp_map_s2, nside_out=self.N_side, order_out='RING', dtype=np.float64) )
+                del(temp_map_s1)
+                del(temp_map_s2)
+            # if you want to subtract something from the maps, do it here 
+            if self.map_to_subtract is not None:
+                map_to_subtract = hp.fitsfunc.read_map(self.map_to_subtract)
+                assert hp.get_nside(map_to_subtract) >= self.N_side
+                if hp.get_nside(map_to_subtract) > self.N_side:
+                    map_to_subtract = hp.ud_grade(map_to_subtract,self.N_side)
+                self.maps = self.maps - map_to_subtract[None,:]
+                if self.cross_ILC:
+                    self.maps_s1 = self.maps_s1 -  map_to_subtract[None,:]
+                    self.maps_s2 = self.maps_s2 -  map_to_subtract[None,:]
+
+
+
+            # if you want to subtract something from the maps only in specific frequency channels, do it here 
+            if self.maps_to_subtract is not None:
+                for freqind in range(self.N_freqs):
+                    if self.maps_to_subtract[freqind] is not None:
+                        if type(self.maps_to_subtract[freqind]) is str:
+                            map_to_subtract = hp.fitsfunc.read_map(self.maps_to_subtract[freqind])
+                        else:
+                            maps_to_subtract = [hp.fitsfunc.read_map(x) for x in self.maps_to_subtract[freqind]]
+                            for xind,mapp in enumerate(maps_to_subtract):
+                                if hp.get_nside(mapp) > self.N_side:
+                                    mapp_dg = hp.ud_grade(mapp,self.N_side)
+                                    maps_to_subtract[xind] = mapp_dg
+                            maps_to_subtract = np.array(maps_to_subtract)
+                            map_to_subtract = np.sum(maps_to_subtract,axis=0)
+                            print("shape is",map_to_subtract.shape)
                     else:
-                        maps_to_subtract = [hp.fitsfunc.read_map(x) for x in self.maps_to_subtract[freqind]]
-                        for xind,mapp in enumerate(maps_to_subtract):
-                            if hp.get_nside(mapp) > self.N_side:
-                                mapp_dg = hp.ud_grade(mapp,self.N_side)
-                                maps_to_subtract[xind] = mapp_dg
-                        maps_to_subtract = np.array(maps_to_subtract)
-                        map_to_subtract = np.sum(maps_to_subtract,axis=0)
-                        print("shape is",map_to_subtract.shape)
-                else:
-                    map_to_subtract = 0*self.maps[freqind]
-                if 1==1:
+                        map_to_subtract = 0*self.maps[freqind]
 
                     assert hp.get_nside(map_to_subtract) >= self.N_side
                     if hp.get_nside(map_to_subtract) > self.N_side:
-                        map_to_subtract = hp.ud_grade(map_to_subtract,self.N_side)
+                            map_to_subtract = hp.ud_grade(map_to_subtract,self.N_side)
+
                     self.maps[freqind] = self.maps[freqind] - map_to_subtract
                     if self.subtract_monopole[freqind]:
-                        print("subtracting monopole",freqind,flush=True)
-                        self.maps[freqind] -= np.mean(self.maps[freqind])
+                            print("subtracting monopole",freqind,flush=True)
+                            self.maps[freqind] -= np.mean(self.maps[freqind])
                     if self.subtract_nside[freqind]:
                         self.maps[freqind] -= hp.ud_grade(hp.ud_grade(self.maps[freqind],self.subtract_nside),self.N_side)
                     if self.cross_ILC:
                         self.maps_s1[freqind] = self.maps_s1[freqind] - map_to_subtract
                         self.maps_s2[freqind] = self.maps_s2[freqind] - map_to_subtract
 
+
+
+
         # if we need to apply weights to alternative maps, read them in
         if self.apply_weights_to_other_maps:
-            print("reading in maps for weights")
+            print("reading in maps for weights",flush=True)
             self.maps_for_weights = np.zeros((self.N_freqs,self.N_pix), dtype=np.float64)
             for i in range(self.N_freqs):
                 # TODO: allow specification of nested or ring ordering (although will already work here if fits keyword ORDERING is present)
@@ -653,9 +746,13 @@ class ILCInfo(object):
             self.bandpasses = [] #initialize empty list
             for i in range(self.N_freqs):
                 if self.freq_bp_files[i] is not None:
-                    (self.bandpasses).append(np.loadtxt(self.freq_bp_files[i], unpack=True, usecols=(0,1)))
+                    if  self.freq_bp_files[i].lower()  !='delta':
+                        (self.bandpasses).append(np.loadtxt(self.freq_bp_files[i], unpack=True, usecols=(0,1)))
+                    else:
+                        self.bandpasses.append('Delta')
                 else:
                     self.bandpasses.append(None)
+
 
     # method for reading in beams
     # self.beams is a list of length self.N_freqs where each entry is an (ELLMAX+1) x 2 array
