@@ -452,16 +452,12 @@ class ILCInfo(object):
                 assert len(self.ILC_deproj_comps) == self.N_deproj, "ILC_deproj_comps"
                 assert all(comp in COMP_TYPES for comp in self.ILC_deproj_comps), "unsupported component type in ILC_deproj_comps"
                 assert((self.N_deproj + 1) <= self.N_freqs), "not enough frequency channels to deproject this many components"
-                self.deproject_from_channels = {}
-                for component in self.ILC_deproj_comps:
-                    self.deproject_from_channels[component] = 'all'
 
         # If a list is input, assign each element the corresponding scale
         if type(self.N_deproj) is list:
             assert len(self.N_deproj) == self.N_scales
             ind = 0
             self.ILC_deproj_comps=[]
-            self.deproject_from_channels = {}
             for N_deproj in self.N_deproj:
                 assert type(N_deproj) is int and N_deproj >= 0, "N_deproj"
                 if (N_deproj > 0):
@@ -469,16 +465,9 @@ class ILCInfo(object):
                     assert len(self.ILC_deproj_comps[ind]) == N_deproj, "ILC_deproj_comps"
                     assert all(comp in COMP_TYPES for comp in self.ILC_deproj_comps[ind]), "unsupported component type in ILC_deproj_comps"
                     assert((N_deproj + 1) <= self.N_freqs), "not enough frequency channels to deproject this many components"
-                    for component in self.ILC_deproj_comps[ind]:
-                        self.deproject_from_channels[component] = 'all'
                 else:
                     self.ILC_deproj_comps.append([])
                 ind = ind+1
-        # if you only want to deproject some component in a given range of frequency channels? (we can remove this i think)A
-        #, it's not as useful as i thought it would be
-        if 'deproject_from_channels' in p.keys():
-            for component in p['deproject_from_channels'].keys():
-                self.deproject_from_channels[component] = p['deproject_from_channels'][component]
 
         # Flag for printing the time taken for several of the linear algebra
         # computations for the weights. Default is False, we could even just remove it,

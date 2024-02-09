@@ -443,13 +443,6 @@ class scale_info(object):
             if (N_deproj != 0):
                 for b in range(1,N_deproj+1):
                     component = ILC_deproj_comps[b-1]
-                    if info.deproject_from_channels[component] not in ['all','All']:
-                        countt = 0
-                        for a in range(info.N_freqs):
-                             if (self.freqs_to_use[j][a] == True):
-                                 if not info.deproject_from_channels[component][a]:
-                                     A_mix[countt][b] = 0
-                                 countt+=1
             return A_mix
 
     def compute_covariance_at_scale_j(self,info,j,FWHM_pix):
