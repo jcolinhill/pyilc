@@ -123,8 +123,8 @@ class ILCInfo(object):
 
         # tolerance for the checks for the responses: preserved component should be within resp_tol of 1, 
         # deprojected components should be within resp_tol of 0
-        # defalt is 1e-3
-        self.resp_tol = 1e-3
+        # default is 1.0e-3
+        self.resp_tol = 1.0e-3
         if 'resp_tol' in p.keys():
             self.resp_tol = p['resp_tol']
 
@@ -147,7 +147,7 @@ class ILCInfo(object):
             assert all(FWHM_val > 0. for FWHM_val in self.GN_FWHM_arcmin), "GN_FWHM_arcmin"
             assert 'ellboundaries' not in p.keys()
             assert 'ellpeaks' not in p.keys()
-        elif self.wavelet_type == 'CosineNeedlets':  #Fiona added CosineNeedlets
+        elif self.wavelet_type == 'CosineNeedlets': 
             # ellpeak values defining the cosine needlets
             self.ellpeaks = np.asarray(p['ellpeaks'])
             self.ellmin = np.asarray(p['ellmin'])
@@ -224,7 +224,7 @@ class ILCInfo(object):
         # how many frequency channels one should use at the scale corresponding to that entry. 
         # if the entry is less than N_freqs, the lowest resolution maps will be dropped from the NILC
         # such that there are the appropriate number of frequency channels used in each scale
-        # maybe we should change the name of this flag?
+        
         self.override_N_freqs_to_use = False
         if 'override_N_freqs_to_use' in p.keys():
             assert 'wavelet_beam_criterion' not in p.keys()
@@ -274,7 +274,8 @@ class ILCInfo(object):
 
 
         # do the wavelet maps already exist as saved files? we can tell the code to skip the check for this, if 
-        # we know this alredy. Deafults to False
+        # we know this alredy. Deafults to False (it will automatically check if they exist).
+        # this just allows you to skip the check if you know they exist.
         self.wavelet_maps_exist = False
         if 'wavelet_maps_exist' in p.keys():
             if p['wavelet_maps_exist'].lower() in ['true','yes','y']:
@@ -315,12 +316,11 @@ class ILCInfo(object):
             assert type(self.subtract_means_before_sums) is list
             assert len(self.subtract_means_before_sums) == self.N_scales
 
-        #flags to subtract the mean/monopole of each frequency
+        # flags to subtract the mean/monopole of each frequency
         # subtract_mean should be a list of N_freq bools of whether you subtract the mean at each frequency
         # if you input one bool it will be broadcast to N_Freq bools.
         self.subtract_mean = False
         self.subtract_monopole = [False] * self.N_freqs
-        self.subtract_nside = [False] * self.N_freqs
         if 'subtract_mean' in p.keys():
             if type(p['subtract_mean'] ) is str:
                 sub_mean = self.N_freqs*[p['subtract_mean']]
@@ -379,23 +379,10 @@ class ILCInfo(object):
         assert hp.pixelfunc.isnsideok(self.N_side, nest=True), "invalid N_side"
         self.N_pix = 12*self.N_side**2
 
-        # by default, all mean-calculation functions are done with hp.smoothing
-        # but in principle we could do this with hp.ud_grade(hp.ud_grade(map,small N_side),original N_side)
-        # set this to true if you want to do the latter
-        if 'mean_by_dgrading' in p.keys():
-            if p['mean_by_dgrading'].lower() in ['true','yes']:
-                self.mean_by_upgrading = True
-                self.mean_by_smoothing = False
-            else:
-                self.mean_by_upgrading = False
-                self.mean_by_smoothing = True
-        else:
-            self.mean_by_smoothing = True
-            self.mean_by_upgrading = False
-        # the N_side you want to dgrade to for these mean calculations
-        if self.mean_by_upgrading:
-            self.mean_nside = p['mean_nside']
-
+        
+        self.mean_by_smoothing = True
+        self.mean_by_upgrading = False  # placeholder - remove this functionality in wavelets.py
+       
         # Do we only want to perform NILC on part of the sky? if so, include the mask
         # todo: think about apodization etc.......
         self.mask_before_covariance_computation = None
@@ -427,7 +414,6 @@ class ILCInfo(object):
         assert self.ILC_preserved_comp in COMP_TYPES, "unsupported component type in ILC_preserved_comp"
 
         # real-space filters: 
-        print(p.keys())
         assert ('ILC_bias_tol' in p.keys() or 'FWHM_pix' in p.keys())
 
         # ILC: bias tolerance
@@ -436,7 +422,7 @@ class ILCInfo(object):
             self.ILC_bias_tol = p['ILC_bias_tol']
             assert self.ILC_bias_tol > 0. and self.ILC_bias_tol < 1., "invalid ILC bias tolerance"
 
-        #if you want to allow ILC biases that are too large for the number of modes available:
+        # if you want to allow ILC biases that are too large for the number of modes available:
         self.override_ILCbiastol = False
         if 'override_ILCbiastol_threshold' in p.keys():
             assert type(p['override_ILCbiastol_threshold']) is str
@@ -675,8 +661,6 @@ class ILCInfo(object):
                     if self.subtract_monopole[freqind]:
                             print("subtracting monopole",freqind,flush=True)
                             self.maps[freqind] -= np.mean(self.maps[freqind])
-                    if self.subtract_nside[freqind]:
-                        self.maps[freqind] -= hp.ud_grade(hp.ud_grade(self.maps[freqind],self.subtract_nside),self.N_side)
                     if self.cross_ILC:
                         self.maps_s1[freqind] = self.maps_s1[freqind] - map_to_subtract
                         self.maps_s2[freqind] = self.maps_s2[freqind] - map_to_subtract
