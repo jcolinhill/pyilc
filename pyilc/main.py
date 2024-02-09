@@ -25,8 +25,9 @@ info = ILCInfo(input_file)
 ##########################
 t2=time.time()
 ##########################
-# read in frequency maps
-#info.read_maps() # fiona: we only need to do this if we are computing wavelet coeffs, if they haven't already been computed and saved
+# read in frequency maps (Update: this is now done in wavelets.py only if the maps needlet coeffs have not already been computed and saved.
+# otherwise we don't need to read in the maps at all.
+# info.read_maps() 
 # read in bandpasses
 info.read_bandpasses()
 # read in beams
