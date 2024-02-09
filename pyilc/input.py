@@ -470,9 +470,7 @@ class ILCInfo(object):
                 ind = ind+1
 
         # Flag for printing the time taken for several of the linear algebra
-        # computations for the weights. Default is False, we could even just remove it,
-        # I sometimes just  find it useful to know how much time the code is taking in each
-        # computation.
+        # computations for the weights. Default is False
         self.print_timing = False
         if 'print_timing' in p.keys():
             assert type(p['print_timing']) is str
@@ -499,8 +497,6 @@ class ILCInfo(object):
             self.save_as_fits = False
             #filenames for the covmaps, invcovmaps, and wavelet coeff and weight files
             self.covmaps_hdf5_filename = self.output_dir + self.output_prefix + '_covmaps'+'_crossILC'*self.cross_ILC+'.hdf5'
-            self.invcovmaps_hdf5_filename = self.output_dir + self.output_prefix + '_invcovmaps'+'_crossILC'*self.cross_ILC+'.hdf5'
-            # fiona should i remove the above?
             self.wavelet_coeff_hdf5_filename = self.output_dir + self.output_prefix + '_waveletmaps.hdf5'
 
             self.weight_filename_hdf5 =  self.output_dir + self.output_prefix + '_weightmaps_component_'+self.ILC_preserved_comp+'_crossILC'*self.cross_ILC+self.output_suffix_weights+'.fits'
@@ -520,7 +516,6 @@ class ILCInfo(object):
         # covmat and not recompute all the time. So, if you don't want to recompute for different values of N_deproj, 
         # turn this off and it will just use the covmat calculated on the area appropriate for what N_deproj was the
         # first time you ran the code.
-        # fiona maybe this is too cumbersome and hsould be removed, it does not save much
         if 'recompute_covmat_for_ndeproj' in p.keys(): 
             self.recompute_covmat_for_ndeproj = p['recompute_covmat_for_ndeproj']
         else:
