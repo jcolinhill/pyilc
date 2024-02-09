@@ -1375,12 +1375,6 @@ def _cov_filename(info,freq1,freq2,scale):
     j = scale
 
     cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_covmap_freq'+str(a)+'_freq'+str(b)+'_scale'+str(j)+'_crossILC'*info.cross_ILC+'.fits'
-    if info.recompute_covmat_for_ndeproj:
-        if type(info.N_deproj) is int:
-            N_deproj = info.N_deproj
-        else:
-            N_deproj = info.N_deproj[j]
-        cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_covmap_freq'+str(a)+'_freq'+str(b)+'_scale'+str(j)+'_crossILC'*info.cross_ILC+'_Ndeproj'+str(N_deproj)+'.fits'
 
     return cov_filename
 
@@ -1391,12 +1385,6 @@ def _inv_cov_filename(info,freq1,freq2,scale):
     j = scale
 
     inv_cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_invcovmap_freq'+str(a)+'_freq'+str(b)+'_scale'+str(j)+'_crossILC'*info.cross_ILC+'.fits'
-    if info.recompute_covmat_for_ndeproj:
-        if type(info.N_deproj) is int:
-            N_deproj = info.N_deproj
-        else:
-            N_deproj = info.N_deproj[j]
-        inv_cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_invcovmap_freq'+str(a)+'_freq'+str(b)+'_scale'+str(j)+'_crossILC'*info.cross_ILC+'_Ndeproj'+str(N_deproj)+'.fits'
 
     return inv_cov_filename
 
