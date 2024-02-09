@@ -86,6 +86,8 @@ class ILCInfo(object):
         
         # if you are applying previously computed and saved weights to a new set of maps,
         # you need to tell the code what the output suffix was for those weights.
+        # this also changes the output_suffix for the weights if they are being computed and saved
+        # default is output_suffix
         self.output_suffix_weights = self.output_suffix
         if 'output_suffix_weights' in p.keys():
             self.output_suffix_weights = p['output_suffix_weights']
