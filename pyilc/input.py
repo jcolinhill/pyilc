@@ -100,6 +100,8 @@ class ILCInfo(object):
         assert type(self.save_weights) is str, "TypeError: save_weights"
 
         #flag whether to save the ILC map at each scale - if this is not in input file, will default to False
+        # Note this saves the input to synthesize() and so the needlet filters are *NOT* applied.
+        # these maps cannot be naively added to form the final map.
         self.save_scale_ILC_maps = False
         if 'save_scale_ILC_maps' in p.keys():
             if p['save_scale_ILC_maps'].lower() in ['yes','true','y','t']:
