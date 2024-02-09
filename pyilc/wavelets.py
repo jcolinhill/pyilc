@@ -191,9 +191,9 @@ class Wavelets(object):
             taper =  (1.0 - 0.5*(np.tanh(2/taperwidths[i]*(ells- (ellboundaries[i]))) + 1.0))
 
             self.filters[i] = np.sqrt(np.ones(self.ELLMAX+1) * taper - np.sum(self.filters[:i]**2,axis=0))
-            self.filters[i][np.isnan(self.filters[i])]=0
+            self.filters[i][np.isnan(self.filters[i])]=0.0
         self.filters[-1] = np.sqrt(np.ones(self.ELLMAX+1)  - np.sum(self.filters[:-1]**2,axis=0))
-        self.filters[-1][np.isnan(self.filters[-1])]=0
+        self.filters[-1][np.isnan(self.filters[-1])]=0.0
         assert (np.absolute( np.sum( self.filters**2., axis=0 ) - np.ones(self.ELLMAX+1,dtype=float)) < self.tol).all(), "wavelet filter transmission check failed"
         self.ell = ells
         return self.ell, self.filters
