@@ -1343,6 +1343,7 @@ def waveletize_input_maps(info,scale_info_wvs,wv,map_images = False):
                         del(maps) #free up memory
                     print("done waveletizing season"+str(season)+" maps at frequency" + str(i),flush=True)
             del wv_maps_temp #free up memory
+            
 def _needletcoeffmap_filename(info,freq,scale,season=None):
 
     if season is None:
@@ -1363,16 +1364,6 @@ def _cov_filename(info,freq1,freq2,scale):
     cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_covmap_freq'+str(a)+'_freq'+str(b)+'_scale'+str(j)+'_crossILC'*info.cross_ILC+'.fits'
 
     return cov_filename
-
-def _inv_cov_filename(info,freq1,freq2,scale):
-
-    a = freq1
-    b = freq2
-    j = scale
-
-    inv_cov_filename = info.output_dir+info.output_prefix+'_needletcoeff_invcovmap_freq'+str(a)+'_freq'+str(b)+'_scale'+str(j)+'_crossILC'*info.cross_ILC+'.fits'
-
-    return inv_cov_filename
 
 def _ILC_scale_filename(info,j,scale_info_wvs):
 
