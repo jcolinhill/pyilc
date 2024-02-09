@@ -23,7 +23,6 @@ except IndexError:
 # read in the input file and set up relevant info object
 info = ILCInfo(input_file)
 ##########################
-t2=time.time()
 ##########################
 # read in frequency maps (Update: this is now done in wavelets.py only if the maps needlet coeffs have not already been computed and saved.
 # otherwise we don't need to read in the maps at all.
@@ -60,8 +59,6 @@ if info.wavelet_type == 'TopHatHarmonic':
 else:
     wavelet_ILC(wv, info, resp_tol=info.resp_tol, map_images=False)
 ##########################
-tend = time.time()-tstart
-print("tend is",tend)
 
 ##########################
 # TODO
