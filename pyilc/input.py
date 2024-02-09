@@ -84,12 +84,6 @@ class ILCInfo(object):
             self.output_suffix = p['output_suffix']
             assert type(self.output_suffix) is str, "TypeError: output_suffix"
         
-        # I have been using this for some stuff but it may be easier to just remove it
-        self.output_suffix_intermediate = self.output_suffix
-        if 'output_suffix_intermediate' in p.keys():
-            self.output_suffix_intermediate = p ['output_suffix_intermediate']
-            assert type(self.output_suffix_intermediate) is str, "TypeError: output_suffix_intermediate"
-
         # if you are applying previously computed and saved weights to a new set of maps,
         # you need to tell the code what the output suffix was for those weights.
         self.output_suffix_weights = self.output_suffix

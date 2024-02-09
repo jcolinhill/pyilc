@@ -1415,14 +1415,14 @@ def _ILC_scale_filename(info,j,scale_info_wvs):
         if scale_info_wvs.freqs_to_use[j][x]:
             frequencies_included += str(x)
 
-    ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'_includechannels'+frequencies_included+info.output_suffix_intermediate+'.fits'
+    ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_crossILC'*info.cross_ILC+'_includechannels'+frequencies_included+info.output_suffix+'.fits'
     if type(info.N_deproj) is int:
         if info.N_deproj>0:
-            ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'_includechannels'+frequencies_included+info.output_suffix_intermediate+'.fits'
+            ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'_includechannels'+frequencies_included+info.output_suffix+'.fits'
     else:
          if info.N_deproj[0]>0:
             # NOTE: ILCdeprojected file name is not so descriptive here. Need to describe it more in info.output_suffix.
-            ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps[0])+'_crossILC'*info.cross_ILC+'_includechannels'+frequencies_included+info.output_suffix_intermediate+'.fits'
+            ILC_map_filename = info.output_dir+info.output_prefix+'needletILCmap_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps[0])+'_crossILC'*info.cross_ILC+'_includechannels'+frequencies_included+info.output_suffix+'.fits'
 
     return ILC_map_filename
 
