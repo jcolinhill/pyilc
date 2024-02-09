@@ -464,12 +464,12 @@ class scale_info(object):
 
             smoothed_mask = hp.sphtfunc.smoothing(dgraded_mask,FWHM_pix[j])
             fskyinv = np.zeros(smoothed_mask.shape)
-            fskyinv[smoothed_mask!=0] = 1/smoothed_mask[smoothed_mask!=0]
-            fskyinv[smoothed_mask==0] = 1e100
+            fskyinv[smoothed_mask!=0] = 1.0/smoothed_mask[smoothed_mask!=0]
+            fskyinv[smoothed_mask==0] = 1.0e100
 
         else:
-            fskyinv = 1
-            dgraded_mask = 1
+            fskyinv = 1.0
+            dgraded_mask = 1.0
 
         smoothed_maps_A = {}
         unsmoothed_maps_A = {}
@@ -484,18 +484,11 @@ class scale_info(object):
                     season_A = 1
                     season_B = 2
                 wavelet_map_A = dgraded_mask * self.load_wavelet_coeff_map(a,j,info,season=season_A) 
-                if info.mean_by_smoothing:
-                    smoothed_maps_A[a] = dgraded_mask*hp.sphtfunc.smoothing(wavelet_map_A, FWHM_pix[j])*fskyinv
-                elif info.mean_by_upgrading:
-                    smoothed_maps_A[a] = hp.ud_grade(hp.ud_grade(wavelet_map_A,info.mean_nside),hp.get_nside(wavelet_map_A))
+                smoothed_maps_A[a] = dgraded_mask*hp.sphtfunc.smoothing(wavelet_map_A, FWHM_pix[j])*fskyinv
                 unsmoothed_maps_A[a] = wavelet_map_A
                 if info.cross_ILC:
                     wavelet_map_B = dgraded_mask * self.load_wavelet_coeff_map(a,j,info,season=season_B) 
-                    if info.mean_by_smoothing:
-                        smoothed_maps_B[a] = hp.sphtfunc.smoothing(wavelet_map_B, FWHM_pix[j])
-                    elif info.mean_by_upgrading:
-                        smoothed_maps_B[a] = hp.ud_grade(hp.ud_grade(wavelet_map_B,info.mean_nside),hp.get_nside(wavelet_map_A))
-
+                    smoothed_maps_B[a] = hp.sphtfunc.smoothing(wavelet_map_B, FWHM_pix[j])
                     unsmoothed_maps_B[a] = wavelet_map_B
 
         for a in range(info.N_freqs):
@@ -516,20 +509,12 @@ class scale_info(object):
 
                                 assert len(wavelet_map_A) == len(wavelet_map_B), "cov mat map calculation: wavelet coefficient maps have different N_side"
                                 if not info.cross_ILC:
-                                    if info.mean_by_smoothing:
-                                        cov_map_temp = hp.sphtfunc.smoothing( (wavelet_map_A - wavelet_map_A_smoothed)*(wavelet_map_B - wavelet_map_B_smoothed) , FWHM_pix[j])
-                                    elif info.mean_by_upgrading:
-                                        cov_map_temp = hp.ud_grade(hp.ud_grade( (wavelet_map_A - wavelet_map_A_smoothed)*(wavelet_map_B - wavelet_map_B_smoothed) , info.mean_nside),hp.get_nside(wavelet_map_A))
-
+                                    cov_map_temp = hp.sphtfunc.smoothing( (wavelet_map_A - wavelet_map_A_smoothed)*(wavelet_map_B - wavelet_map_B_smoothed) , FWHM_pix[j])
                                 else:
-                                     if info.mean_by_smoothing:
-                                         cov_map_temp_AB = (hp.sphtfunc.smoothing( (wavelet_map_A - wavelet_map_A_smoothed)*(wavelet_map_B - wavelet_map_B_smoothed) , FWHM_pix[j]))
-                                         cov_map_temp_BA = (hp.sphtfunc.smoothing( (wavelet_map_B - wavelet_map_B_smoothed)*(wavelet_map_A - wavelet_map_A_smoothed) , FWHM_pix[j]))
-                                     elif info.mean_by_upgrading: 
-                                         cov_map_temp_AB = hp.ud_grade(hp.ud_grade((wavelet_map_A - wavelet_map_A_smoothed)*(wavelet_map_B - wavelet_map_B_smoothed) , info.mean_nside),hp.get_nside(wavelet_map_A))
-                                         cov_map_temp_AB = hp.ud_grade(hp.ud_grade((wavelet_map_B - wavelet_map_B_smoothed)*(wavelet_map_A - wavelet_map_A_smoothed) , info.mean_nside),hp.get_nside(wavelet_map_B))
+                                    cov_map_temp_AB = (hp.sphtfunc.smoothing( (wavelet_map_A - wavelet_map_A_smoothed)*(wavelet_map_B - wavelet_map_B_smoothed) , FWHM_pix[j]))
+                                    cov_map_temp_BA = (hp.sphtfunc.smoothing( (wavelet_map_B - wavelet_map_B_smoothed)*(wavelet_map_A - wavelet_map_A_smoothed) , FWHM_pix[j]))
 
-                                     cov_map_temp = 1/2*(cov_map_temp_AB+ cov_map_temp_BA)
+                                    cov_map_temp = 0.5*(cov_map_temp_AB+ cov_map_temp_BA)
 
 
                                 cov_maps_temp.append( cov_map_temp  * fskyinv)
@@ -554,6 +539,7 @@ class scale_info(object):
                 assert not ncomp == 0
                 subtract_columns += [ncomp]
                 subtract_comp += 1
+                
         A_mix = np.delete(A_mix,tuple(subtract_columns),axis=1)
 
 
@@ -568,6 +554,7 @@ class scale_info(object):
             if (self.freqs_to_use[j][a] == True):
                 a_min = a
                 break
+                
         # get the mask that we don't care about computing outside of:
         #todo: this needs to be removed, and the hardcoding of this needs to be removed
         t1=time.time()
@@ -724,7 +711,7 @@ class scale_info(object):
 
     def compute_weights_at_scale_j_from_covmat(self,j,info,resp_tol,map_images = False):
 
-            # Computes the ILC weights at scale j  without ever computing the invcovmat (using np.linalg.solv instead of np.linalg.inv)
+            # Computes the ILC weights at scale j without ever computing the invcovmat (using np.linalg.solve instead of np.linalg.inv)
 
             t1=time.time()
 
@@ -1134,8 +1121,7 @@ class scale_info(object):
                 if not info.apply_weights_to_other_maps:
                     wavelet_coeff_map = self.load_wavelet_coeff_map(a,j,info)
                 else:
-                    wavelet_coeff_map =maps_for_weights_needlets[a][j]
-                #wavelet_coeff_map = hp.read_map(filename_wavelet_coeff_map, dtype=np.float64)
+                    wavelet_coeff_map = maps_for_weights_needlets[a][j]
                 if info.subtract_means_before_sums[j]:
                     dgraded_mask = hp.ud_grade(info.mask_before_covariance_computation,self.N_side_to_use[j])
                     dgraded_mask[dgraded_mask!=0]=1
