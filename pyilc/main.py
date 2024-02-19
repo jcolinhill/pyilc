@@ -21,8 +21,10 @@ except IndexError:
 # read in the input file and set up relevant info object
 info = ILCInfo(input_file)
 ##########################
-# read in frequency maps
-#info.read_maps() # fiona: we only need to do this if we are computing wavelet coeffs, if they haven't already been computed and saved
+# read in frequency maps (Update: this is now done in wavelets.py only if the maps needlet coeffs have not already been computed and saved.
+# otherwise we don't need to read in the maps at all.
+# info.read_maps() 
+##########################
 # read in bandpasses
 info.read_bandpasses()
 # read in beams
@@ -36,8 +38,6 @@ if info.wavelet_type == 'GaussianNeedlets':
     ell, filts = wv.GaussianNeedlets(FWHM_arcmin=info.GN_FWHM_arcmin)
 elif info.wavelet_type == 'CosineNeedlets': # Fiona added CosineNeedlets
     ell,filts = wv.CosineNeedlets(ellmin = info.ellmin,ellpeaks = info.ellpeaks)
-elif info.wavelet_type == 'ScaleDiscretizedWavelets':
-    ell,filts = wv.ScaleDiscretizedWavelets(ellboundaries = info.ellboundaries)
 elif info.wavelet_type == 'TopHatHarmonic':
     ell,filts = wv.TopHatHarmonic(info.ellbins)
 elif info.wavelet_type == 'TaperedTopHats':

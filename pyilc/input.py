@@ -9,7 +9,7 @@ module to read in relevant input specified by user
 ##########################
 # wavelet types implemented thus far
 # WV_TYPES = ['GaussianNeedlets','TopHatHarmonic']
-WV_TYPES = ['GaussianNeedlets','TopHatHarmonic','CosineNeedlets','ScaleDiscretizedWavelets','TaperedTopHats'] # Fiona added CosineNeedlets
+WV_TYPES = ['GaussianNeedlets','TopHatHarmonic','CosineNeedlets','TaperedTopHats'] # Fiona added CosineNeedlets
 ##########################
 
 ##########################
@@ -84,14 +84,10 @@ class ILCInfo(object):
             self.output_suffix = p['output_suffix']
             assert type(self.output_suffix) is str, "TypeError: output_suffix"
         
-        # I have been using this for some stuff but it may be easier to just remove it
-        self.output_suffix_intermediate = self.output_suffix
-        if 'output_suffix_intermediate' in p.keys():
-            self.output_suffix_intermediate = p ['output_suffix_intermediate']
-            assert type(self.output_suffix_intermediate) is str, "TypeError: output_suffix_intermediate"
-
         # if you are applying previously computed and saved weights to a new set of maps,
         # you need to tell the code what the output suffix was for those weights.
+        # this also changes the output_suffix for the weights if they are being computed and saved
+        # default is output_suffix
         self.output_suffix_weights = self.output_suffix
         if 'output_suffix_weights' in p.keys():
             self.output_suffix_weights = p['output_suffix_weights']
@@ -104,6 +100,8 @@ class ILCInfo(object):
         assert type(self.save_weights) is str, "TypeError: save_weights"
 
         #flag whether to save the ILC map at each scale - if this is not in input file, will default to False
+        # Note this saves the input to synthesize() and so the needlet filters are *NOT* applied.
+        # these maps cannot be naively added to form the final map.
         self.save_scale_ILC_maps = False
         if 'save_scale_ILC_maps' in p.keys():
             if p['save_scale_ILC_maps'].lower() in ['yes','true','y','t']:
@@ -125,8 +123,8 @@ class ILCInfo(object):
 
         # tolerance for the checks for the responses: preserved component should be within resp_tol of 1, 
         # deprojected components should be within resp_tol of 0
-        # defalt is 1e-3
-        self.resp_tol = 1e-3
+        # default is 1.0e-3
+        self.resp_tol = 1.0e-3
         if 'resp_tol' in p.keys():
             self.resp_tol = p['resp_tol']
 
@@ -149,7 +147,7 @@ class ILCInfo(object):
             assert all(FWHM_val > 0. for FWHM_val in self.GN_FWHM_arcmin), "GN_FWHM_arcmin"
             assert 'ellboundaries' not in p.keys()
             assert 'ellpeaks' not in p.keys()
-        elif self.wavelet_type == 'CosineNeedlets':  #Fiona added CosineNeedlets
+        elif self.wavelet_type == 'CosineNeedlets': 
             # ellpeak values defining the cosine needlets
             self.ellpeaks = np.asarray(p['ellpeaks'])
             self.ellmin = np.asarray(p['ellmin'])
@@ -226,7 +224,7 @@ class ILCInfo(object):
         # how many frequency channels one should use at the scale corresponding to that entry. 
         # if the entry is less than N_freqs, the lowest resolution maps will be dropped from the NILC
         # such that there are the appropriate number of frequency channels used in each scale
-        # maybe we should change the name of this flag?
+        
         self.override_N_freqs_to_use = False
         if 'override_N_freqs_to_use' in p.keys():
             assert 'wavelet_beam_criterion' not in p.keys()
@@ -276,7 +274,8 @@ class ILCInfo(object):
 
 
         # do the wavelet maps already exist as saved files? we can tell the code to skip the check for this, if 
-        # we know this alredy. Deafults to False
+        # we know this alredy. Deafults to False (it will automatically check if they exist).
+        # this just allows you to skip the check if you know they exist.
         self.wavelet_maps_exist = False
         if 'wavelet_maps_exist' in p.keys():
             if p['wavelet_maps_exist'].lower() in ['true','yes','y']:
@@ -311,18 +310,18 @@ class ILCInfo(object):
         # by default we don't do this, but if you want to do this put this here
         # this should be a list with N_scales entries, eg if you want to subtract the means on the realspace domains
         # on some scales and not others.
+        # THIS REMOVES SIGNAL DON'T DO THIS UNLESS YOU KNOW WHAT IT IS DOING
         self.subtract_means_before_sums = [False] * self.N_scales
         if 'subtract_means_before_sums' in p.keys():
             self.subtract_means_before_sums = p['subtract_means_before_sums']
             assert type(self.subtract_means_before_sums) is list
             assert len(self.subtract_means_before_sums) == self.N_scales
 
-        #flags to subtract the mean/monopole of each frequency
+        # flags to subtract the mean/monopole of each frequency
         # subtract_mean should be a list of N_freq bools of whether you subtract the mean at each frequency
         # if you input one bool it will be broadcast to N_Freq bools.
         self.subtract_mean = False
         self.subtract_monopole = [False] * self.N_freqs
-        self.subtract_nside = [False] * self.N_freqs
         if 'subtract_mean' in p.keys():
             if type(p['subtract_mean'] ) is str:
                 sub_mean = self.N_freqs*[p['subtract_mean']]
@@ -381,23 +380,10 @@ class ILCInfo(object):
         assert hp.pixelfunc.isnsideok(self.N_side, nest=True), "invalid N_side"
         self.N_pix = 12*self.N_side**2
 
-        # by default, all mean-calculation functions are done with hp.smoothing
-        # but in principle we could do this with hp.ud_grade(hp.ud_grade(map,small N_side),original N_side)
-        # set this to true if you want to do the latter
-        if 'mean_by_dgrading' in p.keys():
-            if p['mean_by_dgrading'].lower() in ['true','yes']:
-                self.mean_by_upgrading = True
-                self.mean_by_smoothing = False
-            else:
-                self.mean_by_upgrading = False
-                self.mean_by_smoothing = True
-        else:
-            self.mean_by_smoothing = True
-            self.mean_by_upgrading = False
-        # the N_side you want to dgrade to for these mean calculations
-        if self.mean_by_upgrading:
-            self.mean_nside = p['mean_nside']
-
+        
+        self.mean_by_smoothing = True
+        self.mean_by_upgrading = False  # placeholder - remove this functionality in wavelets.py
+       
         # Do we only want to perform NILC on part of the sky? if so, include the mask
         # todo: think about apodization etc.......
         self.mask_before_covariance_computation = None
@@ -429,7 +415,6 @@ class ILCInfo(object):
         assert self.ILC_preserved_comp in COMP_TYPES, "unsupported component type in ILC_preserved_comp"
 
         # real-space filters: 
-        print(p.keys())
         assert ('ILC_bias_tol' in p.keys() or 'FWHM_pix' in p.keys())
 
         # ILC: bias tolerance
@@ -438,7 +423,7 @@ class ILCInfo(object):
             self.ILC_bias_tol = p['ILC_bias_tol']
             assert self.ILC_bias_tol > 0. and self.ILC_bias_tol < 1., "invalid ILC bias tolerance"
 
-        #if you want to allow ILC biases that are too large for the number of modes available:
+        # if you want to allow ILC biases that are too large for the number of modes available:
         self.override_ILCbiastol = False
         if 'override_ILCbiastol_threshold' in p.keys():
             assert type(p['override_ILCbiastol_threshold']) is str
@@ -468,16 +453,12 @@ class ILCInfo(object):
                 assert len(self.ILC_deproj_comps) == self.N_deproj, "ILC_deproj_comps"
                 assert all(comp in COMP_TYPES for comp in self.ILC_deproj_comps), "unsupported component type in ILC_deproj_comps"
                 assert((self.N_deproj + 1) <= self.N_freqs), "not enough frequency channels to deproject this many components"
-                self.deproject_from_channels = {}
-                for component in self.ILC_deproj_comps:
-                    self.deproject_from_channels[component] = 'all'
 
         # If a list is input, assign each element the corresponding scale
         if type(self.N_deproj) is list:
             assert len(self.N_deproj) == self.N_scales
             ind = 0
             self.ILC_deproj_comps=[]
-            self.deproject_from_channels = {}
             for N_deproj in self.N_deproj:
                 assert type(N_deproj) is int and N_deproj >= 0, "N_deproj"
                 if (N_deproj > 0):
@@ -485,21 +466,12 @@ class ILCInfo(object):
                     assert len(self.ILC_deproj_comps[ind]) == N_deproj, "ILC_deproj_comps"
                     assert all(comp in COMP_TYPES for comp in self.ILC_deproj_comps[ind]), "unsupported component type in ILC_deproj_comps"
                     assert((N_deproj + 1) <= self.N_freqs), "not enough frequency channels to deproject this many components"
-                    for component in self.ILC_deproj_comps[ind]:
-                        self.deproject_from_channels[component] = 'all'
                 else:
                     self.ILC_deproj_comps.append([])
                 ind = ind+1
-        # if you only want to deproject some component in a given range of frequency channels? (we can remove this i think)A
-        #, it's not as useful as i thought it would be
-        if 'deproject_from_channels' in p.keys():
-            for component in p['deproject_from_channels'].keys():
-                self.deproject_from_channels[component] = p['deproject_from_channels'][component]
 
         # Flag for printing the time taken for several of the linear algebra
-        # computations for the weights. Default is False, we could even just remove it,
-        # I sometimes just  find it useful to know how much time the code is taking in each
-        # computation.
+        # computations for the weights. Default is False
         self.print_timing = False
         if 'print_timing' in p.keys():
             assert type(p['print_timing']) is str
@@ -526,8 +498,6 @@ class ILCInfo(object):
             self.save_as_fits = False
             #filenames for the covmaps, invcovmaps, and wavelet coeff and weight files
             self.covmaps_hdf5_filename = self.output_dir + self.output_prefix + '_covmaps'+'_crossILC'*self.cross_ILC+'.hdf5'
-            self.invcovmaps_hdf5_filename = self.output_dir + self.output_prefix + '_invcovmaps'+'_crossILC'*self.cross_ILC+'.hdf5'
-            # fiona should i remove the above?
             self.wavelet_coeff_hdf5_filename = self.output_dir + self.output_prefix + '_waveletmaps.hdf5'
 
             self.weight_filename_hdf5 =  self.output_dir + self.output_prefix + '_weightmaps_component_'+self.ILC_preserved_comp+'_crossILC'*self.cross_ILC+self.output_suffix_weights+'.fits'
@@ -539,19 +509,6 @@ class ILCInfo(object):
                     self.weight_filename_hdf5 =  self.output_dir+self.output_prefix+'_weightmaps_component_'+self.ILC_preserved_comp+'_deproject_'+'_'.join(self.ILC_deproj_comps[0])+'_crossILC'*self.cross_ILC+self.output_suffix_weights+'.fits' 
 
 
-        # recompute_covmat_for_ndeproj is a flagthat, when it is on, includes the number of deprojected components
-        # in the filenames for the covmat. If it is off, it does not. This is important because the size of the real
-        # space filters is set by calculating an area that includes enough modes to respect a userspecified ILC bias
-        # tolerance, and this calculation changes depending on N_deproj. However, it is computationally intensive
-        # to recompute the covmat, and this is likely a small effect, so it is often likely OK to just use the same 
-        # covmat and not recompute all the time. So, if you don't want to recompute for different values of N_deproj, 
-        # turn this off and it will just use the covmat calculated on the area appropriate for what N_deproj was the
-        # first time you ran the code.
-        # fiona maybe this is too cumbersome and hsould be removed, it does not save much
-        if 'recompute_covmat_for_ndeproj' in p.keys(): 
-            self.recompute_covmat_for_ndeproj = p['recompute_covmat_for_ndeproj']
-        else:
-            self.recompute_covmat_for_ndeproj = False
 
         ####################
         ### TODO: this block of code with SED parameters, etc is currently not used anywhere
@@ -677,8 +634,6 @@ class ILCInfo(object):
                     if self.subtract_monopole[freqind]:
                             print("subtracting monopole",freqind,flush=True)
                             self.maps[freqind] -= np.mean(self.maps[freqind])
-                    if self.subtract_nside[freqind]:
-                        self.maps[freqind] -= hp.ud_grade(hp.ud_grade(self.maps[freqind],self.subtract_nside),self.N_side)
                     if self.cross_ILC:
                         self.maps_s1[freqind] = self.maps_s1[freqind] - map_to_subtract
                         self.maps_s2[freqind] = self.maps_s2[freqind] - map_to_subtract
