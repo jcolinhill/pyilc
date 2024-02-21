@@ -23,7 +23,7 @@ info = ILCInfo(input_file)
 ##########################
 # read in frequency maps (Update: this is now done in wavelets.py only if the maps needlet coeffs have not already been computed and saved.
 # otherwise we don't need to read in the maps at all.
-# info.read_maps() 
+info.read_maps() 
 ##########################
 # read in bandpasses
 info.read_bandpasses()
