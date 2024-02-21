@@ -23,7 +23,7 @@ info = ILCInfo(input_file)
 ##########################
 # read in frequency maps (Update: this is now done in wavelets.py only if the maps needlet coeffs have not already been computed and saved.
 # otherwise we don't need to read in the maps at all.
-info.read_maps() 
+#info.read_maps() 
 ##########################
 # read in bandpasses
 info.read_bandpasses()
@@ -51,6 +51,7 @@ else:
 ##########################
 # wavelet ILC
 if info.wavelet_type == 'TopHatHarmonic':
+    info.read_maps() 
     info.maps2alms()
     info.alms2cls()
     harmonic_ILC(wv, info, resp_tol=info.resp_tol, map_images=False)
