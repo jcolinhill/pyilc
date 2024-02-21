@@ -656,11 +656,11 @@ class scale_info(object):
         optimal_response_deproj_comp = np.zeros((N_comps-1, len_unmasked_pix)) #deprojected components, want response=0
 
         if not (np.absolute(response[0,]-optimal_response_preserved_comp) < resp_tol).all():
-            print(f'preserved component response failed at wavelet scale {j}',flush=True)
+            print(f'preserved component response failed at wavelet scale {j}',str(np.max(np.absolute(response[0,]-optimal_response_preserved_comp)))+'>'+str(resp_tol),flush=True)
             quit()
         if response.shape[0]>1:
             if not (np.absolute(response[1:,]-optimal_response_deproj_comp) < resp_tol).all():
-                print(f'deprojected component response failed at wavelet scale {j}',np.max(np.absolute(response[1:,]-optimal_response_deproj_comp) ),flush=True)
+                print(f'deprojected component response failed at wavelet scale {j}',str(np.max(np.absolute(response[1:,]-optimal_response_deproj_comp) ))+'>'+str(resp_tol),flush=True)
                 quit()
         if info.print_timing:
             print("done response verification in",time.time()-t1,flush=True)
