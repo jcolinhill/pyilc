@@ -145,9 +145,11 @@ By default, `pyilc` can preserve and deproject any of the following components:
 ```
 ['CMB','kSZ','tSZ','rSZ','mu','CIB','CIB_dbeta','CIB_dT','radio']
 ```
-where 'CMB' and 'kSZ' both refer to a blackbody (CMB+kSZ) component; 'tSZ' refers to the Compton-$y$ distortion; 'rSZ' refers to the relativistic thermal SZ (modeled with a third-order Taylor expansion in kT_e/(m_e c^2)); 'mu' refers to the $\mu$-distortion; 'CIB' refers to the cosmic infrared background, which is specified by a modified blackbody SED with a spectral index beta and temperature T; 'CIB_dbeta' refers to the first moment with respect to beta of this modified blackbody; 'CIB_dT' refers to the first moment with respect to T of this modified blackbody; and 'radio' refers to a power-law SED (in specific intensity units).  The CIB and radio SEDs are also available in Jy/sr rather than the default uK_CMB units.
+where 'CMB' and 'kSZ' both refer to a blackbody (CMB+kSZ) component; 'tSZ' refers to the Compton-y distortion; 'rSZ' refers to the relativistic thermal SZ (modeled with a third-order Taylor expansion in kT_e/(m_e c^2)); 'mu' refers to the $\mu$-distortion; 'CIB' refers to the cosmic infrared background, which is specified by a modified blackbody SED with a spectral index beta and temperature T; 'CIB_dbeta' refers to the first moment with respect to beta of this modified blackbody; 'CIB_dT' refers to the first moment with respect to T of this modified blackbody; and 'radio' refers to a power-law SED (in specific intensity units).  The CIB and radio SEDs are also available in Jy/sr rather than the default uK_CMB units that are used internally in `pyilc/fg.py`. (Note: as stated above, input frequency maps are always assumed to be in K_CMB.)
 
 In all cases, the SED is calculated at the frequencies specified in freqs_delta_ghz (for delta-function passbands) or integrated over the passband of the maps specified in freq_bp_files (for actual realistic passbands). This is computed in `pyilc/fg.py`. 
+
+**Output units**: Due to the internal use of uK_CMB units in the code, a CMB-preserved output ILC map is in units of **uK_CMB**.  A kSZ-preserved output ILC map is also in uK_CMB.  A tSZ-preserved output ILC map is in dimensionless Compton-y units.  Output mu-distortion or rSZ ILC maps are also in analogous dimensionless units associated with these distortions.  For all other components (CIB, radio, etc.), an ILC map that preserves one of these components will not have a meaningful absolute normalization (note that such a normalization is *not* needed in order to deproject these components).  If you would like to make an ILC map that preserves one of these component SEDs, consult the modeling in `pyilc/fg.py` to determine how you would like to normalize the output.
 
 **Some of these SEDs depend on specified parameters**. The values of the parameters should be saved in a spearate yaml file; we provide a default `input/fg_SEDs_default_params.yml` . If a different parameter file is desired, this can be read in in the overall input file as follows:
 ```
@@ -182,8 +184,7 @@ ILC_deproj_comps should similarly be modified to be a list (of length N_scales) 
 If you want to preserve or deproject a new component whose SED you can parametrize, you should do the following:
 
 * Add a string specifying your component to the list COMP_TYPES in `pyilc/input.py`
-* Add the SED to `fg.py` by following the implementation of any of the other components. Note that you will have to specify the SED both for delta-function passbands and the SED that should be integrated over a passband for the actual-passbands case. Note that as the maps are always read in in $\mu\mathrm{K}_{\mathrm{CMB}}$ you may need to convert from specific intensity to temperature units with the conversion function dBnudT(nu).
-
+* Add the SED to `fg.py` by following the implementation of any of the other components. Note that you will have to specify the SED both for delta-function passbands and the SED that should be integrated over a passband for the actual-passbands case. Note that as the internal SED computations in `fg.py` are all done in units of $\mu\mathrm{K}_{\mathrm{CMB}}$, you may need to convert from specific intensity to temperature units with the conversion function dBnudT(nu).  (As stated above, your input frequency maps to the code itself should all be in units of K_CMB -- yes, this differs from the internal computations in `fg.py', for primarily legacy-code-related reasons.)
 
 
 ## Output structure
