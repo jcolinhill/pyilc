@@ -21,10 +21,10 @@ except IndexError:
 # read in the input file and set up relevant info object
 info = ILCInfo(input_file)
 ##########################
-
+# read in frequency maps (Update: this is now done in wavelets.py only if the maps needlet coeffs have not already been computed and saved.
+# otherwise we don't need to read in the maps at all.
+# info.read_maps() 
 ##########################
-# read in frequency maps
-info.read_maps()
 # read in bandpasses
 info.read_bandpasses()
 # read in beams
@@ -40,6 +40,8 @@ elif info.wavelet_type == 'CosineNeedlets': # Fiona added CosineNeedlets
     ell,filts = wv.CosineNeedlets(ellmin = info.ellmin,ellpeaks = info.ellpeaks)
 elif info.wavelet_type == 'TopHatHarmonic':
     ell,filts = wv.TopHatHarmonic(info.ellbins)
+elif info.wavelet_type == 'TaperedTopHats':
+    ell,filts = wv.TaperedTopHats(ellboundaries = info.ellboundaries,taperwidths=info.taperwidths)
 else:
     raise TypeError('unsupported wavelet type')
 # example plot -- output in example_wavelet_plot
@@ -55,7 +57,6 @@ if info.wavelet_type == 'TopHatHarmonic':
 else:
     wavelet_ILC(wv, info, resp_tol=info.resp_tol, map_images=False)
 ##########################
-
 
 ##########################
 # TODO

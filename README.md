@@ -70,7 +70,7 @@ beam_files:['/path/to/location/beam_freq_X.txt',
 ```
 where '/path/to/location/beam_freq_X.txt' contains an array of shape (LMAX,2) where the first column specifies the $\ell$ and the second column specifies the beam at $\ell$. LMAX should be at least as high as the ELLMAX (maximum multipole) at which the NILC is being performed (this is a user-specified parameter in the input file -- see below).
 
-**The maps should all be in units of CMB thermodynamic temperature, $\mu \mathrm{K}_{\mathrm{CMB}}$**.
+**The maps should all be in units of CMB thermodynamic temperature, $\mathrm{K}_{\mathrm{CMB}}$**.
 
 
 #### Frequency coverage
