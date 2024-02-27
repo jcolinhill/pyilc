@@ -647,7 +647,7 @@ class ILCInfo(object):
             self.maps_for_weights = np.zeros((self.N_freqs,self.N_pix), dtype=np.float64)
             for i in range(self.N_freqs):
                 # TODO: allow specification of nested or ring ordering (although will already work here if fits keyword ORDERING is present)
-                temp_map = hp.fitsfunc.read_map(self.freq_map_files_for_weights[i], field=self.freq_map_field)
+                temp_map = hp.fitsfunc.read_map(self.freq_map_files_for_weights[i])
                 assert len(temp_map) <= self.N_pix, "input map at higher resolution than specified N_side"
                 if (len(temp_map) == self.N_pix):
                     self.maps_for_weights[i] = np.copy(temp_map)
