@@ -1394,13 +1394,14 @@ def _weights_filename(info,freq,scale):
                 else:
                     if info.N_deproj[j]>0:
                         weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps[j])+'_crossILC'*info.cross_ILC+info.output_suffix_weights+'.fits'
+                '''
                 if info.recompute_covmat_for_ndeproj:
                     if type(info.N_deproj) is int:
                         N_deproj = info.N_deproj
                     else:
                         N_deproj = info.N_deproj[j]
                     weight_filename = weight_filename[:-5] +'_Ndeproj'+str(N_deproj)+'.fits'
-
+                '''
                 weight_filename = weight_filename[:-5]+info.output_suffix+'.fits'
                 return weight_filename
 
