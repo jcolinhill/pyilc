@@ -415,7 +415,8 @@ class ILCInfo(object):
         assert self.ILC_preserved_comp in COMP_TYPES, "unsupported component type in ILC_preserved_comp"
 
         # real-space filters: 
-        assert ('ILC_bias_tol' in p.keys() or 'FWHM_pix' in p.keys())
+        if not self.wavelet_type == 'TopHatHarmonic':
+            assert ('ILC_bias_tol' in p.keys() or 'FWHM_pix' in p.keys())
 
         # ILC: bias tolerance
         if 'ILC_bias_tol' in p.keys():
