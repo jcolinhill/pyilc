@@ -720,6 +720,11 @@ class ILCInfo(object):
                 if ((self.beams)[i][-1][0] > self.ELLMAX):
                     (self.beams)[i] = (self.beams)[i][0:self.ELLMAX+1]
                 assert (len((self.beams)[i]) == self.ELLMAX+1), "beam profiles must contain all integer ells up to ELLMAX"
+            if self.perform_ILC_at_beam is not None:
+                    self.common_beam =np.transpose(np.array([np.arange(self.ELLMAX+1), hp.sphtfunc.gauss_beam(self.perform_ILC_at_beam*(np.pi/180.0/60.0), lmax=self.ELLMAX)]))
+            else:
+                    self.common_beam = self.beams[-1] # if perform_ILC_at_beam is unspecified, convolve to the beam of the highest-resolution map
+
     # method for turning maps to alms
     def maps2alms(self):
         self.alms=[]
