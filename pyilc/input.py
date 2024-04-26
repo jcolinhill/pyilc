@@ -717,8 +717,8 @@ class ILCInfo(object):
                 assert (self.beams)[i][0][0] == 0, "beam profiles must start at ell=0"
                 assert (self.beams)[i][-1][0] >= self.ELLMAX, "beam profiles must extend to ELLMAX or higher"
                 if ((self.beams)[i][-1][0] > self.ELLMAX):
-                    (self.beams)[i] = (self.beams)[i][0:ELLMAX+1]
-                assert (len((self.beams)[i]) == ELLMAX+1), "beam profiles must contain all integer ells up to ELLMAX"
+                    (self.beams)[i] = (self.beams)[i][0:self.ELLMAX+1]
+                assert (len((self.beams)[i]) == self.ELLMAX+1), "beam profiles must contain all integer ells up to ELLMAX"
     # method for turning maps to alms
     def maps2alms(self):
         self.alms=[]
