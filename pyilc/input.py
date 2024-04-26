@@ -712,7 +712,8 @@ class ILCInfo(object):
         elif self.beam_type == '1DBeams':
             self.beams = [] #initialize empty list
             for i in range(self.N_freqs):
-                (self.beams).append(np.loadtxt(self.beam_files[i], unpack=True, usecols=(0,1)))
+                #(self.beams).append(np.loadtxt(self.beam_files[i], unpack=True, usecols=(0,1)))
+                (self.beams).append(np.loadtxt(self.beam_files[i], usecols=(0,1)))
                 # check that beam profiles start at ell=0 and extend to self.ELLMAX or beyond
                 assert (self.beams)[i][0][0] == 0, "beam profiles must start at ell=0"
                 assert (self.beams)[i][-1][0] >= self.ELLMAX, "beam profiles must extend to ELLMAX or higher"
