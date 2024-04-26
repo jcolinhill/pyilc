@@ -230,15 +230,19 @@ class ILCInfo(object):
             assert 'wavelet_beam_criterion' not in p.keys()
             self.override_N_freqs_to_use = True
             self.N_freqs_to_use = p['override_N_freqs_to_use']
-            assert type(self.N_freqs_to_use) is list
-            assert len(self.N_freqs_to_use) == self.N_scales
+
+            if self.N_freqs_to_use == 'all':
+                self.N_freqs_to_use = [self.N_freqs for x in self.N_scales]
+            else:
+                assert type(self.N_freqs_to_use) is list
+            
+                assert len(self.N_freqs_to_use) == self.N_scales
             for x in self.N_freqs_to_use:
                 print(x)
                 assert type(x) is int
                 assert x>0
                 assert x<=self.N_freqs
-
-
+           
         # optionally input the param_dict_file. The default is '../input/fg_SEDs_default_params.yml'
         self.param_dict_file = '../input/fg_SEDs_default_params.yml'
         if 'param_dict_file' in p.keys():
