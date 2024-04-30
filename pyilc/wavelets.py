@@ -1704,7 +1704,7 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
                     countb = 0
                     for b in range(0, info.N_freqs): #  Could probably do this quicker by starting at a instead of 0 when not doing cross_ILC but would have to keep track of count_a and count_b
                         if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True):
-                            cov_matrix_harmonic[counta,countb] = np.sum((2+ells+1)/(4*np.pi)*info.cls[a,b]* (wv.filters[j])**2*taper_func**2)/np.sum(wv.filters[j]**2)
+                            cov_matrix_harmonic[counta,countb] = np.sum((2*ells+1)/(4*np.pi)*info.cls[a,b]* (wv.filters[j])**2*taper_func**2)/np.sum(wv.filters[j]**2) # thanks to Jack Kwok for noticing a bug here
                             countb +=1
                     if (freqs_to_use[j][a] == True):
                         counta +=1
