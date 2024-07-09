@@ -52,4 +52,4 @@ N_maps_xcorr: 0
 
 save_as: 'fits'
 
-IC_bias_tol: 0.01
+ILC_bias_tol: 0.01
