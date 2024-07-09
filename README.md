@@ -19,6 +19,7 @@ If you use an ILC that deprojects some component, please cite the constrained IL
 
 If using a moment-based deprojection, please cite https://ui.adsabs.harvard.edu/abs/arXiv:1701.00274.
 
+See [here](https://ed1b6aae-4cdf-4f9b-a94d-f1aadd0cab78.filesusr.com/ugd/6acf9d_de251625176e4fb1bd3cb40e737ec096.pdf) for slides with an overview of how to use pyilc, presented to the SO FG AWG (Simons Observatory Foreground Analysis Working Group).
 
 # Basic usage
 
