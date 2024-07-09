@@ -1675,7 +1675,6 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
                 for b in range(1,N_deproj+1):
                     max_temp = np.amax(A_mix[:,b])
                     A_mix[:,b] = A_mix[:,b]/max_temp
-            print("A_MIX is",A_mix,flush=True)
             ##############################
             ##############################
             # for each filter scale, compute maps of the smoothed real-space frequency-frequency covariance matrix using the Gaussians determined above
