@@ -1154,7 +1154,6 @@ def waveletize(inp_map=None, wv=None, rebeam=False, inp_beam=None, new_beam=None
     assert wv is not None, "wavelets not defined"
     assert type(wv) is Wavelets, "Wavelets TypeError"
     assert wv.ELLMAX < 3*N_side_inp-1, "ELLMAX too high"
-    assert wv.ELLMAX > 200, "ELLMAX too low"
     if (N_side_to_use is None):
         N_side_to_use = np.ones(wv.N_scales, dtype=int)*N_side_inp
     if(rebeam):
@@ -1395,13 +1394,14 @@ def _weights_filename(info,freq,scale):
                 else:
                     if info.N_deproj[j]>0:
                         weight_filename = info.output_dir+info.output_prefix+'weightmap_freq'+str(a)+'_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(info.ILC_deproj_comps[j])+'_crossILC'*info.cross_ILC+info.output_suffix_weights+'.fits'
+                '''
                 if info.recompute_covmat_for_ndeproj:
                     if type(info.N_deproj) is int:
                         N_deproj = info.N_deproj
                     else:
                         N_deproj = info.N_deproj[j]
                     weight_filename = weight_filename[:-5] +'_Ndeproj'+str(N_deproj)+'.fits'
-
+                '''
                 weight_filename = weight_filename[:-5]+info.output_suffix+'.fits'
                 return weight_filename
 
@@ -1675,7 +1675,6 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
                 for b in range(1,N_deproj+1):
                     max_temp = np.amax(A_mix[:,b])
                     A_mix[:,b] = A_mix[:,b]/max_temp
-            print("A_MIX is",A_mix,flush=True)
             ##############################
             ##############################
             # for each filter scale, compute maps of the smoothed real-space frequency-frequency covariance matrix using the Gaussians determined above
@@ -1704,7 +1703,7 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
                     countb = 0
                     for b in range(0, info.N_freqs): #  Could probably do this quicker by starting at a instead of 0 when not doing cross_ILC but would have to keep track of count_a and count_b
                         if (freqs_to_use[j][a] == True) and (freqs_to_use[j][b] == True):
-                            cov_matrix_harmonic[counta,countb] = np.sum((2+ells+1)/(4*np.pi)*info.cls[a,b]* (wv.filters[j])**2*taper_func**2)/np.sum(wv.filters[j]**2)
+                            cov_matrix_harmonic[counta,countb] = np.sum((2*ells+1)/(4*np.pi)*info.cls[a,b]* (wv.filters[j])**2*taper_func**2)/np.sum(wv.filters[j]**2) # thanks to Jack Kwok for noticing a bug here
                             countb +=1
                     if (freqs_to_use[j][a] == True):
                         counta +=1

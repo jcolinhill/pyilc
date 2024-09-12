@@ -427,7 +427,8 @@ class ILCInfo(object):
         assert self.ILC_preserved_comp in COMP_TYPES, "unsupported component type in ILC_preserved_comp"
 
         # real-space filters: 
-        assert ('ILC_bias_tol' in p.keys() or 'FWHM_pix' in p.keys())
+        if not self.wavelet_type == 'TopHatHarmonic':
+            assert ('ILC_bias_tol' in p.keys() or 'FWHM_pix' in p.keys())
 
         # ILC: bias tolerance
         if 'ILC_bias_tol' in p.keys():
@@ -659,7 +660,7 @@ class ILCInfo(object):
             self.maps_for_weights = np.zeros((self.N_freqs,self.N_pix), dtype=np.float64)
             for i in range(self.N_freqs):
                 # TODO: allow specification of nested or ring ordering (although will already work here if fits keyword ORDERING is present)
-                temp_map = hp.fitsfunc.read_map(self.freq_map_files_for_weights[i], )
+                temp_map = hp.fitsfunc.read_map(self.freq_map_files_for_weights[i])
                 assert len(temp_map) <= self.N_pix, "input map at higher resolution than specified N_side"
                 if (len(temp_map) == self.N_pix):
                     self.maps_for_weights[i] = np.copy(temp_map)

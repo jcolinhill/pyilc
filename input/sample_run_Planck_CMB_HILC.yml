@@ -49,3 +49,7 @@ SED_params_priors: []
 SED_params_priors_params: []
 
 N_maps_xcorr: 0
+
+save_as: 'fits'
+
+ILC_bias_tol: 0.01
