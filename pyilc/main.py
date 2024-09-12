@@ -51,9 +51,12 @@ else:
 ##########################
 # wavelet ILC
 if info.wavelet_type == 'TopHatHarmonic':
-    info.read_maps() 
-    info.maps2alms()
-    info.alms2cls()
+    info.read_maps()
+    if not info.weights_exist:
+        info.maps2alms()
+        info.alms2cls()
+    if info.maps_to_apply_weights:
+        info.maps_to_apply_weights2alms()
     harmonic_ILC(wv, info, resp_tol=info.resp_tol, map_images=False)
 else:
     wavelet_ILC(wv, info, resp_tol=info.resp_tol, map_images=False)

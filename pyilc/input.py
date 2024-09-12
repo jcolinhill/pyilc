@@ -230,15 +230,19 @@ class ILCInfo(object):
             assert 'wavelet_beam_criterion' not in p.keys()
             self.override_N_freqs_to_use = True
             self.N_freqs_to_use = p['override_N_freqs_to_use']
-            assert type(self.N_freqs_to_use) is list
-            assert len(self.N_freqs_to_use) == self.N_scales
+
+            if self.N_freqs_to_use == 'all':
+                self.N_freqs_to_use = [self.N_freqs for x in self.N_scales]
+            else:
+                assert type(self.N_freqs_to_use) is list
+            
+                assert len(self.N_freqs_to_use) == self.N_scales
             for x in self.N_freqs_to_use:
                 print(x)
                 assert type(x) is int
                 assert x>0
                 assert x<=self.N_freqs
-
-
+           
         # optionally input the param_dict_file. The default is '../input/fg_SEDs_default_params.yml'
         self.param_dict_file = '../input/fg_SEDs_default_params.yml'
         if 'param_dict_file' in p.keys():
@@ -280,6 +284,14 @@ class ILCInfo(object):
         if 'wavelet_maps_exist' in p.keys():
             if p['wavelet_maps_exist'].lower() in ['true','yes','y']:
                 self.wavelet_maps_exist = True
+
+        # do the weights already exist as saved files? we can tell the code to skip the check for this, if
+        # we know this alredy. Deafults to False (it will automatically check if they exist).
+        # this just allows you to skip the check if you know they exist.
+        self.weights_exist = False
+        if 'weights_exist' in p.keys():
+            if p['weights_exist'].lower() in ['true','yes','y']:
+                self.weights_exist= True
 
         # frequency map file names
         self.freq_map_files = p['freq_map_files']
@@ -713,13 +725,19 @@ class ILCInfo(object):
         elif self.beam_type == '1DBeams':
             self.beams = [] #initialize empty list
             for i in range(self.N_freqs):
-                (self.beams).append(np.loadtxt(self.beam_files[i], unpack=True, usecols=(0,1)))
+                #(self.beams).append(np.loadtxt(self.beam_files[i], unpack=True, usecols=(0,1)))
+                (self.beams).append(np.loadtxt(self.beam_files[i], usecols=(0,1)))
                 # check that beam profiles start at ell=0 and extend to self.ELLMAX or beyond
                 assert (self.beams)[i][0][0] == 0, "beam profiles must start at ell=0"
                 assert (self.beams)[i][-1][0] >= self.ELLMAX, "beam profiles must extend to ELLMAX or higher"
                 if ((self.beams)[i][-1][0] > self.ELLMAX):
-                    (self.beams)[i] = (self.beams)[i][0:ELLMAX+1]
-                assert (len((self.beams)[i]) == ELLMAX+1), "beam profiles must contain all integer ells up to ELLMAX"
+                    (self.beams)[i] = (self.beams)[i][0:self.ELLMAX+1]
+                assert (len((self.beams)[i]) == self.ELLMAX+1), "beam profiles must contain all integer ells up to ELLMAX"
+            if self.perform_ILC_at_beam is not None:
+                    self.common_beam =np.transpose(np.array([np.arange(self.ELLMAX+1), hp.sphtfunc.gauss_beam(self.perform_ILC_at_beam*(np.pi/180.0/60.0), lmax=self.ELLMAX)]))
+            else:
+                    self.common_beam = self.beams[-1] # if perform_ILC_at_beam is unspecified, convolve to the beam of the highest-resolution map
+
     # method for turning maps to alms
     def maps2alms(self):
         self.alms=[]
@@ -739,6 +757,11 @@ class ILCInfo(object):
                 self.alms_s1.append(hp.map2alm(mapp, lmax=self.ELLMAX))
             for mapp in self.maps_s2:
                 self.alms_s2.append(hp.map2alm(mapp, lmax=self.ELLMAX))
+    def maps_to_apply_weights2alms(self):
+        self.alms_to_apply_weights=[]
+        for freqind,mapp in enumerate(self.maps_for_weights):
+                self.alms_to_apply_weight.append(hp.map2alm(mapp, lmax=self.ELLMAX))
+
     def alms2cls(self):
         self.cls = np.zeros((len(self.alms),len(self.alms),self.ELLMAX+1))
         new_beam = self.common_beam
