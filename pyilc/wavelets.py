@@ -1773,7 +1773,7 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
         count=0
         for a in range(info.N_freqs):
             if (freqs_to_use[j][a] == True):
-                wavelet_coeff_alm = info.alms[a]
+                #wavelet_coeff_alm = info.alms[a]
                 inp_beam = (info.beams)[a]
                 beam_fac = new_beam[:,1]/inp_beam[:,1]
                 ILC_filters[a] += weights[:,count]*taper_func*beam_fac*wv.filters[j]
@@ -1784,7 +1784,10 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
     # synthesize the per-needlet-scale ILC maps into the final combined ILC map (apply each needlet filter again and add them all together -- have to upgrade to all match the same Nside -- done in synthesize)
     ILC_alm = np.zeros(int(hp.sphtfunc.Alm.getsize(wv.ELLMAX)),dtype=np.complex_)
     for a in range(info.N_freqs):
-        wavelet_coeff_alm = info.alms[a]
+        if not info.apply_weights_to_other_maps:
+            wavelet_coeff_alm = info.alms[a]
+        else: 
+            wavelet_coeff_alm = info.alms_to_apply_weights[a]
         ILC_alm += hp.almxfl(wavelet_coeff_alm ,ILC_filters[a])
     ILC_map = hp.alm2map(ILC_alm,nside=info.N_side)
     #ILC_map = synthesize(wv_maps=ILC_maps_per_scale, wv=wv, N_side_out=info.N_side)

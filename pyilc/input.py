@@ -285,6 +285,14 @@ class ILCInfo(object):
             if p['wavelet_maps_exist'].lower() in ['true','yes','y']:
                 self.wavelet_maps_exist = True
 
+        # do the weights already exist as saved files? we can tell the code to skip the check for this, if
+        # we know this alredy. Deafults to False (it will automatically check if they exist).
+        # this just allows you to skip the check if you know they exist.
+        self.weights_exist = False
+        if 'weights_exist' in p.keys():
+            if p['weights_exist'].lower() in ['true','yes','y']:
+                self.weights_exist= True
+
         # frequency map file names
         self.freq_map_files = p['freq_map_files']
         assert len(self.freq_map_files) == self.N_freqs, "freq_map_files"
@@ -748,6 +756,11 @@ class ILCInfo(object):
                 self.alms_s1.append(hp.map2alm(mapp, lmax=self.ELLMAX))
             for mapp in self.maps_s2:
                 self.alms_s2.append(hp.map2alm(mapp, lmax=self.ELLMAX))
+    def maps_to_apply_weights2alms(self):
+        self.alms_to_apply_weights=[]
+        for freqind,mapp in enumerate(self.maps_for_weights):
+                self.alms_to_apply_weight.append(hp.map2alm(mapp, lmax=self.ELLMAX))
+
     def alms2cls(self):
         self.cls = np.zeros((len(self.alms),len(self.alms),self.ELLMAX+1))
         new_beam = self.common_beam
