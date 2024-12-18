@@ -577,7 +577,7 @@ class ILCInfo(object):
             self.maps = np.zeros((self.N_freqs,self.N_pix), dtype=np.float64)
             for i in range(self.N_freqs):
                 # TODO: allow specification of nested or ring ordering (although will already work here if fits keyword ORDERING is present)
-                temp_map = hp.fitsfunc.read_map(self.freq_map_files[i], )
+                temp_map = get_map_handling_K_or_uK(self.freq_map_files[i])
                 assert len(temp_map) <= self.N_pix, "input map at higher resolution than specified N_side"
                 if (len(temp_map) == self.N_pix):
                     self.maps[i] = np.copy(temp_map)
@@ -781,3 +781,35 @@ class ILCInfo(object):
                     beam_fac_b = new_beam[:,1]/inp_beam_b[:,1]
 
                     self.cls_s1s2[a,b]=hp.alm2cl(self.alms_s1[a],self.alms_s2[b],lmax=self.ELLMAX) * beam_fac_b * beam_fac_a 
+
+def get_map_handling_K_or_uK(fp):
+    """
+    Read a map from a FITS file, converting micro Kelvin 
+    (uK_CMB) to Kelvin (K_CMB), if needed.
+    Assumes data is in the first field of the FITS file.
+    Does not support other units, like MJy/sr or Kelvin
+    Rayleigh-Jeans.
+
+    Parameters
+    ----------
+    fp : str or Path
+        Path to the FITS file
+
+    Returns
+    -------
+    m : array-like
+        Map data with units K_CMB
+    """
+    uK_units = ["uK_CMB", "uKcmb"]
+    K_units = ["K_CMB", "Kcmb"]
+    m, h = hp.read_map(fp, h=True, field=0)
+    h = dict(h)
+    if "TUNIT1" not in h:
+        print("No units found in header; assuming K_CMB.")
+    if h["TUNIT1"] in uK_units:
+        m = m / 1e6  # Convert to K from uK
+    elif h["TUNIT1"] in K_units:
+        pass
+    else:
+        raise ValueError("Unknown unit")
+    return m
