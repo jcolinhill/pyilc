@@ -806,7 +806,7 @@ def get_map_handling_K_or_uK(fp):
     h = dict(h)
     if "TUNIT1" not in h:
         print("No units found in header; assuming K_CMB.")
-    if h["TUNIT1"] in uK_units:
+    elif h["TUNIT1"] in uK_units:
         m = m / 1.0e6  # Convert to K from uK
     elif h["TUNIT1"] in K_units:
         pass
