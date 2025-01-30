@@ -1764,7 +1764,7 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
             if N_deproj>0:
                 weight_filename = info.output_dir+info.output_prefix+'weightvector_scale'+str(j)+'_component_'+info.ILC_preserved_comp+'_deproject_'+'_'.join(ILC_deproj_comps)+'_crossILC'*info.cross_ILC+'.txt'
 
-            weights = np.loadtxt(weight_filename)
+            weights = np.loadtxt(weight_filename)[None,:]
         ##########################
         # apply these ILC weights to the needlet coefficient maps to get the per-needlet-scale ILC maps
         #ILC_map_temp = np.zeros(int(N_pix_to_use[j]))
