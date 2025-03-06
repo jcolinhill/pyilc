@@ -800,7 +800,7 @@ def get_map_handling_K_or_uK(fp):
     m : array-like
         Map data with units K_CMB
     """
-    uK_units = ["uK_CMB", "uKcmb"]
+    uK_units = ["uK_CMB", "uKcmb",'uK']
     K_units = ["K_CMB", "Kcmb"]
     m, h = hp.read_map(fp, h=True, field=0)
     h = dict(h)
