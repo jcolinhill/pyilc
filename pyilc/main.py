@@ -29,6 +29,9 @@ info = ILCInfo(input_file)
 info.read_bandpasses()
 # read in beams
 info.read_beams()
+# read in geometries
+if info.work_in_car:
+    info.read_geometries()
 ##########################
 
 ##########################

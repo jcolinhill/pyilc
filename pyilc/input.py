@@ -3,6 +3,11 @@ import numpy as np
 import yaml
 import os
 import healpy as hp
+from astropy.io import fits
+try:
+    from pixell import enmap
+except:
+    print("pixell not improted, make sure you work in healpix")
 """
 module to read in relevant input specified by user
 """
@@ -69,7 +74,20 @@ class ILCInfo(object):
             pass
         p = read_dict_from_yaml(self.input_file)
 
-
+        # default is to work with healpy but we may want to work in CAR pixelization using pixell
+        assert 'work_in_CAR'  in p.keys() or 'work_in_healpix' in p.keys()
+        self.work_in_car = False
+        self.work_in_healpix = False
+        if 'work_in_CAR' in p.keys():
+            if p['work_in_CAR'].lower() in ['true','True','yes','Yes']:
+                self.work_in_car = True
+        if 'work_in_healpix' in p.keys():
+            
+            if p['work_in_healpix'].lower() in ['true','True','yes','Yes']:
+                self.work_in_car  = False
+                self.work_in_healpix = True
+        assert self.work_in_car or self.work_in_healpix
+        assert not (self.work_in_car and self.work_in_healpix)
 
         # output file directory
         self.output_dir = p['output_dir']
@@ -295,6 +313,12 @@ class ILCInfo(object):
         # frequency map file names
         self.freq_map_files = p['freq_map_files']
         assert len(self.freq_map_files) == self.N_freqs, "freq_map_files"
+
+        # units of the input maps
+        if 'input_units' in p.keys():
+            self.units = p['input_units']
+        else:
+            self.units = 'K_CMB'
 
         # some preprocessing maps: Is there one map you want to subtract from all the inputs (eg the kinematic dipole)?
         # put the filename in a a string here
@@ -573,20 +597,29 @@ class ILCInfo(object):
     def read_maps(self):
 
         if not self.wavelet_maps_exist:
-
-            self.maps = np.zeros((self.N_freqs,self.N_pix), dtype=np.float64)
+            if self.work_in_healpix:
+               self.maps = np.zeros((self.N_freqs,self.N_pix), dtype=np.float64)
+            elif self.work_in_car:
+                self.maps = []
+                self.geometries = []
             for i in range(self.N_freqs):
+                print("readin gin map",i)
                 # TODO: allow specification of nested or ring ordering (although will already work here if fits keyword ORDERING is present)
-                temp_map = get_map_handling_K_or_uK(self.freq_map_files[i])
+                temp_map = self.get_map_handling_K_or_uK(self.freq_map_files[i])
                 assert len(temp_map) <= self.N_pix, "input map at higher resolution than specified N_side"
-                if (len(temp_map) == self.N_pix):
-                    self.maps[i] = np.copy(temp_map)
-                elif (len(temp_map) < self.N_pix):
-                    # TODO: should probably upgrade in harmonic space to get pixel window correct
-                    self.maps[i] = np.copy( hp.pixelfunc.ud_grade(temp_map, nside_out=self.N_side, order_out='RING', dtype=np.float64) )
+                if self.work_in_healpix:
+                    if (len(temp_map) == self.N_pix):
+                        self.maps[i] = np.copy(temp_map)
+                    elif (len(temp_map) < self.N_pix):
+                        # TODO: should probably upgrade in harmonic space to get pixel window correct
+                        self.maps[i] = np.copy( hp.pixelfunc.ud_grade(temp_map, nside_out=self.N_side, order_out='RING', dtype=np.float64) )
+                elif self.work_in_car:
+                    self.maps.append(temp_map)
+                    self.geometries.append((temp_map.shape,temp_map.wcs))
             del(temp_map)
             # if cross-ILC read in the S1 and S2 maps
             if self.cross_ILC:
+                assert not self.work_in_car
                 self.maps_s1 = np.zeros((self.N_freqs,self.N_pix), dtype=np.float64)
                 self.maps_s2 = np.zeros((self.N_freqs,self.N_pix), dtype=np.float64)
                 for i in range(self.N_freqs):
@@ -609,6 +642,7 @@ class ILCInfo(object):
                 del(temp_map_s2)
             # if you want to subtract something from the maps, do it here 
             if self.map_to_subtract is not None:
+                assert not self.work_in_car
                 map_to_subtract = hp.fitsfunc.read_map(self.map_to_subtract)
                 assert hp.get_nside(map_to_subtract) >= self.N_side
                 if hp.get_nside(map_to_subtract) > self.N_side:
@@ -622,6 +656,7 @@ class ILCInfo(object):
 
             # if you want to subtract something from the maps only in specific frequency channels, do it here 
             if self.maps_to_subtract is not None:
+                assert not self.work_in_car
                 for freqind in range(self.N_freqs):
                     if self.maps_to_subtract[freqind] is not None:
                         if type(self.maps_to_subtract[freqind]) is str:
@@ -655,6 +690,7 @@ class ILCInfo(object):
 
         # if we need to apply weights to alternative maps, read them in
         if self.apply_weights_to_other_maps:
+            assert not self.work_in_car # fiona: this is useful, come back to this
             print("reading in maps for weights",flush=True)
             self.maps_for_weights = np.zeros((self.N_freqs,self.N_pix), dtype=np.float64)
             for i in range(self.N_freqs):
@@ -669,6 +705,7 @@ class ILCInfo(object):
             del(temp_map)
         # also read in maps with which to cross-correlate, if specified
         if self.N_maps_xcorr != 0:
+            assert not self.work_in_car
             # maps
             self.maps_xcorr = np.zeros((self.N_maps_xcorr,self.N_pix), dtype=np.float64)
             for i in range(self.N_maps_xcorr):
@@ -737,6 +774,30 @@ class ILCInfo(object):
             else:
                     self.common_beam = self.beams[-1] # if perform_ILC_at_beam is unspecified, convolve to the beam of the highest-resolution map
 
+    # method for reading in geometries
+    def read_geometries(self):
+        self.geometries=[]
+        for mapfile in self.freq_map_files:
+            geom = enmap.read_map_geometry(mapfile)
+            if len(geom[0])==3:
+                newgeom = (geom[0][1:],geom[1])
+            else:
+                newgeom = geom
+            assert len(newgeom[0]) == 2
+            self.geometries.append(newgeom)
+        assert len(self.geometries)==self.N_freqs
+        self.pixsizes = [np.sqrt(enmap.area(geom[0], geom[1])/np.prod(geom[0][-2:]))*180*60/np.pi for geom in self.geometries]
+        self.pix_size = self.pixsizes[-1]
+        try:
+            self.maps
+        except:
+            print("reading in last map for downgrading purposes later")
+            self.maps = [ None]* (self.N_freqs-1) + [enmap.read_map(self.freq_map_files[-1])]
+
+
+
+        
+
     # method for turning maps to alms
     def maps2alms(self):
         self.alms=[]
@@ -782,34 +843,46 @@ class ILCInfo(object):
 
                     self.cls_s1s2[a,b]=hp.alm2cl(self.alms_s1[a],self.alms_s2[b],lmax=self.ELLMAX) * beam_fac_b * beam_fac_a 
 
-def get_map_handling_K_or_uK(fp):
-    """
-    Read a map from a FITS file, converting micro Kelvin 
-    (uK_CMB) to Kelvin (K_CMB), if needed.
-    Assumes data is in the first field of the FITS file.
-    Does not support other units, like MJy/sr or Kelvin
-    Rayleigh-Jeans.
+    def get_map_handling_K_or_uK(self,fp):
+        """
+        Read a map from a FITS file, converting micro Kelvin 
+        (uK_CMB) to Kelvin (K_CMB), if needed.
+        Assumes data is in the first field of the FITS file.
+        Does not support other units, like MJy/sr or Kelvin
+        Rayleigh-Jeans.
 
-    Parameters
-    ----------
-    fp : str or Path
-        Path to the FITS file
+        Parameters
+        ----------
+        fp : str or Path
+            Path to the FITS file
 
-    Returns
-    -------
-    m : array-like
-        Map data with units K_CMB
-    """
-    uK_units = ["uK_CMB", "uKcmb",'uK']
-    K_units = ["K_CMB", "Kcmb"]
-    m, h = hp.read_map(fp, h=True, field=0)
-    h = dict(h)
-    if "TUNIT1" not in h:
-        print("No units found in header; assuming K_CMB.")
-    elif h["TUNIT1"] in uK_units:
-        m = m / 1.0e6  # Convert to K from uK
-    elif h["TUNIT1"] in K_units:
-        pass
-    else:
-        raise ValueError("Unknown unit")
-    return m
+        Returns
+        -------
+        m : array-like
+            Map data with units K_CMB
+        """
+        uK_units = ["uK_CMB", "uKcmb",'uK']
+        K_units = ["K_CMB", "Kcmb"]
+        if self.work_in_healpix:
+            m, h = hp.read_map(fp, h=True, field=0)
+        elif self.work_in_car:
+            m =  enmap.read_map(fp, )
+            if len(m.shape)==3:
+                m=m[0] # todo fiona: allow this to read in different fields but start here
+            h = fits.open(fp)[0].header
+        h = dict(h)
+        if "TUNIT1" not in h:
+            print("No units found in header; assuming " + self.units + ".")
+            units = self.units 
+        else:
+            units = h["TUNIT1"] 
+        if units in uK_units:
+            m = m / 1.0e6  # Convert to K from uK
+        elif units in K_units:
+            pass
+        else:
+            raise ValueError("Unknown unit")
+        return m
+
+
+
