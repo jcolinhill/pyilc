@@ -659,7 +659,7 @@ class scale_info(object):
                     if a != b:
                         covmat_temp_sliced[b,a] = covmat_temp_sliced[a,b].flatten() #symmetrize
                     count+=1
-        print("we hav ecovmat",flush=True)
+        print("we have covmat",flush=True)
         print('using numba?',info.use_numba,flush=True)
         covmat_temp_transpose = np.transpose(covmat_temp_sliced,(2,1,0))
         del(covmat_temp_sliced)
