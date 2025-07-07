@@ -7,7 +7,7 @@ This repository also includes an inpainting code, diffusive_inpaint, that diffus
 
 # Requirements
 
-`pyilc` requires python3, [numpy](https://numpy.readthedocs.io/en/latest/), [matplotlib](https://matplotlib.org), and [healpy](https://healpy.readthedocs.io/en/latest/) (and all of their requirements). 
+`pyilc` requires python3, [numpy](https://numpy.readthedocs.io/en/latest/), [matplotlib](https://matplotlib.org), and [healpy](https://healpy.readthedocs.io/en/latest/) (and all of their requirements).  Recently, support for maps in CAR pixelization has been added; to use this functionality (which is still in 'beta'), you will need [pixell](https://github.com/simonsobs/pixell).
 
 # Using the code
 
