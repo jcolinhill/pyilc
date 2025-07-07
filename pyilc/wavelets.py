@@ -5,6 +5,10 @@ import healpy as hp
 from astropy.io import fits
 import os
 import matplotlib
+try:
+    from pixell import enmap, curvedsky,utils#Fiona - if you don't have pixell feel free to comment this out
+except:
+    print('make sure you are working in healpy as pixell is not installed!')
 
 import h5py #Fiona - we could make this optional if we don't want to include other dependencies
 
@@ -162,13 +166,13 @@ class Wavelets(object):
         for i in range(0,self.N_scales-1):
             filt1 = np.logical_and(ells<ellpeaks[i],ells>=ellpeaks[i-1])
             filt2 = np.logical_and(ells<ellpeaks[i+1],ells>=ellpeaks[i])
-            self.filters[i,filt1] = np.cos(np.pi/2*(ellpeaks[i]-ells[filt1])/(ellpeaks[i]-ellpeaks[i-1]))#hp.gauss_beam(FWHM[i], lmax=ELLMAX)
-            self.filters[i,filt2] = np.cos(np.pi/2*(ells[filt2]-ellpeaks[i])/(ellpeaks[i+1]-ellpeaks[i]))#hp.gauss_beam(FWHM[i], lmax=ELLMAX)
+            self.filters[i,filt1] = np.cos(np.pi/2*(ellpeaks[i]-ells[filt1])/(ellpeaks[i]-ellpeaks[i-1]))
+            self.filters[i,filt2] = np.cos(np.pi/2*(ells[filt2]-ellpeaks[i])/(ellpeaks[i+1]-ellpeaks[i]))
 
         i=i+1
         filt1 = np.logical_and(ells<ellpeaks[i],ells>=ellpeaks[i-1])
 
-        self.filters[i,filt1] = np.cos(np.pi/2*(ellpeaks[i]-ells[filt1])/(ellpeaks[i]-ellpeaks[i-1]))#hp.gauss_beam(FWHM[i], lmax=ELLMAX)
+        self.filters[i,filt1] = np.cos(np.pi/2*(ellpeaks[i]-ells[filt1])/(ellpeaks[i]-ellpeaks[i-1]))
 
         # simple check to ensure that sum of squared transmission is unity as needed for NILC algorithm 
         assert (np.absolute( np.sum( self.filters**2., axis=0 ) - np.ones(self.ELLMAX+1,dtype=float)) < self.tol).all(), "wavelet filter transmission check failed"
@@ -252,6 +256,19 @@ class Wavelets(object):
         plt.grid(alpha=0.5)
         plt.savefig(filename+log_or_lin+'.pdf')
 
+def smooth_map_with_gaussbeam(mapp,info,FWHM):
+
+    if info.work_in_healpix:
+         return hp.sphtfunc.smoothing(mapp, FWHM)
+    elif info.work_in_car:
+        alms = curvedsky.map2alm(mapp,lmax=info.ELLMAX+1)
+        smoothing_function= hp.gauss_beam(FWHM,lmax=info.ELLMAX+1)
+        smoothed = curvedsky.almxfl(alms,smoothing_function)
+        zeros = enmap.zeros(mapp.shape,wcs=mapp.wcs)
+
+        return curvedsky.alm2map(smoothed,zeros)
+
+
 class scale_info(object):
     ## It might be better to let this inherit from the wavelets class, and just use one scale_info object instead of both wavelets
     ## and scale_info - possibly a future edit
@@ -264,7 +281,15 @@ class scale_info(object):
         # and assumes filter function has a decreasing side, which is generally not true for the smallest-scale wavelet filter
         self.freqs_to_use = np.full((wv.N_scales,info.N_freqs), False)
         self.N_freqs_to_use = np.zeros(wv.N_scales,dtype=int)
-        self.N_side_to_use = np.ones(wv.N_scales,dtype=int)*info.N_side #initialize all of the internal, per-scale N_side values to the output N_side
+        if info.work_in_healpix:
+            self.N_side_to_use = np.ones(wv.N_scales,dtype=int)*info.N_side #initialize all of the internal, per-scale N_side values to the output N_side
+            self.geom_to_use = None
+            self.pix_size_to_use = None
+        elif info.work_in_car:
+            self.N_side_to_use = None
+            self.geom_to_use = [info.geometries[-1] for x in range(info.N_scales)]#np.ones(wv.N_scales,dtype=int)*info.N_side #initialize all of the internal, per-scale N_side values to the output N_side
+            self.pix_size_to_use = np.ones(wv.N_scales)*info.pix_size
+
         ell_F = np.zeros(wv.N_scales)
         ell_B = np.zeros(info.N_freqs)
         if len(ell_F)>1:
@@ -309,17 +334,43 @@ class scale_info(object):
             else:
                 assert((info.N_deproj[i] + 1) <= self.N_freqs_to_use[i]), "not enough frequency channels to deproject this many components at scale "+ str()
             # determine N_side value to use for each filter scale, by finding the smallest valid N_side larger than ell_F[i]
-            for j in range(20):
-                if (ell_F[i] < 2**j):
-                    self.N_side_to_use[i] = int(2**j)
-                    break
-            if (self.N_side_to_use[i] > info.N_side):
-                self.N_side_to_use[i] = info.N_side
-        self.N_pix_to_use = 12*(self.N_side_to_use)**2
+            if info.work_in_healpix:
+                for j in range(20):
+                    if (ell_F[i] < 2**j):
+                        self.N_side_to_use[i] = int(2**j)
+                        break
+                if (self.N_side_to_use[i] > info.N_side):
+                    self.N_side_to_use[i] = info.N_side
+                self.N_pix_to_use = 12*(self.N_side_to_use)**2
+                self.pix_size_to_use = None
+            else:
+                self.N_pix_to_use = None
+                self.pix_size_to_use[i] = np.pi/ell_F[i] * (180*60/np.pi)*1/2
+                if self.pix_size_to_use[i] <   info.pix_size:
+                    self.pix_size_to_use[i] = info.pix_size
+                fullmap = info.maps[-1]
+                if len(fullmap.shape)==3:
+                        fullmap = fullmap[0]
+                orig_pixsize= np.sqrt(fullmap.pixsize()) *(180*60)/np.pi
+                def get_geometry(res):
+                    geom =enmap.fullsky_geometry(res=res*utils.arcmin)
+                    return geom
+                success = False
+                for sub1arcmin in range(10):
+                    if not success:
+                        try:
+                            dgraded = get_geometry(np.round(self.pix_size_to_use[i]-sub1arcmin))
+                            success = True
+                        except:
+                            success = False
+
+
+                self.geom_to_use[i] = dgraded
         ##########################
         ##########################
         # criterion to determine the real-space gaussian FWHM used in wavelet ILC
         # based on ILC bias mode-counting
+        self.ell_F = ell_F #fiona test
         self.FWHM_pix = np.zeros(wv.N_scales,dtype=float)
         if info.wavelet_type == 'GaussianNeedlets':
             ell, filts = wv.GaussianNeedlets(info.GN_FWHM_arcmin)
@@ -447,10 +498,12 @@ class scale_info(object):
 
     def compute_covariance_at_scale_j(self,info,j,FWHM_pix):
         cov_maps_temp=[]
+        t1=time.time()
         #Fiona add option to include a mask at the level of covariance computation:
         #todo: this needs refinement (and the hard-coding of this part needs to be removed)
         if info.mask_before_covariance_computation is not None:
             print("fsky of whole mask is "+str(np.sum(info.mask_before_covariance_computation)/info.mask_before_covariance_computation.shape[0]),flush=True)
+            assert not info.work_in_car # fiona - deal with this later
             dgraded_mask = hp.ud_grade(info.mask_before_covariance_computation,self.N_side_to_use[j])
             dgraded_mask[dgraded_mask!=0]=1
             print("fsky at scale "+str(j)+" is "+str(np.sum(dgraded_mask)/dgraded_mask.shape[0]),flush=True)
@@ -476,6 +529,7 @@ class scale_info(object):
         if info.cross_ILC:
             smoothed_maps_B = {}
             unsmoothed_maps_B = {}
+        t1=time.time()
         for a in range(info.N_freqs):
             if (self.freqs_to_use[j][a] == True) :
                 if not info.cross_ILC:
@@ -484,13 +538,22 @@ class scale_info(object):
                     season_A = 1
                     season_B = 2
                 wavelet_map_A = dgraded_mask * self.load_wavelet_coeff_map(a,j,info,season=season_A) 
-                smoothed_maps_A[a] = dgraded_mask*hp.sphtfunc.smoothing(wavelet_map_A, FWHM_pix[j])*fskyinv
+
+                smoothed_maps_A[a] = dgraded_mask * fskyinv * smooth_map_with_gaussbeam(wavelet_map_A,info,FWHM_pix[j])
+                #if info.work_in_healpix:
+                 #   smoothed_maps_A[a] = dgraded_mask*hp.sphtfunc.smoothing(wavelet_map_A, FWHM_pix[j])*fskyinv
+                #elif info.work_in_car:
+                #    sigma = 2 *np.sqrt(2 *np.log(2)) * FWHM_pix[h]
+                #    smoothed_maps_A[a] = dgraded_mask*fskyinv*enmap.smooth_gauss(wavelet_map_A,sigma)
+
                 unsmoothed_maps_A[a] = wavelet_map_A
                 if info.cross_ILC:
                     wavelet_map_B = dgraded_mask * self.load_wavelet_coeff_map(a,j,info,season=season_B) 
-                    smoothed_maps_B[a] = hp.sphtfunc.smoothing(wavelet_map_B, FWHM_pix[j])
+                    #smoothed_maps_B[a] = hp.sphtfunc.smoothing(wavelet_map_B, FWHM_pix[j])
+                    smoothed_maps_B[a] = smooth_map_with_gaussbeam(wavelet_map_B,info,FWHM_pix[j])
                     unsmoothed_maps_B[a] = wavelet_map_B
-
+        if info.print_timing:
+            print("smoothed in",time.time()-t1)
         for a in range(info.N_freqs):
                     start_at = a
                     for b in range(start_at, info.N_freqs):
@@ -509,10 +572,13 @@ class scale_info(object):
 
                                 assert len(wavelet_map_A) == len(wavelet_map_B), "cov mat map calculation: wavelet coefficient maps have different N_side"
                                 if not info.cross_ILC:
-                                    cov_map_temp = hp.sphtfunc.smoothing( (wavelet_map_A - wavelet_map_A_smoothed)*(wavelet_map_B - wavelet_map_B_smoothed) , FWHM_pix[j])
+                                    #cov_map_temp = hp.sphtfunc.smoothing( (wavelet_map_A - wavelet_map_A_smoothed)*(wavelet_map_B - wavelet_map_B_smoothed) , FWHM_pix[j])
+                                    cov_map_temp = smooth_map_with_gaussbeam( (wavelet_map_A - wavelet_map_A_smoothed)*(wavelet_map_B - wavelet_map_B_smoothed) ,info, FWHM_pix[j])
                                 else:
-                                    cov_map_temp_AB = (hp.sphtfunc.smoothing( (wavelet_map_A - wavelet_map_A_smoothed)*(wavelet_map_B - wavelet_map_B_smoothed) , FWHM_pix[j]))
-                                    cov_map_temp_BA = (hp.sphtfunc.smoothing( (wavelet_map_B - wavelet_map_B_smoothed)*(wavelet_map_A - wavelet_map_A_smoothed) , FWHM_pix[j]))
+                                    #cov_map_temp_AB = (hp.sphtfunc.smoothing( (wavelet_map_A - wavelet_map_A_smoothed)*(wavelet_map_B - wavelet_map_B_smoothed) , FWHM_pix[j]))
+                                    cov_map_temp_AB = smooth_map_with_gaussbeam( (wavelet_map_A - wavelet_map_A_smoothed)*(wavelet_map_B - wavelet_map_B_smoothed) , info,FWHM_pix[j])
+                                    #cov_map_temp_BA = (hp.sphtfunc.smoothing( (wavelet_map_B - wavelet_map_B_smoothed)*(wavelet_map_A - wavelet_map_A_smoothed) , FWHM_pix[j]))
+                                    cov_map_temp_BA = smooth_map_with_gaussbeam( (wavelet_map_B - wavelet_map_B_smoothed)*(wavelet_map_A - wavelet_map_A_smoothed) , info,FWHM_pix[j])
 
                                     cov_map_temp = 0.5*(cov_map_temp_AB+ cov_map_temp_BA)
 
@@ -531,7 +597,7 @@ class scale_info(object):
 
 
     def weights_from_covmat_at_scale_j(self,info,j,cov_maps_temp,A_mix,resp_tol):
-
+        print("in get weights",self.N_side_to_use,flush=True)
         subtract_comp = 0
         subtract_columns = []
         for ncomp in range(A_mix.shape[1]):
@@ -559,7 +625,7 @@ class scale_info(object):
         #todo: this needs to be removed, and the hardcoding of this needs to be removed
         t1=time.time()
         if info.mask_before_covariance_computation is not None:
-
+            assert not info.work_in_car # fiona deal with this later
             dgraded_mask = hp.ud_grade(info.mask_before_covariance_computation,self.N_side_to_use[j])
             dgraded_mask[dgraded_mask!=0]=1
             if np.sum(dgraded_mask)== 0:
@@ -573,7 +639,11 @@ class scale_info(object):
             apply_mask = True
             print("did all the mask stuff in",time.time()-t1,flush=True)
         else:
-            len_unmasked_pix = self.N_pix_to_use[j]
+            if info.work_in_healpix:
+                len_unmasked_pix = self.N_pix_to_use[j]
+            elif info.work_in_car:
+                #print("j",j,info.geom_to_use[j])
+                len_unmasked_pix = np.prod(self.geom_to_use[j][0])
             apply_mask = False
 
         covmat_temp_sliced = np.zeros((int(self.N_freqs_to_use[j]),int(self.N_freqs_to_use[j]), len_unmasked_pix))
@@ -585,11 +655,12 @@ class scale_info(object):
                     if apply_mask:
                         covmat_temp_sliced[a,b] = cov_maps_temp[count][dgraded_mask] #by construction we're going through inv_cov_maps_temp in the same order as it was populated when computed (see below)
                     else:
-                        covmat_temp_sliced[a,b] = cov_maps_temp[count]
+                        covmat_temp_sliced[a,b] = cov_maps_temp[count].flatten()
                     if a != b:
-                        covmat_temp_sliced[b,a] = covmat_temp_sliced[a,b] #symmetrize
+                        covmat_temp_sliced[b,a] = covmat_temp_sliced[a,b].flatten() #symmetrize
                     count+=1
-
+        print("we have covmat",flush=True)
+        print('using numba?',info.use_numba,flush=True)
         covmat_temp_transpose = np.transpose(covmat_temp_sliced,(2,1,0))
         del(covmat_temp_sliced)
 
@@ -598,9 +669,10 @@ class scale_info(object):
         if not info.use_numba:
             tmp1 = np.linalg.solve(covmat_temp_transpose,A_mix[None,:,:]) 
         else:
+            print("in numba yay")
             tmp1 = my_numba_solver(covmat_temp_transpose,A_mix[:,:]) 
         if info.print_timing:
-            print("got tmp1 in ",time.time()-t1,flush=True)
+            print("got tmp1 in ",time.time()-t1,covmat_temp_transpose.shape,A_mix.shape,flush=True)
         tmp1 = np.transpose(tmp1)
 
         ### construct the matrix Q_{alpha beta} defined in Eq. 30 of McCarthy & Hill 2023 for each pixel at this wavelet scale and evaluate Eq. 29 to get weights ###
@@ -753,7 +825,11 @@ class scale_info(object):
                 print('needlet coefficient covariance map already exists at scale',j,":", cov_filename,flush=True)
 
             if info.print_timing:
+                print("printing timing",flush=True)
                 print("got covmats in",time.time()-t1,flush=True)    
+            else:
+                print("we are here",flush=True)
+
 
             # compute the weights
             t1=time.time()
@@ -836,7 +912,10 @@ class scale_info(object):
 
     def load_weights_at_scale_j_fits(self,info,j,query_exists=False):
             ## Loads and returns the precomputed weights at scale j
-            weights = np.zeros((int(self.N_pix_to_use[j]),int(self.N_freqs_to_use[j])))
+            if info.work_in_healpix:
+                weights = np.zeros((int(self.N_pix_to_use[j]),int(self.N_freqs_to_use[j])))
+            elif info.work_in_car:
+                weights = np.zeros((self.geom_to_use[j][0][0],self.geom_to_use[j][0][1],int(self.N_freqs_to_use[j])))
             count=0
             flag = True
             for a in range(info.N_freqs):
@@ -844,7 +923,13 @@ class scale_info(object):
                     weight_filename = _weights_filename(info,a,j)
                     exists = os.path.isfile(weight_filename)
                     if not query_exists:
-                          weights[:,count] = hp.read_map(weight_filename, dtype=np.float64, )
+                        if info.work_in_healpix:
+                            weights[:,count] = hp.read_map(weight_filename, dtype=np.float64, )
+                        elif info.work_in_car:
+                            weights[:,count] = enmap.read_map(weight_filename)
+
+                            
+                         
                     else:
                         if not exists:
                             return False
@@ -855,7 +940,11 @@ class scale_info(object):
 
     def load_weights_at_scale_j_hdf5(self,info,j,query_exists=False):
         weight_filename = info.weight_filename_hdf5
-        weights = np.zeros((int(self.N_pix_to_use[j]),int(self.N_freqs_to_use[j])))
+        if info.work_in_healpix:
+            weights = np.zeros((int(self.N_pix_to_use[j]),int(self.N_freqs_to_use[j])))
+        elif info.work_in_car:
+            weights = np.zeros((self.geom_to_use[j][0][0],self.geom_to_use[j][0][1],int(self.N_freqs_to_use[j])))
+
         exists = os.path.isfile(weight_filename)
         if query_exists:
             if not exists:
@@ -897,7 +986,12 @@ class scale_info(object):
         if query_exists:
             return exists,filename_wavelet_coeff_map
         elif exists:
-            return hp.read_map(filename_wavelet_coeff_map, dtype=np.float64)
+            if info.work_in_healpix:
+                return hp.read_map(filename_wavelet_coeff_map, dtype=np.float64)
+            elif info.work_in_car:
+                return enmap.read_map(filename_wavelet_coeff_map, )
+
+
 
     def hdf5_load_wavelet_coeff_map(self,frequency,scale,info,season=None,query_exists = False):
 
@@ -948,8 +1042,10 @@ class scale_info(object):
         if info.save_as_fits:
 
             filename_wavelet_coeff_map = _needletcoeffmap_filename(info,frequency,scale,season=season)
-
-            hp.write_map(filename_wavelet_coeff_map, wavelet_coeff_map,nest=False, dtype=np.float64, overwrite=False)
+            if info.work_in_healpix: 
+                hp.write_map(filename_wavelet_coeff_map, wavelet_coeff_map,nest=False, dtype=np.float64, overwrite=False)
+            elif info.work_in_car:
+                enmap.write_map(filename_wavelet_coeff_map, wavelet_coeff_map,)
 
         elif info.save_as_hdf5:
 
@@ -958,10 +1054,13 @@ class scale_info(object):
             f = h5py.File(filename_wavelet_coeff_dataset,'a')
 
             if season is None:
+                dsetname = "freq"+str(frequency)+'_scale'+str(scale)
 
-                f.create_dataset("freq"+str(frequency)+'_scale'+str(scale),wavelet_coeff_map.shape,data=wavelet_coeff_map)
+                #f.create_dataset("freq"+str(frequency)+'_scale'+str(scale),wavelet_coeff_map.shape,data=wavelet_coeff_map)
             else:
-                f.create_dataset("freq"+str(frequency)+'_scale'+str(scale)+"_S"+str(season),wavelet_coeff_map.shape,data=wavelet_coeff_map)
+                dsetname = "freq"+str(frequency)+'_scale'+str(scale)+"_S"+str(season)
+
+            f.create_dataset(dsetname,wavelet_coeff_map.shape,data=wavelet_coeff_map)
 
 
             f.close()
@@ -972,7 +1071,10 @@ class scale_info(object):
         if query_exists:
             return exists,filename
         elif exists:
-            return hp.read_map(filename, dtype=np.float64)
+            if info.work_in_healpix:
+                return hp.read_map(filename, dtype=np.float64)
+            elif info.work_in_car:
+                return enmap.read_map(filename)
 
     def hdf5_load_covmap(self,frequency1,frequency2,scale,info,query_exists = False):
         filename_covmaps_dataset = info.covmaps_hdf5_filename
@@ -1012,8 +1114,10 @@ class scale_info(object):
         if info.save_as_fits:
 
             filename = _cov_filename(info,frequency1,frequency2,scale)
-
-            hp.write_map(filename, covmap,nest=False, dtype=np.float64, overwrite=False)
+            if info.work_in_healpix:
+                hp.write_map(filename, covmap,nest=False, dtype=np.float64, overwrite=False)
+            elif info.work_in_car:
+                enmap.write_map(filename, covmap, )
 
         elif info.save_as_hdf5:
 
@@ -1031,7 +1135,10 @@ class scale_info(object):
         if query_exists:
             return exists,filename
         elif exists:
-            return hp.read_map(filename, dtype=np.float64)
+            if info.work_in_healpix:
+                return hp.read_map(filename, dtype=np.float64)
+            elif info.work_in_car:
+                return enmap.read_map(filename, dtype=np.float64)
 
     def hdf5_load_invcovmap(self,frequency1,frequency2,scale,info,query_exists = False):
 
@@ -1073,8 +1180,10 @@ class scale_info(object):
         if info.save_as_fits:
 
             filename = _inv_cov_filename(info,frequency1,frequency2,scale)
-
-            hp.write_map(filename, invcovmap,nest=False, dtype=np.float64, overwrite=False)
+            if info.work_in_healpix:
+                hp.write_map(filename, invcovmap,nest=False, dtype=np.float64, overwrite=False)
+            elif info.work_in_car:
+                enmap.write_map(filename, invcovmap,)
 
         elif info.save_as_hdf5:
 
@@ -1109,12 +1218,18 @@ class scale_info(object):
         else:
             print("weights exist; loading weights at scale",j)
             weights = self.load_weights_at_scale_j(info,j)
+        if info.work_in_car:
+            print("weights shape is",weights.shape,self.geom_to_use[j][0])
+            weights = weights.reshape((self.geom_to_use[j][0][0],self.geom_to_use[j][0][1],weights.shape[-1]))
 
 
         ##########################
         # apply these ILC weights to the needlet coefficient maps to get the per-needlet-scale ILC maps
         t1=time.time()
-        ILC_map_temp = np.zeros(int(self.N_pix_to_use[j]))
+        if info.work_in_healpix:
+            ILC_map_temp = np.zeros(int(self.N_pix_to_use[j]))
+        elif info.work_in_car:
+            ILC_map_temp = enmap.zeros(self.geom_to_use[j][0],wcs=self.geom_to_use[j][1])
         count=0
         for a in range(info.N_freqs):
             if (self.freqs_to_use[j][a] == True):
@@ -1123,6 +1238,7 @@ class scale_info(object):
                 else:
                     wavelet_coeff_map = maps_for_weights_needlets[a][j]
                 if info.subtract_means_before_sums[j]:
+                    assert not info.work_in_car # fiona come back to here
                     dgraded_mask = hp.ud_grade(info.mask_before_covariance_computation,self.N_side_to_use[j])
                     dgraded_mask[dgraded_mask!=0]=1
                     print("fsky at scale "+str(j)+" is "+str(np.sum(dgraded_mask)/dgraded_mask.shape[0]),flush=True)
@@ -1138,7 +1254,10 @@ class scale_info(object):
                     wavelet_coeff_map_minus_smoothed = wavelet_coeff_map - hp.smoothing(dgraded_mask * wavelet_coeff_map,self.FWHM_pix[j])/fsky
                     ILC_map_temp += weights[:,count] * (wavelet_coeff_map_minus_smoothed)
                 else:
-                    ILC_map_temp += weights[:,count] * wavelet_coeff_map
+                    if info.work_in_car:
+                        ILC_map_temp += weights[:,:,count] * wavelet_coeff_map
+                    elif info.work_in_healpix:
+                        ILC_map_temp += weights[:,count] * wavelet_coeff_map
                 count+=1
         if info.print_timing:
             print("finished summing at scale",j,time.time()-t1,flush=True)
@@ -1147,15 +1266,20 @@ class scale_info(object):
 
 
 # apply wavelet transform (i.e., filters) to a map
-def waveletize(inp_map=None, wv=None, rebeam=False, inp_beam=None, new_beam=None, wv_filts_to_use=None, N_side_to_use=None):
+def waveletize(inp_map=None, wv=None, rebeam=False, inp_beam=None, new_beam=None, wv_filts_to_use=None, N_side_to_use=None,geom_to_use=None,info=None):
     assert inp_map is not None, "no input map specified"
+    assert info is not None
     N_pix = len(inp_map)
-    N_side_inp = hp.npix2nside(N_pix)
+   # N_side_inp = hp.npix2nside(N_pix)
     assert wv is not None, "wavelets not defined"
-    assert type(wv) is Wavelets, "Wavelets TypeError"
-    assert wv.ELLMAX < 3*N_side_inp-1, "ELLMAX too high"
-    if (N_side_to_use is None):
+    #assert type(wv) is Wavelets, "Wavelets TypeError"
+  #  assert wv.ELLMAX < 3*N_side_inp-1, "ELLMAX too high"
+    if (N_side_to_use is None and info.work_in_healpix):
+        N_side_inp = hp.npix2nside(N_pix)
         N_side_to_use = np.ones(wv.N_scales, dtype=int)*N_side_inp
+    if geom_to_use is None and info.work_in_car:
+        geom_inp = enmap.geometry(inp_map)
+        geom_to_use = [geom_input for x in wv.N_scales] 
     if(rebeam):
         assert inp_beam is not None, "no input beam defined"
         assert new_beam is not None, "no new beam defined"
@@ -1171,25 +1295,40 @@ def waveletize(inp_map=None, wv=None, rebeam=False, inp_beam=None, new_beam=None
     else:
         taper_func = np.ones(wv.ELLMAX+1,dtype=float)
     # convert map to alm, apply wavelet filters (and taper and rebeam)
-    inp_map_alm = hp.map2alm(inp_map, lmax=wv.ELLMAX)
+    if info.work_in_healpix:
+        inp_map_alm = hp.map2alm(inp_map, lmax=wv.ELLMAX)
+    elif info.work_in_car:
+        inp_map_alm = curvedsky.map2alm(inp_map, lmax=wv.ELLMAX)
+
     wv_maps = []
     if wv_filts_to_use is not None: #allow user to only output maps for some of the filter scales
         assert len(wv_filts_to_use) == wv.N_scales, "wv_filts_to_use has wrong shape"
-        assert len(N_side_to_use) == wv.N_scales, "N_side_to_use has wrong shape"
+        if info.work_in_healpix:
+            assert len(N_side_to_use) == wv.N_scales, "N_side_to_use has wrong shape"
+        elif info.work_in_car:
+            assert len(geom_to_use) == wv.N_scales, "N_side_to_use has wrong shape"
+
         for j in range(wv.N_scales):
-            assert N_side_to_use[j] <= N_side_inp, "N_side_to_use > N_side_inp"
+            t1aa=time.time()
+           # assert N_side_to_use[j] <= N_side_inp, "N_side_to_use > N_side_inp"
             if wv_filts_to_use[j] == True:
-                wv_maps.append( hp.alm2map( hp.almxfl( inp_map_alm, (wv.filters[j])*taper_func*beam_fac), nside=N_side_to_use[j]) )
+                if info.work_in_healpix:
+
+                    wv_maps.append( hp.alm2map( hp.almxfl( inp_map_alm, (wv.filters[j])*taper_func*beam_fac), nside=N_side_to_use[j]) )
+                elif info.work_in_car:
+                    mapp = enmap.zeros(geom_to_use[j][0],geom_to_use[j][1])
+                    wv_maps.append( curvedsky.alm2map( curvedsky.almxfl( inp_map_alm, (wv.filters[j])*taper_func*beam_fac), mapp) )
+
     else:
         assert len(N_side_to_use) == wv.N_scales, "N_side_to_use has wrong shape"
         for j in range(wv.N_scales):
-            assert N_side_to_use[j] <= N_side_inp, "N_side_to_use > N_side_inp"
+           # assert N_side_to_use[j] <= N_side_inp, "N_side_to_use > N_side_inp"
+            t1=time.time()
             wv_maps.append( hp.alm2map( hp.almxfl( inp_map_alm, (wv.filters[j])*taper_func*beam_fac), nside=N_side_to_use[j]) )
+            if info.print_timing:
+                print("did scale",j,"in",time.time()-t1)
     # return maps of wavelet coefficients (i.e., filtered maps) -- N.B. each one can have a different N_side
     return wv_maps
-
-
-
 
 # Find nth wavelet coefficients of a map
 def find_nth_wavelet_coefficient(scale,inp_map=None,inp_map_alm=None, wv=None, rebeam=False, inp_beam=None, new_beam=None, wv_filts_to_use=None, N_side_to_use=None):
@@ -1238,27 +1377,52 @@ def find_nth_wavelet_coefficient(scale,inp_map=None,inp_map_alm=None, wv=None, r
 # synthesize map from wavelet coefficients
 # (N.B. power will be lost near ELLMAX if a taper has been applied in waveletize)
 # note that you will get nonsense if different wavelets are used here than in waveletize (obviously)
-def synthesize(wv_maps=None, wv=None, N_side_out=None):
+def synthesize(wv_maps=None, wv=None, N_side_out=None,geom_out=None):
     assert wv is not None, "wavelets not defined"
-    assert type(wv) is Wavelets, "Wavelets TypeError"
-    assert N_side_out is not None, "N_side_out must be specified"
-    assert N_side_out > 0, "N_side_out must be positive"
-    assert hp.pixelfunc.isnsideok(N_side_out, nest=True), "invalid N_side_out"
-    assert wv.ELLMAX < 3*N_side_out-1, "ELLMAX too high"
-    N_pix_out = 12*N_side_out**2
-    out_map = np.zeros(N_pix_out)
+#    assert type(wv) is Wavelets, "Wavelets TypeError"
+    assert (N_side_out is not None ) ^ (geom_out is not None), "exactly one of N_side_out or geom_out must be specified"
+    if N_side_out is not None:
+        assert N_side_out > 0, "N_side_out must be positive"
+        assert hp.pixelfunc.isnsideok(N_side_out, nest=True), "invalid N_side_out"
+        assert wv.ELLMAX < 3*N_side_out-1, "ELLMAX too high"
+
+        N_pix_out = 12*N_side_out**2
+        out_map = np.zeros(N_pix_out)
+        work_in_healpix = True
+        work_in_car = False
+
+    elif geom_out is not None:
+        out_map = enmap.zeros(geom_out[0],wcs=geom_out[1])
+        work_in_healpix = False
+        work_in_car = True
+
     for j in range(wv.N_scales):
         N_pix_temp = len(wv_maps[j])
-        N_side_temp = hp.npix2nside(N_pix_temp)
-        temp_alm = hp.map2alm(wv_maps[j], lmax=np.amin(np.array([wv.ELLMAX, 3*N_side_temp-1])))
-        if (3*N_side_temp-1 < wv.ELLMAX):
-            temp_alm_filt = hp.almxfl(temp_alm, (wv.filters[j])[:3*N_side_temp])
-        else:
-            temp_alm_filt = hp.almxfl(temp_alm, wv.filters[j])
-        out_map += hp.alm2map(temp_alm_filt, nside=N_side_out)
+        if work_in_healpix:
+            N_side_temp = hp.npix2nside(N_pix_temp)
+            temp_alm = hp.map2alm(wv_maps[j], lmax=np.amin(np.array([wv.ELLMAX, 3*N_side_temp-1])))
+        elif work_in_car:
+            temp_alm = curvedsky.map2alm(wv_maps[j], lmax=wv.ELLMAX)
+        if work_in_healpix:
+            if (3*N_side_temp-1 < wv.ELLMAX):
+                temp_alm_filt = hp.almxfl(temp_alm, (wv.filters[j])[:3*N_side_temp])
+             
+
+            else:
+                temp_alm_filt = hp.almxfl(temp_alm, wv.filters[j])
+        elif work_in_car:
+                temp_alm_filt = curvedsky.almxfl(temp_alm, wv.filters[j])
+
+        if work_in_healpix:
+            out_map += hp.alm2map(temp_alm_filt, nside=N_side_out)
+        elif work_in_car:
+            tmap = enmap.zeros(out_map.shape,wcs=out_map.wcs)
+            out_map += curvedsky.alm2map(temp_alm_filt, tmap)
+
     return out_map
 
 def waveletize_input_maps(info,scale_info_wvs,wv,map_images = False):
+        print("in waveletize",flush=True)
         ##########################
         # compute wavelet decomposition of all frequency maps used at each filter scale
         # save the filtered maps (aka maps of "wavelet coefficients")
@@ -1270,9 +1434,9 @@ def waveletize_input_maps(info,scale_info_wvs,wv,map_images = False):
         FWHM_pix = scale_info_wvs.FWHM_pix
         N_side_to_use = scale_info_wvs.N_side_to_use
         N_pix_to_use = scale_info_wvs.N_pix_to_use
+        geom_to_use = scale_info_wvs.geom_to_use
 
         have_read_input_maps = False
-
         for i in range(info.N_freqs):
             # N.B. maps are assumed to be in strictly decreasing order of FWHM! i.e. info.beams[-1] is highest-resolution beam
             wv_maps_temp = []
@@ -1290,18 +1454,27 @@ def waveletize_input_maps(info,scale_info_wvs,wv,map_images = False):
             if flag == False:
                 # if we have not read in the input files we need to do so
                 if not have_read_input_maps:
+                    print("reading input maps",flush=True)
                     info.read_maps()
+                    print("done")
                     have_read_input_maps = True
+                else:
+                    print("we already have input maps")
                 print("waveletizing frequency ", i, "...",flush=True)
                 if info.mask_before_wavelet_computation is not None:
                     mask = info.mask_before_wavelet_computation
                 else:
                     mask = 1
-
-                wv_maps_temp = waveletize(inp_map=mask*(info.maps)[i], wv=wv, rebeam=True, inp_beam=(info.beams)[i], new_beam=info.common_beam, wv_filts_to_use=freqs_to_use[:,i], N_side_to_use=N_side_to_use)
+                t1aaa=time.time()
+                wv_maps_temp = waveletize(inp_map=mask*(info.maps)[i], wv=wv, rebeam=True, inp_beam=(info.beams)[i], new_beam=info.common_beam, wv_filts_to_use=freqs_to_use[:,i], N_side_to_use=N_side_to_use, geom_to_use = geom_to_use, info=info)
+                if info.print_timing:
+                    print("waveletized in",time.time()-t1aaa)
+                t1b=time.time()
                 for j in range(wv.N_scales):
                     if freqs_to_use[j][i] == True:
                         scale_info_wvs.save_wavelet_coeff_map(i,j,info,wv_maps_temp[j],season=None)
+                if info.print_timing:
+                    print('saved needlet coeffs in',time.time()-t1b,flush=True)
                 print("done waveletizing frequency ", i, "...",flush=True)
             if map_images == True:
                 for j in range(wv.N_scales):
@@ -1335,7 +1508,11 @@ def waveletize_input_maps(info,scale_info_wvs,wv,map_images = False):
                             newbeam = info.common_beam
                         else:
                             newbeam = (info.beams)[-1]
-                        wv_maps_temp = waveletize(inp_map=(maps)[i], wv=wv, rebeam=True, inp_beam=(info.beams)[i], new_beam=newbeam, wv_filts_to_use=freqs_to_use[:,i], N_side_to_use=N_side_to_use)
+                        t1a=time.time()
+                        print("about to waveletize",i)
+                        wv_maps_temp = waveletize(inp_map=(maps)[i], wv=wv, rebeam=True, inp_beam=(info.beams)[i], new_beam=newbeam, wv_filts_to_use=freqs_to_use[:,i], N_side_to_use=N_side_to_use, geom_to_use = geom_to_use, info=info)
+                        if info.print_timing:
+                            print("waveltized freq",i,'in',time.time()-t1a)
                         for j in range(wv.N_scales):
                             if freqs_to_use[j][i] == True:
                                 scale_info_wvs.save_wavelet_coeff_map(i,j,info,wv_maps_temp[j],season=season) #need to check if they exist first
@@ -1444,7 +1621,6 @@ def wavelet_ILC(wv=None, info=None,  resp_tol=1.e-3, map_images=False,return_ILC
     assert info.N_side > 0, "N_side cannot be negative or zero"
 
     print("doing wavelet ILC",flush=True)
-
     ## Define the properties of the scales etc that we need, 
     scale_info_wvs = scale_info(wv,info,)
 
@@ -1456,17 +1632,18 @@ def wavelet_ILC(wv=None, info=None,  resp_tol=1.e-3, map_images=False,return_ILC
     # Calculate (or load) the wavelet coefficients of the input maps:
     if not info.wavelet_maps_exist:
         t1=time.time()
+        print("waveletizing",flush=True)
         waveletize_input_maps(info,scale_info_wvs,wv,map_images = map_images)
         if info.print_timing:
             print("waveletized in",time.time()-t1,flush=True)
-
+    
     # If you want to apply the weights to OTHER maps, calculate their wavelet coefficients here
     if info.apply_weights_to_other_maps:
          maps_for_weights_needlets=[]
          info.read_maps()
          for i in range(info.N_freqs):
              print("waveletizing maps to apply weights", i,flush=True)
-             maps_for_weights_needlets.append(waveletize(inp_map=(info.maps_for_weights)[i], wv=wv, rebeam=True, inp_beam=(info.beams)[i], new_beam=newbeam, wv_filts_to_use=scale_info_wvs.freqs_to_use[:,i], N_side_to_use=scale_info_wvs.N_side_to_use))
+             maps_for_weights_needlets.append(waveletize(inp_map=(info.maps_for_weights)[i], wv=wv, rebeam=True, inp_beam=(info.beams)[i], new_beam=newbeam, wv_filts_to_use=scale_info_wvs.freqs_to_use[:,i], N_side_to_use=scale_info_wvs.N_side_to_use, geom_to_use = scale_info_wvs.geom_to_use, info=info))
              print("waveletized ", i,flush=True)
     else:
         print("not waveletizing any other maps",flush=True)
@@ -1477,12 +1654,18 @@ def wavelet_ILC(wv=None, info=None,  resp_tol=1.e-3, map_images=False,return_ILC
     ILC_maps_per_scale = []
     for j in range(wv.N_scales):
         # first, check if the ILC has been done already at this scale:
+        print("checking",j,flush=True)
         ILCscalefilename = _ILC_scale_filename(info,j,scale_info_wvs)
         exists = os.path.isfile(ILCscalefilename)
         if exists:
-            ILC_map_temp = hp.fitsfunc.read_map(ILCscalefilename)
+            print("ILC temp map exists at scale",j)
+            if info.work_in_healpix:
+                ILC_map_temp = hp.fitsfunc.read_map(ILCscalefilename)
+            elif info.work_in_car:
+                ILC_map_temp = enmap.read_map(ILCscalefilename)
         else:
             # if it has not been done, do the ILC at this scale
+            print("ILC temp map does not exist at scale",j)
             ILC_map_temp = scale_info_wvs.ILC_at_scale_j(j,info,resp_tol,map_images = map_images,maps_for_weights_needlets=maps_for_weights_needlets)
     
         ILC_maps_per_scale.append(ILC_map_temp)
@@ -1490,17 +1673,26 @@ def wavelet_ILC(wv=None, info=None,  resp_tol=1.e-3, map_images=False,return_ILC
         ILCscalefilename = _ILC_scale_filename(info,j,scale_info_wvs)
         # save the ILC at this scale for future use
         if not exists:
-            hp.fitsfunc.write_map(ILCscalefilename,ILC_map_temp)
+            if info.work_in_healpix:
+                hp.fitsfunc.write_map(ILCscalefilename,ILC_map_temp)
+            elif info.work_in_car:
+                enmap.write_map(ILCscalefilename,ILC_map_temp)
+
         del(ILC_map_temp)
 
     # synthesize the per-needlet-scale ILC maps into the final combined ILC map (apply each needlet filter again and add them all together -- have to upgrade to all match the same Nside -- done in synthesize)
     print("synthesizing the full ILC map",flush=True)
-    ILC_map = synthesize(wv_maps=ILC_maps_per_scale, wv=wv, N_side_out=info.N_side)
+    if info.work_in_healpix:
+        ILC_map = synthesize(wv_maps=ILC_maps_per_scale, wv=wv, N_side_out=info.N_side,)
+    elif info.work_in_car:
+        ILC_map = synthesize(wv_maps=ILC_maps_per_scale, wv=wv, geom_out=info.geometries[-1],)
     # save the final ILC map
     ILC_map_filename = _ILC_map_filename(info)
     print("done! saving the map as",ILC_map_filename,flush=True)
-
-    hp.write_map(ILC_map_filename, ILC_map, nest=False, dtype=np.float64, overwrite=False)
+    if info.work_in_healpix:
+       hp.write_map(ILC_map_filename, ILC_map, nest=False, dtype=np.float64, overwrite=False)
+    elif info.work_in_car:
+       enmap.write_map(ILC_map_filename, ILC_map, )
 
     # make image if requested
     if map_images:
@@ -1539,6 +1731,7 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
     freqs_to_use = np.full((wv.N_scales,info.N_freqs), False)
     N_freqs_to_use = np.zeros(wv.N_scales,dtype=int)
     N_side_to_use = np.ones(wv.N_scales,dtype=int)*info.N_side #initialize all of the internal, per-scale N_side values to the output N_side
+    pix_size_to_use = np.ones(wv.N_scales)*info.pix_size #initialize all of the internal, per-scale pix-size values to the output pix-size
     ell_F = np.zeros(wv.N_scales)
     ell_B = np.zeros(info.N_freqs)
     for i in range(wv.N_scales-1):
@@ -1568,10 +1761,14 @@ def harmonic_ILC(wv=None, info=None, resp_tol=1.e-3, map_images=False):
             if (ell_F[i] < 2**j):
                 N_side_to_use[i] = int(2**j)
                 break
+        pix_size_to_use[i] = np.pi/ell_F[i] * (180*60/np.pi)
         if (N_side_to_use[i] > info.N_side):
             N_side_to_use[i] = info.N_side
+        if pix_size_to_use[i] > info.pix_size:
+            pix_size_to_use[i] = info.pix_size
     N_pix_to_use = 12*(N_side_to_use)**2
     ##########################
+    self.ell_F = ell_F
     ##########################
     # criterion to determine the real-space gaussian FWHM used in wavelet ILC
     # based on ILC bias mode-counting
