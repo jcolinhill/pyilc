@@ -602,7 +602,7 @@ class ILCInfo(object):
                 self.maps = []
                 self.geometries = []
             for i in range(self.N_freqs):
-                print("readin gin map",i)
+                print("reading in map",i)
                 # TODO: allow specification of nested or ring ordering (although will already work here if fits keyword ORDERING is present)
                 temp_map = self.get_map_handling_K_or_uK(self.freq_map_files[i])
                 assert len(temp_map) <= self.N_pix, "input map at higher resolution than specified N_side"
