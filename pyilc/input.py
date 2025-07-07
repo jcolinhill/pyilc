@@ -7,7 +7,7 @@ from astropy.io import fits
 try:
     from pixell import enmap
 except:
-    print("pixell not improted, make sure you work in healpix")
+    print("pixell not imported; make sure you work in healpix")
 """
 module to read in relevant input specified by user
 """
@@ -82,7 +82,6 @@ class ILCInfo(object):
             if p['work_in_CAR'].lower() in ['true','True','yes','Yes']:
                 self.work_in_car = True
         if 'work_in_healpix' in p.keys():
-            
             if p['work_in_healpix'].lower() in ['true','True','yes','Yes']:
                 self.work_in_car  = False
                 self.work_in_healpix = True
