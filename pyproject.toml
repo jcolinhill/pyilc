@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=64.0.0"]
+
+[tool.setuptools.packages.find]
+exclude=["*data*", "*input*", "*notebooks*", "*plots*"]
+
+[project]
+name="pyilc"
+requires-python = ">=3.10"
+version = "0.0.1"
+dependencies = [
+    "numpy",
+    "matplotlib",
+    "healpy",
+    "pixell"
+]
+readme = "README.md"
+license = {file = "LICENSE"}
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+description="Needlet ILC in Python"
+
+[project.scripts]
+pyilc = "pyilc.main:main"
+
+[project.urls]
+Homepage = "https://github.com/jcolinhill/pyilc"

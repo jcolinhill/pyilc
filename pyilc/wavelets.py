@@ -74,8 +74,8 @@ matplotlib.rc('text', usetex=True)
 fontProperties = {'family':'sans-serif',
                   'weight' : 'normal', 'size' : 16}
 import matplotlib.pyplot as plt
-from input import ILCInfo
-from fg import get_mix, get_mix_bandpassed
+from .input import ILCInfo
+from .fg import get_mix, get_mix_bandpassed
 import time
 """
 this module constructs the Wavelets class, which contains the
